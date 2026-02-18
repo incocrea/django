@@ -29,10 +29,11 @@
 18. [Dashboard — Interfaz de Control (Next.js)](#18-dashboard--interfaz-de-control-nextjs)
 19. [Flujo Completo End-to-End](#19-flujo-completo-end-to-end)
 20. [Garantías Arquitecturales (Phase 3)](#20-garantías-arquitecturales-phase-3)
-21. [Qué Sobrevive un Reinicio](#21-qué-sobrevive-un-reinicio)
-22. [Observaciones y Problemas Conocidos](#22-observaciones-y-problemas-conocidos)
-23. [Estado Actual vs Planificado](#23-estado-actual-vs-planificado)
-24. [Estructura de Archivos Completa](#24-estructura-de-archivos-completa)
+21. [Identity Core — Módulo de Identidad Formal (Phase 4)](#21-identity-core--módulo-de-identidad-formal-phase-4)
+22. [Qué Sobrevive un Reinicio](#22-qué-sobrevive-un-reinicio)
+23. [Observaciones y Problemas Conocidos](#23-observaciones-y-problemas-conocidos)
+24. [Estado Actual vs Planificado](#24-estado-actual-vs-planificado)
+25. [Estructura de Archivos Completa](#25-estructura-de-archivos-completa)
 
 ---
 
@@ -48,7 +49,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 
 **Filosofía de diseño**: El sistema opera en **$0/mes** usando exclusivamente tiers gratuitos (Gemini Free, Groq Free, Neon Free, ChromaDB local, Ollama local). La privacidad es prioridad: datos de identidad nunca salen de la máquina local; solo los outputs de agentes van a LLMs cloud.
 
-**Estado actual**: Phase 3 completada (Architectural Hardening). El sistema está listo para la próxima etapa: entrenamiento real de la conciencia virtual con datos de identidad del principal.
+**Estado actual**: Phase 4 completada (Identity Core). El módulo de identidad formal provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno.
 
 ---
 
@@ -268,13 +269,16 @@ Motor de decisión determinístico e **inmutable**. Evalúa cómo manejar cada t
 **Inmutabilidad garantizada por diseño**:
 ```python
 class DecisionEngine:
-    __slots__ = ("_autonomy_level",)                    # Solo un atributo permitido
-    def __init__(self, autonomy_level: int = 0):
+    __slots__ = ("_autonomy_level", "_identity_profile")  # Solo dos atributos permitidos
+    def __init__(self, autonomy_level: int = 0, identity_profile=None):
         object.__setattr__(self, "_autonomy_level", autonomy_level)  # Bypass del override
+        object.__setattr__(self, "_identity_profile", identity_profile)
     def __setattr__(self, _name, _value):
         raise AttributeError("DecisionEngine is immutable")  # Bloquea toda mutación
     @property
     def autonomy_level(self) -> int: return self._autonomy_level  # Solo lectura
+    @property
+    def identity_profile(self): return self._identity_profile     # Solo lectura (Phase 4)
 ```
 
 **Tablas de decisión (mapeo determinístico)**:
@@ -1050,7 +1054,94 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ---
 
-## 21. QUÉ SOBREVIVE UN REINICIO
+## 21. IDENTITY CORE — MÓDULO DE IDENTIDAD FORMAL (Phase 4)
+
+Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (4 archivos, ~790 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
+
+### 21.1 Arquitectura del Módulo
+
+```
+src/identity/
+├── __init__.py          # Re-exports: IdentityProfile, IdentityManager
+├── schema.py    (~105)  # Pydantic model IdentityProfile
+├── embedding.py (~215)  # Text composition + ChromaDB embedding + cosine similarity
+├── versioning.py(~215)  # Semantic versioning + SHA-256 hashing + Postgres persistence
+└── manager.py   (~255)  # Singleton lifecycle manager
+```
+
+**Grafo de dependencias**:
+```
+persona.yaml → manager.py → schema.py + embedding.py + versioning.py
+                                ↓              ↓
+                          IdentityProfile   ChromaDB DefaultEmbeddingFunction
+                                ↓              (all-MiniLM-L6-v2, 384-dim)
+                          DecisionEngine (inyección, read-only)
+                          AlignmentEvaluator (baseline para drift detection)
+```
+
+### 21.2 IdentityProfile — `schema.py`
+
+Modelo Pydantic que estructura la identidad del principal:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `version` | `str` | Versión semántica vX.Y.Z (validado por regex) |
+| `created_at` | `datetime` | UTC timestamp de creación |
+| `principal_name` | `str` | Nombre del principal |
+| `big_five` | `Dict[str, float]` | Rasgos Big Five (0.0–1.0 validado) |
+| `values` | `List[str]` | Valores personales ordenados por prioridad |
+| `communication_style` | `Dict[str, float]` | Dimensiones de comunicación |
+| `boundaries` | `List[str]` | Límites conductuales |
+| `writing_style` | `Dict[str, Any]` | Reglas de estilo de escritura |
+| `expertise` | `Dict[str, Any]` | Áreas de expertise primaria/secundaria |
+| `decision_making` | `Dict[str, Any]` | Patrones de toma de decisiones |
+| `baseline_embedding` | `List[float]` | Vector de 384 dimensiones (all-MiniLM-L6-v2) |
+| `drift_threshold` | `float` | Umbral mínimo de similitud coseno (default 0.78) |
+| `content_hash` | `Optional[str]` | SHA-256 para detección de cambios |
+
+Propiedades: `has_baseline` → bool, `to_persistable()` → dict JSON-safe.
+
+### 21.3 Embedding — `embedding.py`
+
+- **`build_identity_text(persona_data, writing_samples)`** — Concatena 8 secciones de identidad (principal, Big Five, valores, límites, comunicación, escritura, decisiones, expertise) + top 3 writing samples (max 500 chars cada uno) en un texto largo para embedding.
+- **`compute_baseline_embedding(text)`** — Usa `chromadb.utils.embedding_functions.DefaultEmbeddingFunction()` (all-MiniLM-L6-v2) para producir un vector de 384 dimensiones. Mismo proveedor que la memoria semántica/episódica.
+- **`cosine_similarity(vec_a, vec_b)`** — Similitud coseno manual (dot product / product of norms). Retorna float en [0.0, 1.0] para vectores normalizados.
+
+### 21.4 Versioning — `versioning.py`
+
+- **Semantic Versioning**: `generate_version()` (patch), `generate_minor_version()`, `generate_major_version()` — incrementan partes del version string vX.Y.Z.
+- **Content Hashing**: `hash_identity(text)` → SHA-256 hex de 64 caracteres. Permite detectar si el contenido de identidad realmente cambió entre builds.
+- **Persistencia**: Reutiliza la tabla `config_versions` de Postgres con `config_type='identity_profile'`. Métodos: `save_version()`, `load_latest_version()`, `get_version_history()`.
+
+### 21.5 IdentityManager — `manager.py`
+
+Singleton que orquesta el ciclo de vida completo:
+
+1. **`load_from_persona_yaml()`** — Parsea `configs/persona.yaml`
+2. **`build_profile()`** — Pipeline: YAML → text → hash → check change → embed → version → construct `IdentityProfile`. Si `content_hash` no cambió, retorna el perfil activo existente (short-circuit).
+3. **`save_profile()`** — Delega a `IdentityVersionManager.save_version()` para persistir en Postgres
+4. **`load_active_profile()`** — DB primero, fallback a rebuild desde YAML
+5. **`rebuild_profile()`** — Fuerza reconstrucción desde `persona.yaml`
+6. **`get_status()`** — Datos de monitoreo (version, hash, embedding dims, etc.)
+
+### 21.6 Integración en el Sistema
+
+**AppState (main.py)**: `IdentityManager` se inicializa en lifespan después de TrainingManager y antes de Cognition Layer:
+```
+Settings → DB → ModelRouter → Crew → Memory → Skills → Training → IdentityManager → Cognition → AlignmentEvaluator wiring → Orchestrator
+```
+
+**DecisionEngine**: Recibe `identity_profile` en constructor (read-only via `@property`). **No altera `evaluate()`** — preparado para uso futuro en identity-aware cognition.
+
+**AlignmentEvaluator**: Nuevo campo `identity_similarity` en `AlignmentReport`. `set_baseline_embedding()` wired at startup. `compute_identity_similarity()` calcula similitud coseno de cada respuesta contra el baseline. Score **no incluido** en `overall_score` (preserva pesos heurísticos existentes). Valor -1.0 cuando baseline no disponible.
+
+### 21.7 Tests — 47 tests unitarios
+
+`tests/test_identity_module.py`: 7 clases de test cubriendo schema, embedding, versioning, manager, DecisionEngine integration, AlignmentEvaluator integration, y no circular imports.
+
+---
+
+## 22. QUÉ SOBREVIVE UN REINICIO
 
 | Dato | Almacenamiento | En RAM | En Postgres | Persiste |
 |------|---------------|--------|-------------|----------|
@@ -1065,14 +1156,15 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 | **Decisiones detectadas** | **RAM + Postgres** | 500 | Ilimitado | **Sí** |
 | **Memory operations** | **RAM + Postgres** | 1000 | Ilimitado | **Sí** |
 | **Token usage** | **RAM + Postgres** | Unbounded | Ilimitado | **Sí** |
+| **Identity profile** | **RAM + Postgres** | 1 activo | config_versions | **Sí** (Phase 4) |
 
 > **Principio**: Las escrituras a Postgres son **fire-and-forget** en paralelo al almacenamiento in-memory. Si Postgres falla, el sistema sigue funcionando idénticamente — solo pierde persistencia a largo plazo.
 
 ---
 
-## 22. OBSERVACIONES Y PROBLEMAS CONOCIDOS
+## 23. OBSERVACIONES Y PROBLEMAS CONOCIDOS
 
-1. **Identity fidelity es heurístico** — el score actual se basa en conteo de correcciones y keyword matching, no en comparación de embeddings contra un baseline de identidad. La fidelidad real requerirá embedding-based scoring.
+1. **Identity fidelity tiene componente embedding** — Phase 4 añadió `identity_similarity` en AlignmentEvaluator usando cosine similarity contra un baseline embedding de 384 dimensiones (all-MiniLM-L6-v2). El score se trackea en `AlignmentReport` pero NO se incluye en `overall_score` hasta validar con datos reales. El fidelity del dashboard de analytics sigue siendo heurístico (correction-count based).
 
 2. **Governance review es automática** — no hay human-in-the-loop real. El GovernanceAgent revisa via LLM pero **auto-approves** si el JSON no parsea. No hay mecanismo de pausa para esperar decisión del principal.
 
@@ -1094,9 +1186,9 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ---
 
-## 23. ESTADO ACTUAL VS PLANIFICADO
+## 24. ESTADO ACTUAL VS PLANIFICADO
 
-### Completado (Phase 1 + 2 + 3 + parcial Phase 3.5)
+### Completado (Phase 1 + 2 + 3 + 3.5 + 4)
 - Full crew de 5 agentes con orchestrator (pipeline de 10+ pasos)
 - Sistema de memoria de 4 niveles (ChromaDB + SQLite)
 - Model Router con 3 proveedores + cadena de fallback + conteo de tokens real
@@ -1114,13 +1206,14 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 - Phase 3 architectural hardening (sin ruta legacy, 49 tests de cognición, TaskCategory extraído)
 - **Learn-topic skill** — pipeline web search → LLM summarize → chunk → ChromaDB, activable desde chat ("aprende sobre X") y UI Skills, 261 líneas
 - **3 Modos Cognitivos** — selector cíclico en chat para nivel de inteligencia (Full/Memory+LLM/Memory Only), Knowledge Boundary + Knowledge Status Header en system prompt (Modo 2), filtro de memoria semántica (Modos 2-3), retorno directo de memoria sin LLM (Modo 3), indicadores de fuente (🧠/🌐) y modo por mensaje
+- **Identity Core (Phase 4)** — módulo `src/identity/` con IdentityProfile versionado (Pydantic), baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), semantic versioning con persistencia en config_versions, SHA-256 change detection, identity_similarity en AlignmentEvaluator via cosine similarity, inyección read-only en DecisionEngine, 47 unit tests
 
 ### Planificado (Phase 4+)
 | Item | Prioridad | Descripción |
 |------|-----------|-------------|
 | **Human-in-the-Loop** | ALTA | Mecanismo de pausa para approval queue de governance |
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
-| **Real Identity Fidelity** | CRÍTICA | Scoring basado en embeddings comparados con baseline |
+| **Real Identity Fidelity** | MEDIA | Baseline embedding implementado (Phase 4). Falta: ponderar identity_similarity en overall_score, dashboard gauge, drift alertas |
 | **Persona Version Control** | ALTA | Snapshots, diffs, rollback, ramas experimentales |
 | **Document Chunking Pipeline** | ALTA | Chunking inteligente (500-1000 tokens con overlap) |
 | **Memory Consolidation** | ALTA | Job background para resumir episodic → semantic |
@@ -1133,7 +1226,7 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ---
 
-## 24. ESTRUCTURA DE ARCHIVOS COMPLETA
+## 25. ESTRUCTURA DE ARCHIVOS COMPLETA
 
 ```
 iame.lol/
@@ -1148,18 +1241,18 @@ iame.lol/
 │   │   │   ├── governance_agent.py  (132 ln) # Meta-agente de cumplimiento
 │   │   │   └── crew.py             (111 ln) # Inicialización y gestión del crew
 │   │   ├── api/
-│   │   │   ├── main.py             (249 ln) # Composition root + AppState + lifespan
+│   │   │   ├── main.py             (280 ln) # Composition root + AppState + lifespan + Identity wiring
 │   │   │   └── routes.py          (2233 ln) # 77 endpoints REST + WebSocket
 │   │   ├── cognition/                        # Capa cognitiva OBLIGATORIA
 │   │   │   ├── __init__.py          (20 ln) # Re-exports: DecisionEngine, Planner, TaskCategory
-│   │   │   ├── decision_engine.py  (138 ln) # Motor de decisión inmutable
+│   │   │   ├── decision_engine.py  (150 ln) # Motor de decisión inmutable (+identity_profile, Phase 4)
 │   │   │   └── planner.py         (118 ln) # Planificador stateless
 │   │   ├── db/
 │   │   │   ├── database.py        (289 ln) # Postgres connection + 10 tablas
 │   │   │   └── persistence.py     (491 ln) # Fire-and-forget persistence repository
 │   │   ├── evaluation/                       # 5 módulos heurísticos
 │   │   │   ├── quality_scorer.py   (383 ln) # Calidad en 5 dimensiones → grade A-F
-│   │   │   ├── alignment_evaluator.py(383 ln) # Alineación con persona
+│   │   │   ├── alignment_evaluator.py(420 ln) # Alineación con persona + identity_similarity (Phase 4)
 │   │   │   ├── legal_risk.py      (319 ln) # 15+ regex patterns de riesgo legal
 │   │   │   ├── decision_registry.py(358 ln) # Detección de decisiones de negocio
 │   │   │   └── memory_rollback.py  (353 ln) # Auditoría + point-in-time recovery
@@ -1168,6 +1261,12 @@ iame.lol/
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
 │   │   │   └── orchestrator.py    (1336 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
+│   │   ├── identity/                         # Módulo de identidad formal (Phase 4)
+│   │   │   ├── __init__.py          (8 ln) # Re-exports: IdentityProfile, IdentityManager
+│   │   │   ├── schema.py         (101 ln) # IdentityProfile Pydantic model
+│   │   │   ├── embedding.py      (215 ln) # Identity text + ChromaDB embedding + cosine similarity
+│   │   │   ├── versioning.py     (215 ln) # Semantic versioning + SHA-256 + Postgres persistence
+│   │   │   └── manager.py        (255 ln) # Singleton lifecycle manager
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
 │   │   ├── router/
@@ -1196,6 +1295,7 @@ iame.lol/
 │   │   ├── test_event_bus.py      (115 ln) # Tests del event bus
 │   │   ├── test_model_router.py   (112 ln) # Tests del router
 │   │   ├── test_skills.py         (103 ln) # Tests de skills
+│   │   ├── test_identity_module.py(310 ln) # Tests del módulo de identidad (Phase 4, 47 tests)
 │   │   ├── test_config.py          (86 ln) # Tests de configuración
 │   │   └── test_basics.py          (59 ln) # Tests básicos de importación
 │   └── configs → ../configs                  # Symlink a configs/
@@ -1235,12 +1335,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~9,600 líneas en `agent/src/`
-**Total de tests**: 1,851 líneas en 13 archivos (235 tests, 230 passing, 5 pre-existing failures)
+**Total de código backend (Python)**: ~10,400 líneas en `agent/src/` (incluye identity/ ~790 ln nuevas)
+**Total de tests**: 2,161 líneas en 14 archivos (272 tests, 272 passing)
 **Total de código frontend (TypeScript/TSX)**: ~8,100 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2025-02-19 — 3 Modos Cognitivos (reemplaza OLK), learn-topic skill, free conversation + guided interview training*
-*77 endpoints, 1285 ln orchestrator, 434 ln training manager, 261 ln learn-topic, 767 ln API client*
-*Preparado para auditoría de especialistas en conciencias virtuales*
+*Última actualización: 2025-06-19 — Phase 4 Identity Core (IdentityProfile versionado, baseline embedding 384-dim, identity_similarity en AlignmentEvaluator, inyección en DecisionEngine)*
+*77 endpoints, 1285 ln orchestrator, 434 ln training manager, 261 ln learn-topic, 790 ln identity module, 767 ln API client*
+*272 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
