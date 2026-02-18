@@ -59,24 +59,24 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 │                 DASHBOARD (Next.js 15 / React 19 / Tailwind / shadcn/ui)     │
 │                 Puerto 3000 — 12 rutas + WebSocket client                    │
 ├──────────────────────────┬───────────────────────────────────────────────────┤
-│  Zustand Store (119 ln)  │  API Client — lib/api.ts (650 ln, ~60 métodos)   │
+│  Zustand Store (151 ln)  │  API Client — lib/api.ts (767 ln, ~74 métodos)   │
 │  Estado global del UI    │  Comunicación tipada con el backend               │
 ├──────────────────────────┴───────────────────────────────────────────────────┤
 │                                     ▼ HTTP / WebSocket                       │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│         FastAPI Backend — Puerto 8000 — Prefijo /api — 73 endpoints          │
-│                           routes.py (1606 ln) + main.py (249 ln)             │
+│         FastAPI Backend — Puerto 8000 — Prefijo /api — 77 endpoints          │
+│                           routes.py (2233 ln) + main.py (249 ln)             │
 ├──────────┬───────────┬──────────┬───────────┬──────────┬─────────────────────┤
 │ COGNICIÓN│ ORQUESTA- │ AGENT    │ MEMORIA   │ EVALUA-  │ TRACE              │
 │ Decision │ DOR       │ CREW (5) │ 4 niveles │ CIÓN     │ Collector          │
 │ Engine   │ Pipeline  │          │ Manager   │ 5 módulos│ 13 tipos nodo      │
-│ (138 ln) │ 10 pasos  │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
-│ Planner  │ (829 ln)  │ Business │           │ (1796 ln │                    │
-│ (118 ln) │           │ Comms    │           │  total)  │                    │
+│ (138 ln) │ 10+ pasos │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
+│ Planner  │ (1285 ln) │ Business │           │ (1796 ln │                    │
+│ (118 ln) │ + OLK     │ Comms    │           │  total)  │                    │
 │ Categ.   │           │ Tech     │           │          │                    │
 │ (18 ln)  │           │ Govern.  │           │          │                    │
 ├──────────┴───────────┴──────────┴───────────┴──────────┴─────────────────────┤
-│ Model Router (329 ln) │ Skill Registry (116 ln) │ Training Mgr (194 ln)      │
+│ Model Router (360 ln) │ Skill Registry (116 ln) │ Training Mgr (434 ln)      │
 │ Gemini → Groq → Ollama│ 4 skills + LearnTopic  │ 3 modos + correcciones     │
 │ Fallback automático   │ (106 ln) + Tools(110 ln)│ + upload writing samples   │
 ├───────────────────────┴─────────────────────────┴────────────────────────────┤
@@ -99,10 +99,10 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 | **Backend** | Python + FastAPI + uvicorn | 3.11+ | API REST + WebSocket, orquestación multi-agente | Puerto 8000, `--reload` en dev |
 | **Frontend** | Next.js + React + TypeScript | 15 / 19 / 5.7 | Dashboard de control con 12 rutas | Puerto 3000, App Router |
 | **UI** | shadcn/ui + Tailwind CSS + lucide-react | 3.4 | Componentes primitivos + tema lab oscuro | Variables CSS: lab-text, lab-card, accent-glow |
-| **Estado UI** | Zustand | 5 | Store global del cliente | 119 líneas |
+| **Estado UI** | Zustand | 5 | Store global del cliente | 151 líneas |
 | **LLM primario** | Google Gemini 2.5 Flash | — | Proveedor principal (free tier) | Via google-generativeai SDK |
 | **LLM secundario** | Groq (Llama 3.3 70B) | — | Fallback #1 (free tier) | Via groq SDK |
-| **LLM local** | Ollama (qwen2.5:32b) | — | Fallback #2 + modo privacidad | Siempre disponible localmente |
+| **LLM local** | Ollama (llama3.1:8b) | — | Fallback #2 + modo privacidad | Siempre disponible localmente |
 | **Vector DB** | ChromaDB | local | Memoria episódica + semántica | Embeddings `all-MiniLM-L6-v2` (default) |
 | **SQL relacional** | Neon Postgres | remoto | Audit log, mensajes, persistencia Phase 1 | psycopg2 síncrono, autocommit |
 | **SQL local** | SQLite | local | Memoria procedimental (correcciones, workflows) | Archivo `procedural.db` |
@@ -148,7 +148,7 @@ class Settings(BaseSettings):
 | Archivo | Líneas | Propósito | Formato |
 |---------|--------|-----------|---------|
 | `configs/persona.yaml` | 87 | **Identidad completa del principal**: Big Five traits (5 dimensiones, 0.0-1.0), valores ordenados por prioridad (7 valores), estilo de comunicación (6 parámetros calibrados), decision_making (risk_tolerance, analysis_depth, stakeholder_weight, data_vs_intuition, trade_off_priorities), boundaries (6 reglas conductuales hardcodeadas), expertise (primary/secondary), preferencias de trabajo, writing_style | YAML |
-| `configs/models.json` | ~80 | 3 proveedores LLM con modelos específicos, cadena de fallback (gemini → groq → ollama), asignaciones por agente, 4 perfiles (balanced, max_quality, privacy_mode, budget_mode) | JSON |
+| `configs/models.json` | ~172 | 3 proveedores LLM con modelos específicos, cadena de fallback (gemini → groq → ollama), asignaciones por agente, 6 task-type routings, 4 perfiles (balanced, max_quality, privacy_mode, budget_mode), version 2.0 | JSON |
 | `configs/skills.json` | ~55 | Registro de 4 skills (web-research, email-draft, document-gen, learn-topic) con toggle enable/disable, nivel de riesgo por skill, estadísticas de uso | JSON |
 | `configs/governance.yaml` | 254 | **Framework de gobernanza completo**: 5 niveles de autonomía (Observer→Trusted), clasificación de riesgo por acción (low/medium/high/critical con ejemplos), operaciones prohibidas, reglas de privacidad, escalamiento, controles de emergencia | YAML |
 
@@ -195,7 +195,7 @@ class AppState:
 - `ServiceMonitorMiddleware` — logea requests >5s como slow, registra errores 500
 - `CORSMiddleware` — permite `localhost:3000` (dashboard)
 
-### 5.2 API Endpoints — `agent/src/api/routes.py` (1606 líneas, 73 endpoints)
+### 5.2 API Endpoints — `agent/src/api/routes.py` (2233 líneas, 77 endpoints)
 
 Todas las rutas bajo prefijo `/api`. Patrón uniforme:
 
@@ -221,8 +221,8 @@ async def handler():
 | **Trace** | `/trace/list`, `/trace/{id}`, `/trace/latest/graph`, `/trace/replay` | GET×3, POST | Trazas cognitivas, grafos React Flow, replay paso a paso |
 | **Persistence** | `/interactions`, `/interactions/{id}/trace`, `/interactions/{id}/evaluations`, `/token-usage/persisted` | GET×4 | Datos persistidos en Postgres |
 | **Memory** | `/memory/stats`, `/memory/search`, `/memory/semantic/store`, `/memory/semantic/{id}` (PUT, DELETE), `/memory/episodic/{id}` (DELETE) | GET, POST×2, PUT, DELETE×2 | CRUD completo del sistema de memoria |
-| **Skills** | `/skills`, `/skills/{id}/toggle`, `/skills/web-research`, `/skills/learn-topic` | GET, POST×3 | Gestión de habilidades + herramienta de aprendizaje |
-| **Training** | `/training/status`, `/training/session/start`, `/training/session/end`, `/training/correction`, `/training/history`, `/training/upload-samples` | GET×2, POST×4 | Sesiones de entrenamiento, correcciones, upload de muestras de escritura |
+| **Skills** | `/skills`, `/skills/{id}/toggle`, `/skills/web-research`, `/skills/learn-topic` | GET, POST×3 | Gestión de habilidades + herramienta de aprendizaje + learn-topic pipeline |
+| **Training** | `/training/status`, `/training/session/start`, `/training/session/end`, `/training/correction`, `/training/history`, `/training/upload-samples`, `/training/exchange`, `/training/interview/questions`, `/training/interview/answer` | GET×2, POST×7 | Sesiones de entrenamiento, correcciones, upload de muestras de escritura, free conversation exchanges, guided interview Q&A |
 | **Models** | `/models/config`, `/models/assignment`, `/models/profile`, `/models/test` | GET, PUT×2, POST | Gestión de proveedores LLM, perfiles, asignaciones por agente |
 | **Evaluation** | `/evaluation/overview`, quality/×3, alignment/×2, legal/×3, decisions/×5, rollback/×5 | GET×14, POST×3, PUT×1 | 19 endpoints para los 5 módulos de evaluación |
 | **Governance** | `/governance/config`, `/governance/audit-log`, `/governance/approvals`, `/governance/emergency-stop`, `/governance/emergency-resume`, `/governance/emergency-status` | GET×3, POST×2, GET×1 | Configuración, auditoría, aprobaciones, parada de emergencia |
@@ -322,9 +322,9 @@ class Planner:
 
 ## 7. CAPA DE ORQUESTACIÓN — Pipeline de 10 Pasos
 
-### `agent/src/flows/orchestrator.py` (829 líneas)
+### `agent/src/flows/orchestrator.py` (1285 líneas)
 
-El Orchestrator es el **cerebro central** del sistema. Recibe un mensaje de usuario y lo procesa a través de un pipeline determinístico de 10 pasos, donde cada paso emite eventos vía EventBus y crea nodos de trace vía TraceCollector.
+El Orchestrator es el **cerebro central** del sistema. Recibe un mensaje de usuario y lo procesa a través de un pipeline determinístico de 10+ pasos, donde cada paso emite eventos vía EventBus y crea nodos de trace vía TraceCollector.
 
 **Constructor con validación obligatoria**:
 ```python
@@ -345,9 +345,9 @@ class Orchestrator:
 | 1a | **Learning Detection** | Si el mensaje matchea patrones de aprendizaje ("aprende sobre X", "hazte experto en Y"), dispara el pipeline learn-topic: web search → LLM summarize → chunk → store en ChromaDB. Si la skill está habilitada y el match es positivo, la respuesta se genera con el contexto de lo aprendido y se retorna directamente (bypass pasos 2-10). | Sí | 10-60s |
 | 2 | **Decision Engine** | `DecisionEngine.evaluate()` — determina strategy, agent, risk, review gates. Resultado: `DecisionResult` (frozen). | No | <1ms |
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
-| 4 | **Memory Recall** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. | No | 50-200ms |
+| 4 | **Memory Recall + OLK Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si OLK=true**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
-| 6 | **Prompt Build** | Fusiona: memory context + correction context + extra context + conversation history. | No | <1ms |
+| 6 | **Prompt Build + OLK Hard-Block** | Fusiona: memory context + correction context + extra context + conversation history. **Si OLK=true y es una pregunta de conocimiento sin learned_knowledge**: retorna respuesta de declinación determinista SIN llamar al LLM (`_is_knowledge_question()` + `_extract_topic_hint()` — 17 regex patterns ES/EN + exenciones para saludos e identidad). Inyecta Knowledge Status Header condicional (solo si OLK=true). | No | <1ms |
 | 7 | **LLM Generate** | Ruta al agente asignado → `ModelRouter.generate()` → proveedor LLM en la cadena de fallback. | Sí | 500-5000ms |
 | 8 | **Identity Review** | **Per plan**: Si el Plan incluye paso `identity_review`, el IdentityCoreAgent revisa el output para alineación con la personalidad del principal. Puede reescribir la respuesta. | Sí | 500-3000ms |
 | 9 | **Governance Review** | **Per plan**: Si el Plan incluye paso `governance_review`, el GovernanceAgent revisa el output. Produce JSON con `approved`, `risk_level`, `flags`, `revised_content`. Auto-approves en parse errors. | Sí | 500-3000ms |
@@ -389,7 +389,7 @@ RESEARCH     → technical.generate(prompt, system_prompt)  # + web research ski
     ┌──────▼──────┐    ┌──────▼──────┐        ┌──────▼──────┐
     │  Identity   │    │  BaseAgent  │        │  BaseAgent  │
     │  CoreAgent  │    │  (ABC)      │        │  (ABC)      │
-    │  (222 ln)   │    │  (91 ln)    │        │  (91 ln)    │
+    │  (255 ln)   │    │  (91 ln)    │        │  (91 ln)    │
     │  STANDALONE │    └──────┬──────┘        └──────┬──────┘
     │  No extiende│         │                       │
     │  BaseAgent  │    ┌────┼────┬─────┐           │
@@ -404,7 +404,7 @@ RESEARCH     → technical.generate(prompt, system_prompt)  # + web research ski
 
 | Agente | Clase | Archivo | Rol | System Prompt | Modelo Default | Temperatura |
 |--------|-------|---------|-----|---------------|----------------|-------------|
-| **Identity Core** | `IdentityCoreAgent` | `identity_core.py` (222 ln) | **Guardián de la personalidad**. Responde COMO el principal. Construye system prompt dinámico desde persona.yaml con Big Five traits mapeados a descripciones textuales + valores + estilo de comunicación + boundaries + writing style. | Dinámico (~1500 tokens) con persona completa | Gemini | 0.7 |
+| **Identity Core** | `IdentityCoreAgent` | `identity_core.py` (255 ln) | **Guardián de la personalidad**. Responde COMO el principal. Construye system prompt dinámico desde persona.yaml con Big Five traits mapeados a descripciones textuales + valores + estilo de comunicación + boundaries + writing style. Soporta Knowledge Boundary condicional (OLK). | Dinámico (~1500 tokens) con persona completa + Knowledge Boundary (si OLK=true) | Gemini | 0.7 |
 | **Business** | `BusinessAgent` | `business_agent.py` (50 ln) | Estratega de negocio. Analiza deals, pricing, ROI, stakeholders. | `_persona_header()` + expertise + values + boundaries + contexto de negocio | Groq | 0.7 |
 | **Communication** | `CommunicationAgent` | `communication_agent.py` (56 ln) | Especialista en comunicación. Redacta emails, propuestas, mensajes en el estilo del principal. | `_persona_header()` + communication style + writing style + values | Gemini | 0.7 |
 | **Technical** | `TechnicalAgent` | `technical_agent.py` (44 ln) | Constructor técnico. Código, arquitectura, debugging. | `_persona_header()` + tech expertise + quality standards | Groq | 0.7 |
@@ -507,7 +507,7 @@ ChromaDB usa por defecto `all-MiniLM-L6-v2` (384 dimensiones, local, gratuito). 
 
 ## 10. MODEL ROUTER — Cadena de Fallback LLM
 
-### `agent/src/router/model_router.py` (329 líneas)
+### `agent/src/router/model_router.py` (360 líneas)
 
 Abstracción sobre los 3 proveedores LLM con fallback automático, asignación por rol de agente, y hot-swap:
 
@@ -516,8 +516,8 @@ Solicitud de generación
         │
         ▼
 ┌───────────────────┐    Falla?    ┌──────────────────┐    Falla?    ┌──────────────────┐
-│  GEMINI 2.5 Flash │ ──────────→ │  GROQ Llama 3.3  │ ──────────→ │  OLLAMA qwen2.5  │
-│  (Free tier)      │             │  70B (Free tier)  │             │  32b (Local)     │
+│  GEMINI 2.5 Flash │ ──────────→ │  GROQ Llama 3.3  │ ──────────→ │  OLLAMA llama3.1 │
+│  (Free tier)      │             │  70B (Free tier)  │             │  8b (Local)      │
 │  $0.15/1M tokens  │             │  $0.05/1M tokens  │             │  $0/token        │
 └───────────────────┘             └──────────────────┘             └──────────────────┘
 ```
@@ -767,7 +767,7 @@ No hay enforcement middleware automático ni human-in-the-loop real todavía.
 
 ## 15. TRAINING — Sistema de Entrenamiento Progresivo
 
-### `agent/src/training/manager.py` (194 líneas)
+### `agent/src/training/manager.py` (434 líneas)
 
 Sistema de entrenamiento con 3 modos diseñados para que el principal enseñe progresivamente a su conciencia virtual:
 
@@ -776,8 +776,8 @@ Sistema de entrenamiento con 3 modos diseñados para que el principal enseñe pr
 | Modo | Propósito | Flujo |
 |------|-----------|-------|
 | **correction** | Corregir una respuesta incorrecta | El principal da: original response + corrección deseada + explicación. Se almacena como regla en ProceduralMemory. |
-| **free_conversation** | Conversación libre para calibrar personalidad | El principal conversa normalmente. El sistema observa y aprende patrones. |
-| **guided_interview** | Preguntas estructuradas para capturar identidad | El sistema hace preguntas específicas sobre valores, preferencias, estilo. |
+| **free_conversation** | Conversación libre para calibrar personalidad | El principal conversa normalmente. El sistema analiza el mensaje con LLM (role=identity_core, temp=0.4) para extraer rasgos de personalidad, estilo, preferencias y valores. Los rasgos extraídos se almacenan en SemanticMemory (category=personality_trait). El contexto completo se almacena en EpisodicMemory. El historial de exchanges se mantiene en sesión. |
+| **guided_interview** | Preguntas estructuradas para capturar identidad | El sistema presenta 15 preguntas predefinidas sobre valores, comunicación, toma de decisiones, límites y personalidad. Las respuestas se analizan con LLM para extraer rasgos, que se almacenan en SemanticMemory (category=interview_response). Progreso visual con barra de completitud. |
 
 ### 15.2 Correcciones
 
@@ -827,7 +827,7 @@ Wrapper sobre Tavily API con dos modos:
 - `EmailDraftTool`: Usa CommunicationAgent para generar draft de email
 - `DocumentGenTool`: Usa CommunicationAgent para generar documentos
 
-### 16.4 Learn Topic — `agent/src/skills/learn_topic.py` (311 líneas)
+### 16.4 Learn Topic — `agent/src/skills/learn_topic.py` (261 líneas)
 
 Skill de aprendizaje profundo: investiga un tema en la web, resume con LLM, y almacena chunks de conocimiento en memoria semántica para uso persistente en todas las conversaciones futuras.
 
@@ -906,9 +906,9 @@ class PersistenceRepository:
 - **Next.js 15** (App Router) + **React 19** + **TypeScript 5.7**
 - **Tailwind CSS 3.4** + **shadcn/ui** para componentes
 - **Tema lab oscuro** con variables CSS: `lab-text`, `lab-text-dim`, `lab-card`, `lab-surface`, `lab-border`, `accent-glow`, `accent-primary`, `status-green/amber/red/blue`
-- **Zustand 5** para state management global (119 líneas)
-- **API client** centralizado en `lib/api.ts` (650 líneas, ~60 métodos tipados)
-- **i18n** vía `lib/i18n/` — soporta `en.json` + `es.json`
+- **Zustand 5** para state management global (151 líneas)
+- **API client** centralizado en `lib/api.ts` (767 líneas, ~74 métodos tipados)
+- **i18n** vía `lib/i18n/` — soporta `en.json` (~531 keys) + `es.json`
 - Directiva `"use client"` en todas las páginas interactivas
 
 ### 18.2 Rutas del Dashboard (12 páginas)
@@ -916,12 +916,12 @@ class PersistenceRepository:
 | Ruta | Página | Líneas | Funcionalidad |
 |------|--------|--------|--------------|
 | `/` | Command Center | 189 | KPI cards (conversations, tokens, uptime, quality), agent status ring (5 agentes con estado visual), health LEDs, activity feed (real-time via WebSocket), persona card, router card, quick actions |
-| `/chat` | Chat Interface | 11 (wrapper) + 167 (ChatPanel) + 51 (MessageBubble) | Chat de texto con el sistema orquestado. Envía POST /api/chat y renderiza respuestas con metadata (provider, model, latency) |
+| `/chat` | Chat Interface | 11 (wrapper) + 167 (ChatPanel) + 51 (MessageBubble) | Chat de texto con el sistema orquestado. Envía POST /api/chat y renderiza respuestas con metadata (provider, model, latency). **Toggle OLK** (Only Local Knowledge): botón Brain/Globe para activar/desactivar modo closed-book. **Indicadores de fuente**: 🧠 Memory (verde, N chunks) / 🌐 General (ámbar) por mensaje. |
 | `/identity` | Identity Studio | 417 | **Big Five sliders + radar chart** (5 dimensiones), estilo de comunicación (6 sliders), value hierarchy (drag-and-drop reordenable), behavioral boundaries, save/reload desde persona.yaml |
-| `/training` | Training Center | 478 | 3 modos de entrenamiento (correction, free, guided), historial de sesiones, upload de writing samples con preview |
+| `/training` | Training Center | 478 | 3 modos de entrenamiento (correction, **free conversation** con extracción de rasgos + almacenamiento en memoria semántica, **guided interview** con 15 preguntas + barra de progreso), historial de sesiones, upload de writing samples con preview |
 | `/testing` | Testing Playground | 366 | Chat simulator, scenario theater (escenarios predefinidos), A/B compare (comparar 2 respuestas side-by-side) |
 | `/models` | Model Manager | 352 | Estado de proveedores (Gemini/Groq/Ollama), 4 perfiles switcheables, asignaciones por agente (qué modelo usa cada agente), endpoint de test |
-| `/skills` | Skill Manager | 254 | Lista de skills con toggle on/off, ejecución de web research directa |
+| `/skills` | Skill Manager | 254 | Lista de skills con toggle on/off, ejecución de web research directa, **learn-topic UI** con selector de profundidad (basic/moderate/deep) y activación desde chat |
 | `/memory` | Memory Lab | 494 | Stats cards (count por tier), semantic search interactivo, store new memories, **edit inline** y delete individual memories |
 | `/governance` | Governance Console | 481 | Niveles de autonomía visual, configuración (read-only), audit log con filtros, approval queue con acciones funcionales (approve/reject/request changes), emergency stop/resume button |
 | `/analytics` | Analytics Dashboard | 269 | Identity fidelity gauge, autonomy metrics, token usage charts (recharts), events breakdown by type/agent/risk |
@@ -933,19 +933,19 @@ class PersistenceRepository:
 | Directorio | Componentes | Líneas totales | Descripción |
 |------------|------------|----------------|-------------|
 | `components/command-center/` | 7 componentes | 1026 | KPI cards, activity feed (ScrollArea con eventos real-time), agent ring (SVG circular con 5 agentes), health bar (LEDs de servicios), persona card, router card, quick actions (i18n completo) |
-| `components/chat/` | 2 componentes | 218 | ChatPanel (input + message list + submission) + MessageBubble (render individual con metadata) |
+| `components/chat/` | 2 componentes | 218 | ChatPanel (input + message list + OLK toggle + submission) + MessageBubble (render individual con metadata + knowledge source indicators Brain/Globe) |
 | `components/layout/` | 3 componentes | 266 | Sidebar (navegación agrupada en 4 secciones: Core, Identity & Training, Infrastructure, Observability), Header (breadcrumb + system status), ClientShell (wrapper con font loading) |
 | `components/trace/` | 1 componente | 267 | TraceNode — nodo custom de React Flow con expand/collapse, colores por tipo, métricas inline |
-| `components/ui/` | 8 componentes | 317 | Primitivos shadcn/ui: badge, button, card, input, progress, scroll-area, separator, tabs |
+| `components/ui/` | 9 componentes | 340 | Primitivos shadcn/ui: badge, button, card, input, progress, scroll-area, separator, tabs, tooltip |
 
-### 18.4 API Client — `dashboard/lib/api.ts` (~810 líneas)
+### 18.4 API Client — `dashboard/lib/api.ts` (~767 líneas)
 
-~70 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, y persisted token usage:
+~74 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, persisted token usage, learn-topic, free conversation exchange, guided interview, y knowledge sources:
 
 ```typescript
 export const api = {
     // Chat — respuesta incluye knowledge_sources (closed-book metadata)
-    chat: (message, conversationId?) => fetchAPI<ChatResponse>("/chat", { method: "POST", body }),
+    chat: (message, conversationId?, onlyLocalKnowledge?) => fetchAPI<ChatResponse>("/chat", { method: "POST", body }),
     // Memory
     memoryStats: () => fetchAPI<MemoryStats>("/memory/stats"),
     memorySearch: (query, tier?, limit?) => fetchAPI<SearchResults>("/memory/search", { method: "POST", body }),
@@ -978,19 +978,24 @@ export const api = {
                               │  3. Emit "agent_state.thinking" →WS   │
                               │  4. Cargar historial (últimos 20 msgs)│
                               │  5. Emit "agent_state.acting" →WS    │
-                              │  6. orchestrator.process(msg, id, hist)│
+                              │  6. orchestrator.process(msg, id, hist, │
+                              │     only_local_knowledge)              │
                               └────────────────┬─────────────────────┘
                                                │
                               ┌────────────────▼──────────────────────┐
                               │       ORCHESTRATOR PIPELINE           │
                               │                                       │
                               │  0. Emergency Check (si parado → STOP)│
+                              │  0.5 Learn-topic auto-detect          │
                               │  1. Classify (keywords, <1ms)         │
                               │  2. Decision Engine (determinístico)   │
                               │  3. Planner (Plan con steps)          │
-                              │  4. Memory Recall (ChromaDB ×2 + RAM) │
+                              │  4. Memory Recall + OLK semantic      │
+                              │     filter (strip non-learned chunks)  │
                               │  5. Correction Injection (SQLite)     │
-                              │  6. Prompt Build (merge contextos)    │
+                              │  6. Prompt Build + OLK Hard-Block     │
+                              │     (deterministic decline if no       │
+                              │      learned knowledge + knowledge Q)  │
                               │  7. LLM Generate → ModelRouter →      │
                               │     → Gemini/Groq/Ollama              │
                               │  8. Identity Review (si Plan dice sí) │
@@ -1012,6 +1017,7 @@ export const api = {
           ┌──────────────────────────────────────────────────────────┐
           │                    Dashboard actualiza                   │
           │  • ChatPanel muestra el mensaje con metadata            │
+          │  • Knowledge source indicators (🧠/🌐) por mensaje       │
           │  • WebSocket events → Command Center actualiza:         │
           │    - Agent ring (estado de cada agente)                 │
           │    - Activity feed (nuevo evento)                       │
@@ -1090,8 +1096,8 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ## 23. ESTADO ACTUAL VS PLANIFICADO
 
-### Completado (Phase 1 + 2 + 3)
-- Full crew de 5 agentes con orchestrator (pipeline de 10 pasos)
+### Completado (Phase 1 + 2 + 3 + parcial Phase 3.5)
+- Full crew de 5 agentes con orchestrator (pipeline de 10+ pasos)
 - Sistema de memoria de 4 niveles (ChromaDB + SQLite)
 - Model Router con 3 proveedores + cadena de fallback + conteo de tokens real
 - 12 páginas de dashboard (todas funcionales)
@@ -1100,12 +1106,14 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 - Governance console (config viewer, audit log, approval queue, emergency stop/resume)
 - Analytics dashboard (fidelity, autonomy, tokens, events)
 - Testing playground (chat sim, scenario theater, A/B compare)
-- Training system (3 modos + upload de writing samples + correcciones)
+- Training system (3 modos: correction + free conversation con extracción de rasgos + guided interview con 15 preguntas + upload de writing samples)
 - WebSocket real-time updates + Event Bus
 - Service logger con crash reports
 - Postgres persistence layer (interactions, traces, evaluations, token usage, memory ops)
 - Cognition layer obligatoria (DecisionEngine inmutable + Planner stateless)
 - Phase 3 architectural hardening (sin ruta legacy, 49 tests de cognición, TaskCategory extraído)
+- **Learn-topic skill** — pipeline web search → LLM summarize → chunk → ChromaDB, activable desde chat ("aprende sobre X") y UI Skills, 261 líneas
+- **OLK system (Only Local Knowledge)** — toggle en chat para modo closed-book, Knowledge Boundary + Knowledge Status Header + Final Enforcement en system prompt, filtro de memoria semántica, hard-block determinístico para preguntas sin conocimiento aprendido, indicadores de fuente (🧠/🌐) por mensaje
 
 ### Planificado (Phase 4+)
 | Item | Prioridad | Descripción |
@@ -1118,7 +1126,7 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 | **Memory Consolidation** | ALTA | Job background para resumir episodic → semantic |
 | **Multi-Agent Collaboration** | MEDIA | Llamadas paralelas a agentes + agregación |
 | **Identity Drift Detection** | MEDIA | Embeddings baseline + alerta de drift |
-| **Autonomous Skill Acquisition** | MEDIA | Learning Agent pipeline |
+| **Autonomous Skill Acquisition** | MEDIA | Learning Agent pipeline avanzado (learn-topic básico ya implementado, falta "Teach Me" UI y adquisición autónoma) |
 | **External Integrations** | MEDIA | Email, calendar, Slack/Discord |
 | **QLoRA Fine-Tuning** | BAJA | PEFT + Unsloth para modelo privado |
 | **Self-Modification System** | BAJA | Acceso al codebase con governance |
@@ -1133,7 +1141,7 @@ iame.lol/
 │   ├── src/
 │   │   ├── agents/                           # 5 agentes especializados
 │   │   │   ├── base_agent.py         (91 ln) # ABC para agentes de dominio
-│   │   │   ├── identity_core.py     (222 ln) # Guardián de identidad (standalone)
+│   │   │   ├── identity_core.py     (255 ln) # Guardián de identidad (standalone, OLK support)
 │   │   │   ├── business_agent.py     (50 ln) # Estratega de negocio
 │   │   │   ├── communication_agent.py(56 ln) # Especialista en comunicación
 │   │   │   ├── technical_agent.py    (44 ln) # Constructor técnico
@@ -1141,7 +1149,7 @@ iame.lol/
 │   │   │   └── crew.py             (111 ln) # Inicialización y gestión del crew
 │   │   ├── api/
 │   │   │   ├── main.py             (249 ln) # Composition root + AppState + lifespan
-│   │   │   └── routes.py          (1606 ln) # 73 endpoints REST + WebSocket
+│   │   │   └── routes.py          (2233 ln) # 77 endpoints REST + WebSocket
 │   │   ├── cognition/                        # Capa cognitiva OBLIGATORIA
 │   │   │   ├── __init__.py          (20 ln) # Re-exports: DecisionEngine, Planner, TaskCategory
 │   │   │   ├── decision_engine.py  (138 ln) # Motor de decisión inmutable
@@ -1159,20 +1167,20 @@ iame.lol/
 │   │   │   └── event_bus.py       (128 ln) # Pub/Sub + WS + Audit
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
-│   │   │   └── orchestrator.py    (829 ln) # Pipeline de 10 pasos
+│   │   │   └── orchestrator.py    (1285 ln) # Pipeline de 10+ pasos + OLK hard-block
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
 │   │   ├── router/
-│   │   │   └── model_router.py    (329 ln) # Gemini→Groq→Ollama fallback
+│   │   │   └── model_router.py    (360 ln) # Gemini→Groq→Ollama fallback
 │   │   ├── skills/
 │   │   │   ├── registry.py        (116 ln) # Skill toggle + tracking
 │   │   │   ├── web_research.py    (106 ln) # Tavily wrapper
-│   │   │   ├── learn_topic.py     (311 ln) # Topic learning pipeline
+│   │   │   ├── learn_topic.py     (261 ln) # Topic learning pipeline
 │   │   │   └── tools.py          (110 ln) # Email + Document tools
 │   │   ├── trace/
 │   │   │   └── collector.py       (342 ln) # Cognitive trace + TraceStore
 │   │   ├── training/
-│   │   │   └── manager.py         (194 ln) # 3 modos + correcciones
+│   │   │   └── manager.py         (434 ln) # 3 modos + correcciones + free convo + interview
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
@@ -1210,10 +1218,10 @@ iame.lol/
 │   │   ├── chat/                  (218 ln) # ChatPanel + MessageBubble
 │   │   ├── layout/                (266 ln) # Sidebar (4 grupos) + Header + ClientShell
 │   │   ├── trace/                 (267 ln) # TraceNode (React Flow custom)
-│   │   └── ui/                    (317 ln) # 8 primitivos shadcn/ui
+│   │   └── ui/                    (340 ln) # 9 primitivos shadcn/ui
 │   └── lib/
-│       ├── api.ts                 (807 ln) # API client (~70 métodos)
-│       ├── store.ts               (147 ln) # Zustand global store
+│       ├── api.ts                 (767 ln) # API client (~74 métodos)
+│       ├── store.ts               (151 ln) # Zustand global store (17 state fields)
 │       ├── hooks/                           # Custom React hooks
 │       └── i18n/                            # en.json + es.json
 ├── configs/                                  # Archivos de configuración
@@ -1227,13 +1235,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~7,000 líneas en `agent/src/`
-**Total de tests**: 1,851 líneas en 12 archivos (235 tests, 230 passing, 5 pre-existing failures)
+**Total de código backend (Python)**: ~9,600 líneas en `agent/src/`
+**Total de tests**: 1,851 líneas en 13 archivos (235 tests, 230 passing, 5 pre-existing failures)
 **Total de código frontend (TypeScript/TSX)**: ~8,100 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2025-02-18 — OLK toggle (Only Local Knowledge) en chat interface*
-*Pipeline: web search → LLM summarize → chunk → ChromaDB semantic memory*
-*Activable desde chat ("aprende sobre X") y Skill Manager UI*
+*Última actualización: 2026-02-18 — OLK deterministic hard-block (no LLM leakage), learn-topic skill, free conversation + guided interview training*
+*77 endpoints, 1285 ln orchestrator, 434 ln training manager, 261 ln learn-topic, 767 ln API client*
 *Preparado para auditoría de especialistas en conciencias virtuales*
