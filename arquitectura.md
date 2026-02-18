@@ -429,25 +429,37 @@ El system prompt del IdentityCoreAgent es el más crítico del sistema — es lo
 8. **Knowledge Boundary**: Restricción de conocimiento closed-book — el agente SOLO responde con datos de su base de conocimiento local (semantic memory). Si no tiene información aprendida, dice "no sé" y sugiere aprender.
 9. **Final enforcement**: Refuerzo final que asegura compliance con el Knowledge Boundary
 
-### 8.4 Aislamiento de Conocimiento (Closed-Book Mode)
+### 8.4 Aislamiento de Conocimiento (Closed-Book Mode) + Control OLK
 
-El sistema implementa un modo "closed-book" que restringe al LLM a SOLO usar el conocimiento local aprendido:
+El sistema implementa un modo "closed-book" controlable desde el chat que restringe al LLM a SOLO usar el conocimiento local aprendido:
+
+**Control OLK (Only Local Knowledge)**:
+- Toggle en la interfaz de chat (botón OLK con icono Brain/Globe)
+- `only_local_knowledge: bool` se envía en `ChatRequest` → `orchestrator.process()` → `identity_core.respond()`
+- **OLK ON** (default, verde): Knowledge Boundary + Knowledge Status Header + Final Enforcement activos
+- **OLK OFF** (gris): Sin restricciones — LLM puede usar training data libremente
 
 **Componentes del sistema**:
-1. **Knowledge Boundary** (identity_core.py): Sección permanente en el system prompt que instruye al LLM a solo responder desde el contexto proporcionado.
-2. **Knowledge Status Header** (orchestrator.py): Anotación dinámica inyectada en el contexto que indica si se encontró conocimiento aprendido (`learned_knowledge`) para el tema solicitado.
-3. **Final Enforcement** (identity_core.py): Refuerzo al final del system prompt (recency bias) que maximiza el cumplimiento del LLM.
-4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) que indica cuántos chunks de conocimiento aprendido se usaron.
+1. **Knowledge Boundary** (identity_core.py): Sección condicional en el system prompt (solo si OLK=true) que instruye al LLM a solo responder desde el contexto proporcionado.
+2. **Knowledge Status Header** (orchestrator.py): Anotación dinámica inyectada en el contexto (solo si OLK=true) que indica si se encontró conocimiento aprendido (`learned_knowledge`).
+3. **Final Enforcement** (identity_core.py): Refuerzo al final del system prompt (solo si OLK=true, recency bias).
+4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) con `olkActive` flag.
 
-**Comportamiento**:
+**Comportamiento con OLK ON**:
 - Preguntas sobre temas aprendidos → Responde SOLO desde los chunks de `learned_knowledge` en SemanticMemory
 - Preguntas sobre temas NO aprendidos → Responde "No tengo información, dime: 'aprende sobre [tema]'"
 - Conversación general (saludos, identidad, instrucciones) → Sin restricción
 - Búsqueda web → SOLO cuando el usuario lo ordena explícitamente ("aprende sobre X")
 
+**Comportamiento con OLK OFF**:
+- Sin restricción — el LLM puede responder desde su training data + contexto de memoria
+- Búsqueda web permitida si el usuario la solicita
+
 **Indicador visual en el chat (dashboard)**:
 - 🧠 `Memory (N)` verde → Respuesta basada en N chunks de conocimiento aprendido
 - 🌐 `General` ámbar → Respuesta usó contexto semántico pero no conocimiento aprendido
+- Botón OLK verde (Brain icon) → Modo restrictivo activo
+- Botón OLK gris (Globe icon) → Modo libre activo
 
 ---
 
@@ -1221,7 +1233,7 @@ iame.lol/
 
 ---
 
-*Última actualización: 2025-02-18 — Knowledge Isolation (closed-book mode) + memory source indicator*
+*Última actualización: 2025-02-18 — OLK toggle (Only Local Knowledge) en chat interface*
 *Pipeline: web search → LLM summarize → chunk → ChromaDB semantic memory*
 *Activable desde chat ("aprende sobre X") y Skill Manager UI*
 *Preparado para auditoría de especialistas en conciencias virtuales*
