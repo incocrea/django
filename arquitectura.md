@@ -71,8 +71,8 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 │ Decision │ DOR       │ CREW (5) │ 4 niveles │ CIÓN     │ Collector          │
 │ Engine   │ Pipeline  │          │ Manager   │ 5 módulos│ 13 tipos nodo      │
 │ (138 ln) │ 10+ pasos │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
-│ Planner  │ (1285 ln) │ Business │           │ (1796 ln │                    │
-│ (118 ln) │ + OLK     │ Comms    │           │  total)  │                    │
+│ Planner  │ (1336 ln) │ Business │           │ (1796 ln │                    │
+│ (118 ln) │ + 3 Modos │ Comms    │           │  total)  │                    │
 │ Categ.   │           │ Tech     │           │          │                    │
 │ (18 ln)  │           │ Govern.  │           │          │                    │
 ├──────────┴───────────┴──────────┴───────────┴──────────┴─────────────────────┤
@@ -345,9 +345,9 @@ class Orchestrator:
 | 1a | **Learning Detection** | Si el mensaje matchea patrones de aprendizaje ("aprende sobre X", "hazte experto en Y"), dispara el pipeline learn-topic: web search → LLM summarize → chunk → store en ChromaDB. Si la skill está habilitada y el match es positivo, la respuesta se genera con el contexto de lo aprendido y se retorna directamente (bypass pasos 2-10). | Sí | 10-60s |
 | 2 | **Decision Engine** | `DecisionEngine.evaluate()` — determina strategy, agent, risk, review gates. Resultado: `DecisionResult` (frozen). | No | <1ms |
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
-| 4 | **Memory Recall + OLK Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si OLK=true**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
+| 4 | **Memory Recall + Mode Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si cognitive_mode ≥ 2**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
-| 6 | **Prompt Build + OLK Hard-Block** | Fusiona: memory context + correction context + extra context + conversation history. **Si OLK=true y no hay learned_knowledge**: aplica **deny-by-default** — solo permite saludos (`_CASUAL_RE`) y preguntas de identidad (`_IDENTITY_RE` respondibles desde persona.yaml). Todo lo demás (preferencias, opiniones, hechos) → hard-block determinístico SIN llamar al LLM (`_is_safe_without_knowledge()` + `_extract_topic_hint()`). Inyecta Knowledge Status Header ultra-restrictivo. | No | <1ms |
+| 6 | **Prompt Build + Mode Logic** | Fusiona: memory context + correction context + extra context + conversation history. **Modo 3**: retorno directo de memoria sin LLM — ensambla líneas `[tier/category] text` de memorias recuperadas. **Modo 2**: inyecta Knowledge Status Header (con/sin datos aprendidos). **Modo 1**: sin restricciones. | No | <1ms |
 | 7 | **LLM Generate** | Ruta al agente asignado → `ModelRouter.generate()` → proveedor LLM en la cadena de fallback. | Sí | 500-5000ms |
 | 8 | **Identity Review** | **Per plan**: Si el Plan incluye paso `identity_review`, el IdentityCoreAgent revisa el output para alineación con la personalidad del principal. Puede reescribir la respuesta. | Sí | 500-3000ms |
 | 9 | **Governance Review** | **Per plan**: Si el Plan incluye paso `governance_review`, el GovernanceAgent revisa el output. Produce JSON con `approved`, `risk_level`, `flags`, `revised_content`. Auto-approves en parse errors. | Sí | 500-3000ms |
@@ -404,7 +404,7 @@ RESEARCH     → technical.generate(prompt, system_prompt)  # + web research ski
 
 | Agente | Clase | Archivo | Rol | System Prompt | Modelo Default | Temperatura |
 |--------|-------|---------|-----|---------------|----------------|-------------|
-| **Identity Core** | `IdentityCoreAgent` | `identity_core.py` (255 ln) | **Guardián de la personalidad**. Responde COMO el principal. Construye system prompt dinámico desde persona.yaml con Big Five traits mapeados a descripciones textuales + valores + estilo de comunicación + boundaries + writing style. Soporta Knowledge Boundary condicional (OLK). | Dinámico (~1500 tokens) con persona completa + Knowledge Boundary (si OLK=true) | Gemini | 0.7 |
+| **Identity Core** | `IdentityCoreAgent` | `identity_core.py` (255 ln) | **Guardián de la personalidad**. Responde COMO el principal. Construye system prompt dinámico desde persona.yaml con Big Five traits mapeados a descripciones textuales + valores + estilo de comunicación + boundaries + writing style. Soporta Knowledge Boundary condicional (Modo 2). | Dinámico (~1500 tokens) con persona completa + Knowledge Boundary (si cognitive_mode==2) | Gemini | 0.7 |
 | **Business** | `BusinessAgent` | `business_agent.py` (50 ln) | Estratega de negocio. Analiza deals, pricing, ROI, stakeholders. | `_persona_header()` + expertise + values + boundaries + contexto de negocio | Groq | 0.7 |
 | **Communication** | `CommunicationAgent` | `communication_agent.py` (56 ln) | Especialista en comunicación. Redacta emails, propuestas, mensajes en el estilo del principal. | `_persona_header()` + communication style + writing style + values | Gemini | 0.7 |
 | **Technical** | `TechnicalAgent` | `technical_agent.py` (44 ln) | Constructor técnico. Código, arquitectura, debugging. | `_persona_header()` + tech expertise + quality standards | Groq | 0.7 |
@@ -429,38 +429,37 @@ El system prompt del IdentityCoreAgent es el más crítico del sistema — es lo
 8. **Knowledge Boundary**: Restricción de conocimiento closed-book — el agente SOLO responde con datos de su base de conocimiento local (semantic memory). Si no tiene información aprendida, dice "no sé" y sugiere aprender.
 9. **Final enforcement**: Refuerzo final que asegura compliance con el Knowledge Boundary
 
-### 8.4 Aislamiento de Conocimiento (Closed-Book Mode) + Control OLK
+### 8.4 3 Modos Cognitivos — Control de Inteligencia del Delegado
 
-El sistema implementa un modo "closed-book" controlable desde el chat que restringe al LLM a SOLO usar el conocimiento local aprendido:
+El sistema implementa 3 modos cognitivos seleccionables desde el chat que controlan qué recursos de inteligencia usa el delegado para responder:
 
-**Control OLK (Only Local Knowledge)**:
-- Toggle en la interfaz de chat (botón OLK con icono Brain/Globe)
-- `only_local_knowledge: bool` se envía en `ChatRequest` → `orchestrator.process()` → `identity_core.respond()`
-- **OLK ON** (default, verde): Knowledge Boundary + Knowledge Status Header + Final Enforcement activos
-- **OLK OFF** (gris): Sin restricciones — LLM puede usar training data libremente
+**Parámetro**: `cognitive_mode: int` (1, 2, 3) — enviado en `ChatRequest` → `orchestrator.process()` → `identity_core.respond()`
+
+| Modo | Nombre | Icono | Color | Recursos | Descripción |
+|------|--------|-------|-------|----------|-------------|
+| 🟢 1 | **Full Intelligence** | Globe | Verde | Web + LLM + toda la memoria | Sin restricciones. El LLM puede usar training data, web search (Tavily), y todas las memorias. |
+| 🟡 2 | **Memory + LLM** | Brain | Ámbar | LLM + memoria aprendida | **Default**. El LLM genera respuestas pero SOLO fundamentadas en el contexto de memoria recuperado. Sin web. Filtra semantic memory a `learned_knowledge` solamente. Knowledge Boundary + Status Header activos. |
+| 🔴 3 | **Memory Only** | Database | Rojo | Solo memoria (sin LLM) | Recuperación pura de memoria. NO llama al LLM. El orchestrator ensambla las memorias recuperadas en formato `[tier/category] text` y las retorna directamente. Si no hay memorias: retorna "no memories found". Modelo reportado: `memoryOnly`. |
 
 **Componentes del sistema**:
-1. **Knowledge Boundary** (identity_core.py): Sección condicional en el system prompt (solo si OLK=true) que instruye al LLM a solo responder desde el contexto proporcionado.
-2. **Knowledge Status Header** (orchestrator.py): Anotación dinámica inyectada en el contexto (solo si OLK=true) que indica si se encontró conocimiento aprendido (`learned_knowledge`).
-3. **Final Enforcement** (identity_core.py): Refuerzo al final del system prompt (solo si OLK=true, recency bias).
-4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) con `olkActive` flag.
+1. **Knowledge Boundary** (identity_core.py): Sección condicional en el system prompt (solo Modo 2) que instruye al LLM a solo responder desde el contexto proporcionado.
+2. **Knowledge Status Header** (orchestrator.py): Anotación dinámica inyectada en el contexto (solo Modo 2) que indica si se encontró conocimiento aprendido.
+3. **Final Enforcement** (identity_core.py): Refuerzo al final del system prompt (solo Modo 2, recency bias).
+4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) con campo `cognitiveMode`.
+5. **Memory Filter** (orchestrator.py, paso 4): Modos 2 y 3 filtran semantic memory a solo `learned_knowledge`.
+6. **Mode 3 Early Return** (orchestrator.py, paso 6): Retorno directo sin LLM — ensambla memorias como texto formateado.
 
-**Comportamiento con OLK ON**:
-- Preguntas sobre temas aprendidos → Responde SOLO desde los chunks de `learned_knowledge` en SemanticMemory (sin fabricar opiniones)
-- Preguntas no seguras sin conocimiento aprendido → **Hard-block determinístico** (deny-by-default, sin llamada LLM): "No tengo información, dime: 'aprende sobre [tema]'"
-- Mensajes seguros sin conocimiento (saludos, preguntas de identidad respondibles desde persona.yaml) → Pasan al LLM con header ultra-restrictivo
-- Todo lo demás (preferencias, opiniones, experiencias, hechos) → Bloqueado por deny-by-default
-- Búsqueda web → SOLO cuando el usuario lo ordena explícitamente ("aprende sobre X")
+**Selector en el chat (dashboard)**:
+- Botón cíclico: click avanza Mode 1 → 2 → 3 → 1
+- Color e icono cambian según el modo activo
+- Tooltip muestra descripción del modo actual
 
-**Comportamiento con OLK OFF**:
-- Sin restricción — el LLM puede responder desde su training data + contexto de memoria
-- Búsqueda web permitida si el usuario la solicita
-
-**Indicador visual en el chat (dashboard)**:
+**Indicador en burbujas de mensaje**:
+- 🟢 `Mode 1` verde → Respuesta con inteligencia completa
+- 🟡 `Mode 2` ámbar → LLM + memoria
+- 🔴 `Mode 3` rojo → Solo memoria, sin LLM
 - 🧠 `Memory (N)` verde → Respuesta basada en N chunks de conocimiento aprendido
-- 🌐 `General` ámbar → Respuesta usó contexto semántico pero no conocimiento aprendido
-- Botón OLK verde (Brain icon) → Modo restrictivo activo
-- Botón OLK gris (Globe icon) → Modo libre activo
+- 🌐 `General` ámbar → Contexto semántico pero no conocimiento aprendido
 
 ---
 
@@ -917,7 +916,7 @@ class PersistenceRepository:
 | Ruta | Página | Líneas | Funcionalidad |
 |------|--------|--------|--------------|
 | `/` | Command Center | 189 | KPI cards (conversations, tokens, uptime, quality), agent status ring (5 agentes con estado visual), health LEDs, activity feed (real-time via WebSocket), persona card, router card, quick actions |
-| `/chat` | Chat Interface | 11 (wrapper) + 167 (ChatPanel) + 51 (MessageBubble) | Chat de texto con el sistema orquestado. Envía POST /api/chat y renderiza respuestas con metadata (provider, model, latency). **Toggle OLK** (Only Local Knowledge): botón Brain/Globe para activar/desactivar modo closed-book. **Indicadores de fuente**: 🧠 Memory (verde, N chunks) / 🌐 General (ámbar) por mensaje. |
+| `/chat` | Chat Interface | 11 (wrapper) + 167 (ChatPanel) + 51 (MessageBubble) | Chat de texto con el sistema orquestado. Envía POST /api/chat y renderiza respuestas con metadata (provider, model, latency). **3 Modos Cognitivos**: botón cíclico (Globe/Brain/Database) para controlar nivel de inteligencia (Full 🟢, Memory+LLM 🟡, Memory Only 🔴). **Indicadores de fuente**: 🧠 Memory (verde, N chunks) / 🌐 General (ámbar) + modo cognitivo por mensaje. |
 | `/identity` | Identity Studio | 417 | **Big Five sliders + radar chart** (5 dimensiones), estilo de comunicación (6 sliders), value hierarchy (drag-and-drop reordenable), behavioral boundaries, save/reload desde persona.yaml |
 | `/training` | Training Center | 478 | 3 modos de entrenamiento (correction, **free conversation** con extracción de rasgos + almacenamiento en memoria semántica, **guided interview** con 15 preguntas + barra de progreso), historial de sesiones, upload de writing samples con preview |
 | `/testing` | Testing Playground | 366 | Chat simulator, scenario theater (escenarios predefinidos), A/B compare (comparar 2 respuestas side-by-side) |
@@ -934,7 +933,7 @@ class PersistenceRepository:
 | Directorio | Componentes | Líneas totales | Descripción |
 |------------|------------|----------------|-------------|
 | `components/command-center/` | 7 componentes | 1026 | KPI cards, activity feed (ScrollArea con eventos real-time), agent ring (SVG circular con 5 agentes), health bar (LEDs de servicios), persona card, router card, quick actions (i18n completo) |
-| `components/chat/` | 2 componentes | 218 | ChatPanel (input + message list + OLK toggle + submission) + MessageBubble (render individual con metadata + knowledge source indicators Brain/Globe) |
+| `components/chat/` | 2 componentes | 218 | ChatPanel (input + message list + cognitive mode cycling selector + submission) + MessageBubble (render individual con metadata + knowledge source indicators + cognitive mode indicator) |
 | `components/layout/` | 3 componentes | 266 | Sidebar (navegación agrupada en 4 secciones: Core, Identity & Training, Infrastructure, Observability), Header (breadcrumb + system status), ClientShell (wrapper con font loading) |
 | `components/trace/` | 1 componente | 267 | TraceNode — nodo custom de React Flow con expand/collapse, colores por tipo, métricas inline |
 | `components/ui/` | 9 componentes | 340 | Primitivos shadcn/ui: badge, button, card, input, progress, scroll-area, separator, tabs, tooltip |
@@ -980,7 +979,7 @@ export const api = {
                               │  4. Cargar historial (últimos 20 msgs)│
                               │  5. Emit "agent_state.acting" →WS    │
                               │  6. orchestrator.process(msg, id, hist, │
-                              │     only_local_knowledge)              │
+                              │     cognitive_mode)                  │
                               └────────────────┬─────────────────────┘
                                                │
                               ┌────────────────▼──────────────────────┐
@@ -991,10 +990,10 @@ export const api = {
                               │  1. Classify (keywords, <1ms)         │
                               │  2. Decision Engine (determinístico)   │
                               │  3. Planner (Plan con steps)          │
-                              │  4. Memory Recall + OLK semantic      │
+                              │  4. Memory Recall + Mode filter      │
                               │     filter (strip non-learned chunks)  │
                               │  5. Correction Injection (SQLite)     │
-                              │  6. Prompt Build + OLK Hard-Block     │
+                              │  6. Prompt Build + Mode Logic        │
                               │     (deterministic decline if no       │
                               │      learned knowledge + knowledge Q)  │
                               │  7. LLM Generate → ModelRouter →      │
@@ -1114,7 +1113,7 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 - Cognition layer obligatoria (DecisionEngine inmutable + Planner stateless)
 - Phase 3 architectural hardening (sin ruta legacy, 49 tests de cognición, TaskCategory extraído)
 - **Learn-topic skill** — pipeline web search → LLM summarize → chunk → ChromaDB, activable desde chat ("aprende sobre X") y UI Skills, 261 líneas
-- **OLK system (Only Local Knowledge)** — toggle en chat para modo closed-book, Knowledge Boundary + Knowledge Status Header + Final Enforcement en system prompt, filtro de memoria semántica, hard-block determinístico para preguntas sin conocimiento aprendido, indicadores de fuente (🧠/🌐) por mensaje
+- **3 Modos Cognitivos** — selector cíclico en chat para nivel de inteligencia (Full/Memory+LLM/Memory Only), Knowledge Boundary + Knowledge Status Header en system prompt (Modo 2), filtro de memoria semántica (Modos 2-3), retorno directo de memoria sin LLM (Modo 3), indicadores de fuente (🧠/🌐) y modo por mensaje
 
 ### Planificado (Phase 4+)
 | Item | Prioridad | Descripción |
@@ -1142,7 +1141,7 @@ iame.lol/
 │   ├── src/
 │   │   ├── agents/                           # 5 agentes especializados
 │   │   │   ├── base_agent.py         (91 ln) # ABC para agentes de dominio
-│   │   │   ├── identity_core.py     (255 ln) # Guardián de identidad (standalone, OLK support)
+│   │   │   ├── identity_core.py     (255 ln) # Guardián de identidad (standalone, 3 cognitive modes)
 │   │   │   ├── business_agent.py     (50 ln) # Estratega de negocio
 │   │   │   ├── communication_agent.py(56 ln) # Especialista en comunicación
 │   │   │   ├── technical_agent.py    (44 ln) # Constructor técnico
@@ -1168,7 +1167,7 @@ iame.lol/
 │   │   │   └── event_bus.py       (128 ln) # Pub/Sub + WS + Audit
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
-│   │   │   └── orchestrator.py    (1285 ln) # Pipeline de 10+ pasos + OLK hard-block
+│   │   │   └── orchestrator.py    (1336 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
 │   │   ├── router/
@@ -1242,6 +1241,6 @@ iame.lol/
 
 ---
 
-*Última actualización: 2026-02-18 — OLK deterministic hard-block (no LLM leakage), learn-topic skill, free conversation + guided interview training*
+*Última actualización: 2025-02-19 — 3 Modos Cognitivos (reemplaza OLK), learn-topic skill, free conversation + guided interview training*
 *77 endpoints, 1285 ln orchestrator, 434 ln training manager, 261 ln learn-topic, 767 ln API client*
 *Preparado para auditoría de especialistas en conciencias virtuales*
