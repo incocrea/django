@@ -347,7 +347,7 @@ class Orchestrator:
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
 | 4 | **Memory Recall + OLK Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si OLK=true**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
-| 6 | **Prompt Build + OLK Hard-Block** | Fusiona: memory context + correction context + extra context + conversation history. **Si OLK=true y es una pregunta de conocimiento sin learned_knowledge**: retorna respuesta de declinación determinista SIN llamar al LLM (`_is_knowledge_question()` + `_extract_topic_hint()` — 17 regex patterns ES/EN + exenciones para saludos e identidad). Inyecta Knowledge Status Header condicional (solo si OLK=true). | No | <1ms |
+| 6 | **Prompt Build + OLK Hard-Block** | Fusiona: memory context + correction context + extra context + conversation history. **Si OLK=true y no hay learned_knowledge**: aplica **deny-by-default** — solo permite saludos (`_CASUAL_RE`) y preguntas de identidad (`_IDENTITY_RE` respondibles desde persona.yaml). Todo lo demás (preferencias, opiniones, hechos) → hard-block determinístico SIN llamar al LLM (`_is_safe_without_knowledge()` + `_extract_topic_hint()`). Inyecta Knowledge Status Header ultra-restrictivo. | No | <1ms |
 | 7 | **LLM Generate** | Ruta al agente asignado → `ModelRouter.generate()` → proveedor LLM en la cadena de fallback. | Sí | 500-5000ms |
 | 8 | **Identity Review** | **Per plan**: Si el Plan incluye paso `identity_review`, el IdentityCoreAgent revisa el output para alineación con la personalidad del principal. Puede reescribir la respuesta. | Sí | 500-3000ms |
 | 9 | **Governance Review** | **Per plan**: Si el Plan incluye paso `governance_review`, el GovernanceAgent revisa el output. Produce JSON con `approved`, `risk_level`, `flags`, `revised_content`. Auto-approves en parse errors. | Sí | 500-3000ms |
@@ -446,9 +446,10 @@ El sistema implementa un modo "closed-book" controlable desde el chat que restri
 4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) con `olkActive` flag.
 
 **Comportamiento con OLK ON**:
-- Preguntas sobre temas aprendidos → Responde SOLO desde los chunks de `learned_knowledge` en SemanticMemory
-- Preguntas sobre temas NO aprendidos → Responde "No tengo información, dime: 'aprende sobre [tema]'"
-- Conversación general (saludos, identidad, instrucciones) → Sin restricción
+- Preguntas sobre temas aprendidos → Responde SOLO desde los chunks de `learned_knowledge` en SemanticMemory (sin fabricar opiniones)
+- Preguntas no seguras sin conocimiento aprendido → **Hard-block determinístico** (deny-by-default, sin llamada LLM): "No tengo información, dime: 'aprende sobre [tema]'"
+- Mensajes seguros sin conocimiento (saludos, preguntas de identidad respondibles desde persona.yaml) → Pasan al LLM con header ultra-restrictivo
+- Todo lo demás (preferencias, opiniones, experiencias, hechos) → Bloqueado por deny-by-default
 - Búsqueda web → SOLO cuando el usuario lo ordena explícitamente ("aprende sobre X")
 
 **Comportamiento con OLK OFF**:
