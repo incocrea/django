@@ -426,6 +426,28 @@ El system prompt del IdentityCoreAgent es el más crítico del sistema — es lo
 5. **Boundaries**: 6 reglas hardcodeadas que el agente NUNCA puede violar
 6. **Writing style**: Preferencias de tono, estructuración, y elementos de personalidad
 7. **AI disclosure**: "Solo revela tu naturaleza AI si te lo preguntan directamente — nunca voluntariamente"
+8. **Knowledge Boundary**: Restricción de conocimiento closed-book — el agente SOLO responde con datos de su base de conocimiento local (semantic memory). Si no tiene información aprendida, dice "no sé" y sugiere aprender.
+9. **Final enforcement**: Refuerzo final que asegura compliance con el Knowledge Boundary
+
+### 8.4 Aislamiento de Conocimiento (Closed-Book Mode)
+
+El sistema implementa un modo "closed-book" que restringe al LLM a SOLO usar el conocimiento local aprendido:
+
+**Componentes del sistema**:
+1. **Knowledge Boundary** (identity_core.py): Sección permanente en el system prompt que instruye al LLM a solo responder desde el contexto proporcionado.
+2. **Knowledge Status Header** (orchestrator.py): Anotación dinámica inyectada en el contexto que indica si se encontró conocimiento aprendido (`learned_knowledge`) para el tema solicitado.
+3. **Final Enforcement** (identity_core.py): Refuerzo al final del system prompt (recency bias) que maximiza el cumplimiento del LLM.
+4. **Knowledge Sources** (orchestrator.py): Metadata en la respuesta (`knowledge_sources`) que indica cuántos chunks de conocimiento aprendido se usaron.
+
+**Comportamiento**:
+- Preguntas sobre temas aprendidos → Responde SOLO desde los chunks de `learned_knowledge` en SemanticMemory
+- Preguntas sobre temas NO aprendidos → Responde "No tengo información, dime: 'aprende sobre [tema]'"
+- Conversación general (saludos, identidad, instrucciones) → Sin restricción
+- Búsqueda web → SOLO cuando el usuario lo ordena explícitamente ("aprende sobre X")
+
+**Indicador visual en el chat (dashboard)**:
+- 🧠 `Memory (N)` verde → Respuesta basada en N chunks de conocimiento aprendido
+- 🌐 `General` ámbar → Respuesta usó contexto semántico pero no conocimiento aprendido
 
 ---
 
@@ -910,7 +932,7 @@ class PersistenceRepository:
 
 ```typescript
 export const api = {
-    // Chat
+    // Chat — respuesta incluye knowledge_sources (closed-book metadata)
     chat: (message, conversationId?) => fetchAPI<ChatResponse>("/chat", { method: "POST", body }),
     // Memory
     memoryStats: () => fetchAPI<MemoryStats>("/memory/stats"),
@@ -1199,7 +1221,7 @@ iame.lol/
 
 ---
 
-*Última actualización: 2025-02-18 — Learn Topic Skill implementada (Phase 3.2)*
+*Última actualización: 2025-02-18 — Knowledge Isolation (closed-book mode) + memory source indicator*
 *Pipeline: web search → LLM summarize → chunk → ChromaDB semantic memory*
 *Activable desde chat ("aprende sobre X") y Skill Manager UI*
 *Preparado para auditoría de especialistas en conciencias virtuales*
