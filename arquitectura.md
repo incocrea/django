@@ -49,7 +49,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 
 **Filosofía de diseño**: El sistema opera en **$0/mes** usando exclusivamente tiers gratuitos (Gemini Free, Groq Free, Neon Free, ChromaDB local, Ollama local). La privacidad es prioridad: datos de identidad nunca salen de la máquina local; solo los outputs de agentes van a LLMs cloud.
 
-**Estado actual**: Phase 4 completada (Identity Core). El módulo de identidad formal provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno.
+**Estado actual**: Phase 6B completada (Identity-Aware Context Weighting — Soft Mode). El módulo de identidad formal provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno. Phase 5A agrega `IdentityEnforcer` como señal de observabilidad activa. Phase 5B agrega `IdentityPolicyEngine` como capa reactiva configurable (none/log/flag/rewrite_request/block). Phase 5C agrega `IdentityFeedbackController` como capa de feedback controlado: genera hints de corrección de identidad determinísticos cuando policy_result.action == "rewrite_request" AND severity == "high", sin modificar respuestas, sin re-ejecutar LLM, sin alterar scores. Phase 6A agrega `IdentityMemoryBridge` como capa pre-generación de análisis de afinidad memoria–identidad: calcula cosine similarity entre cada memoria recuperada y el baseline embedding del principal, produciendo metadata observacional (scores individuales + agregados avg/max/min) sin modificar, filtrar ni re-ordenar memorias. Phase 6B agrega `IdentityContextWeighter` como capa de anotación soft de contexto: anota cada línea de memoria en el prompt con `[IDENTITY_ALIGNED]` o `[LOW_IDENTITY_ALIGNMENT]` basado en scores de afinidad de Phase 6A, adjuntando bloque de análisis — sin eliminar, reordenar ni modificar contenido.
 
 ---
 
@@ -348,9 +348,12 @@ class Orchestrator:
 | 1 | **Classify** | Clasifica el mensaje por keywords heurísticos. Requiere ≥2 matches para overridear CONVERSATION. 24 keywords por categoría. | No | <1ms |
 | 1a | **Learning Detection** | Si el mensaje matchea patrones de aprendizaje ("aprende sobre X", "hazte experto en Y"), dispara el pipeline learn-topic: web search → LLM summarize → chunk → store en ChromaDB. Si la skill está habilitada y el match es positivo, la respuesta se genera con el contexto de lo aprendido y se retorna directamente (bypass pasos 2-10). | Sí | 10-60s |
 | 2 | **Decision Engine** | `DecisionEngine.evaluate()` — determina strategy, agent, risk, review gates. Resultado: `DecisionResult` (frozen). | No | <1ms |
+| 3c | **Identity Decision Modulation** | Evalúa alignment entre `DecisionResult` e `IdentityProfile` en 4 factores: risk tolerance, category–values, autonomía, decision style. Composite score → label (aligned/tension/misaligned). Estrictamente observacional — nunca modifica decisiones. Phase 6C. | No | <1ms |
+| 3d | **Identity Confidence** | Agrega señales de identidad (enforcement similarity, policy severity, decision alignment, memory affinity) en confidence score ponderado (0.0–1.0) + autonomy_modifier (+1/0/-1). Primer componente no-observacional — metadata advisory. Degradación graceful con inputs faltantes. Phase 6D. | No | <1ms |
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
 | 4 | **Memory Recall + Mode Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si cognitive_mode ≥ 2**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
+| 3b | **Identity Context Weighting** | Anota cada línea de memoria en el contexto con `[IDENTITY_ALIGNED]` (similarity ≥ avg) o `[LOW_IDENTITY_ALIGNMENT]` (similarity < avg) basado en scores de afinidad de Phase 6A. Matching por `memory_id` via `context_line_ids` (refactor Phase 6C). Adjunta bloque "Identity Context Analysis" con conteos. Estrictamente soft: no elimina, no reordena, no modifica contenido. | No | <1ms |
 | 6 | **Prompt Build + Mode Logic** | Fusiona: memory context + correction context + extra context + conversation history. **Modo 3**: retorno directo de memoria sin LLM — ensambla líneas `[tier/category] text` de memorias recuperadas. **Modo 2**: inyecta Knowledge Status Header (con/sin datos aprendidos). **Modo 1**: sin restricciones. | No | <1ms |
 | 7 | **LLM Generate** | Ruta al agente asignado → `ModelRouter.generate()` → proveedor LLM en la cadena de fallback. | Sí | 500-5000ms |
 | 8 | **Identity Review** | **Per plan**: Si el Plan incluye paso `identity_review`, el IdentityCoreAgent revisa el output para alineación con la personalidad del principal. Puede reescribir la respuesta. | Sí | 500-3000ms |
@@ -993,6 +996,8 @@ export const api = {
                               │  0.5 Learn-topic auto-detect          │
                               │  1. Classify (keywords, <1ms)         │
                               │  2. Decision Engine (determinístico)   │
+                              │  3c. Identity Decision Modulation     │
+                              │  3d. Identity Confidence (Phase 6D)   │
                               │  3. Planner (Plan con steps)          │
                               │  4. Memory Recall + Mode filter      │
                               │     filter (strip non-learned chunks)  │
@@ -1056,17 +1061,24 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ## 21. IDENTITY CORE — MÓDULO DE IDENTIDAD FORMAL (Phase 4)
 
-Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (4 archivos, ~790 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
+Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (11 archivos, ~1670 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
 
 ### 21.1 Arquitectura del Módulo
 
 ```
 src/identity/
-├── __init__.py          # Re-exports: IdentityProfile, IdentityManager
-├── schema.py    (~105)  # Pydantic model IdentityProfile
-├── embedding.py (~215)  # Text composition + ChromaDB embedding + cosine similarity
-├── versioning.py(~215)  # Semantic versioning + SHA-256 hashing + Postgres persistence
-└── manager.py   (~255)  # Singleton lifecycle manager
+├── __init__.py            # Re-exports: IdentityProfile, IdentityManager, IdentityEnforcer, IdentityPolicyEngine, IdentityMemoryBridge, IdentityContextWeighter, IdentityDecisionModulator, IdentityConfidenceEngine
+├── schema.py      (~105) # Pydantic model IdentityProfile
+├── embedding.py   (~215) # Text composition + ChromaDB embedding + cosine similarity
+├── versioning.py  (~215) # Semantic versioning + SHA-256 hashing + Postgres persistence
+├── enforcement.py (~90)  # Phase 5A: Soft drift detection (IdentityEnforcer)
+├── policy.py      (~165) # Phase 5B: Reactive identity control (IdentityPolicyEngine)
+├── feedback.py    (~110) # Phase 5C: Controlled identity feedback (IdentityFeedbackController)
+├── memory_bridge.py(~165)# Phase 6A: Identity-aware memory affinity analyser (IdentityMemoryBridge)
+├── context_weighting.py(~200) # Phase 6B: Soft identity-aware context annotation (IdentityContextWeighter)
+├── decision_modulation.py(~280) # Phase 6C: Observational decision-identity alignment (IdentityDecisionModulator)
+├── confidence.py  (~230) # Phase 6D: Soft autonomy modulation (IdentityConfidenceEngine)
+└── manager.py     (~255) # Singleton lifecycle manager
 ```
 
 **Grafo de dependencias**:
@@ -1135,9 +1147,178 @@ Settings → DB → ModelRouter → Crew → Memory → Skills → Training → 
 
 **AlignmentEvaluator**: Nuevo campo `identity_similarity` en `AlignmentReport`. `set_baseline_embedding()` wired at startup. `compute_identity_similarity()` calcula similitud coseno de cada respuesta contra el baseline. Score **no incluido** en `overall_score` (preserva pesos heurísticos existentes). Valor -1.0 cuando baseline no disponible.
 
-### 21.7 Tests — 47 tests unitarios
+### 21.7 Enforcement — `enforcement.py` (Phase 5A)
 
-`tests/test_identity_module.py`: 7 clases de test cubriendo schema, embedding, versioning, manager, DecisionEngine integration, AlignmentEvaluator integration, y no circular imports.
+**`IdentityEnforcer`** — Detector de drift de identidad por observación. Módulo completamente aislado (sin dependencias a orchestrator, cognition, o events).
+
+**`evaluate_similarity(similarity_score: float) → Dict`**:
+- `{"status": "no_baseline"}` — sin baseline embedding o similarity < 0
+- `{"status": "aligned", "similarity": ..., "threshold": ...}` — similarity ≥ threshold
+- `{"status": "drift_detected", "similarity": ..., "threshold": ..., "severity": ...}` — similarity < threshold
+
+**Integración en Orchestrator (paso 7c, post-evaluación)**:
+1. Lee `align_report.identity_similarity` del paso 7b
+2. Instancia `IdentityEnforcer(profile)` con el perfil activo de `IdentityManager`
+3. Evalúa drift → agrega resultado a `evaluation_results["identity_enforcement"]`
+4. Emite evento `identity.drift_checked` via EventBus
+5. Pasa `drift_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_enforcement`)
+
+**Garantías**: NO bloquea, NO reintenta, NO altera la respuesta. Es señal de observabilidad pura.
+
+### 21.8 Policy Engine — `policy.py` (Phase 5B)
+
+**`IdentityPolicyEngine`** — Capa reactiva de control de identidad. Completamente desacoplada de IdentityProfile y IdentityEnforcer — recibe solo valores escalares (similarity, threshold) + config de governance.
+
+**`evaluate_action(similarity, threshold, governance_config) → Dict`**:
+- Clasifica severidad: `none` (sim ≥ threshold), `low` (gap < 0.05), `medium` (gap < 0.15), `high` (gap ≥ 0.15)
+- Mapea severidad → acción via `governance.yaml → identity_control`: `on_low`, `on_medium`, `on_high`
+- Acciones válidas: `none | log | flag | rewrite_request | block`
+- Resultado: `{action, severity, reason, similarity, threshold}`
+
+**Integración en Orchestrator (paso 7d, post-enforcement)**:
+1. Lee `identity_control` de `governance_config`
+2. Si habilitado y hay drift_result: instancia `IdentityPolicyEngine()`, evalúa
+3. Agrega resultado a `evaluation_results["identity_policy"]`
+4. Emite evento `identity.policy_evaluated` via EventBus
+5. Pasa `policy_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_policy`)
+
+**Configuración** (`governance.yaml → identity_control`):
+```yaml
+identity_control:
+  enabled: true
+  on_low: "log"
+  on_medium: "flag"
+  on_high: "rewrite_request"
+```
+
+**Garantías**: Stateless, NO bloquea, NO altera respuestas (acciones son señales advisory).
+
+### 21.9 Feedback Controller — `feedback.py` (Phase 5C)
+
+**`IdentityFeedbackController`** — Capa de feedback controlado de identidad. Completamente stateless, sin parámetros de constructor, sin dependencia a orchestrator/events/cognition. Depende solo de IdentityProfile (read-only).
+
+**`generate_feedback(drift_result, policy_result, identity_profile) → Dict`**:
+- Si `policy_result.action != "rewrite_request"` o `drift_result.severity != "high"`: retorna `{feedback_generated: False}`
+- Si ambas condiciones: genera hint determinístico basado en `principal_name`, primeros 3 `values`, y `communication_style` (dimensiones ≥ 0.6)
+- Resultado: `{feedback_generated, type, hint, severity, similarity, threshold}`
+
+**Integración en Orchestrator (paso 7e, post-policy)**:
+1. Verifica `policy_result.action == "rewrite_request"` AND `drift_result.severity == "high"`
+2. Obtiene `identity_profile` del `IdentityManager`
+3. Genera feedback via `IdentityFeedbackController().generate_feedback()`
+4. Si `feedback_generated`: agrega a `evaluation_results["identity_feedback"]`
+5. Emite evento `identity.feedback_generated` via EventBus
+6. Pasa `feedback_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_feedback`)
+
+**Garantías**: NO re-ejecuta LLM, NO muta respuestas, NO altera scores, NO modifica IdentityProfile. El hint es metadata advisory para corrección futura.
+
+### 21.10 Memory Bridge — `memory_bridge.py` (Phase 6A)
+
+**`IdentityMemoryBridge`** — Capa pre-generación de análisis de afinidad memoria–identidad. Completamente stateless, sin parámetros de constructor, sin dependencia a orchestrator/events/cognition. Depende de IdentityProfile (read-only) y de `cosine_similarity` + `compute_baseline_embedding` de `embedding.py`.
+
+**`analyze_memories(identity_profile, retrieved_memories) → Dict`**:
+- Si `identity_profile` no es IdentityProfile o no tiene baseline: retorna `{enabled: False, reason: ...}`
+- Si `retrieved_memories` vacío: retorna `{enabled: False, reason: "no_memories"}`
+- Para cada memoria: usa embedding pre-computado si existe, o computa on-the-fly via `compute_baseline_embedding(content)`
+- Calcula cosine similarity vs baseline embedding del principal
+- Resultado: `{enabled, memories_analyzed, memory_scores: [{memory_id, tier, identity_similarity, content_preview}], aggregate: {avg_similarity, max_similarity, min_similarity}}`
+
+**Integración en Orchestrator (paso 2b, post-memory recall, pre-corrections)**:
+1. Verifica que hay `recalled_memories` y que `identity_profile.has_baseline`
+2. Analiza afinidad via `IdentityMemoryBridge().analyze_memories()`
+3. Si `enabled`: agrega a `evaluation_results["identity_memory_affinity"]`
+4. Emite evento `identity.memory_affinity_analyzed` via EventBus
+5. Pasa `memory_affinity_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_memory_affinity`)
+
+**Garantías**: Estrictamente observacional — NO re-ordena, NO filtra, NO modifica memorias ni prompts. Output es metadata advisory para fases futuras de weighted retrieval.
+
+### 21.11 Context Weighting — `context_weighting.py` (Phase 6B)
+
+**`IdentityContextWeighter`** — Capa de anotación soft de identidad para el contexto del prompt. Completamente stateless, sin parámetros de constructor, sin dependencia a orchestrator/events/cognition. Depende solo de `logging` y typing.
+
+**`apply_annotations(memory_context, memory_affinity_result, context_line_ids=None) → Dict`**:
+- Si `memory_affinity_result` no está habilitado o no tiene `memory_scores`: retorna `{annotated: False, reason: ...}`
+- Calcula `avg_similarity` de los scores de afinidad
+- Para cada línea del `memory_context`: busca match por `memory_id` via `context_line_ids[i]` (refactor Phase 6C — reemplaza matching por substring)
+  - Si match encontrado y similarity ≥ avg: prepend `[IDENTITY_ALIGNED]`
+  - Si match encontrado y similarity < avg: prepend `[LOW_IDENTITY_ALIGNMENT]`
+- Genera `analysis_block` con conteos de líneas alineadas vs low-alignment y mensaje de coherencia
+- Resultado: `{annotated, annotated_context, analysis_block, stats: {total_lines, annotated_lines, aligned_count, low_alignment_count, avg_similarity}}`
+
+**Integración en Orchestrator (paso 3b, post-context combination, pre-cognitive mode routing)**:
+1. Verifica que hay `memory_affinity_result` con `enabled: True`
+2. Aplica anotaciones via `IdentityContextWeighter().apply_annotations()`
+3. Reemplaza `memory_context` en `full_context` con la versión anotada
+4. Adjunta `analysis_block` al final del `full_context`
+5. Agrega resultado a `evaluation_results["identity_context_weighting"]`
+6. Emite evento `identity.context_weighted` via EventBus
+7. Non-blocking (try/except)
+
+**Garantías**: Estrictamente soft — NO elimina líneas, NO reordena, NO modifica el contenido de las memorias. Solo prepend tags informativos y adjunta bloque de análisis al final.
+
+### 21.12 Decision Modulation — `decision_modulation.py` (Phase 6C)
+
+**`IdentityDecisionModulator`** — Analizador observacional de alineación decisión-identidad. Completamente stateless, sin parámetros de constructor, solo importa `IdentityProfile` del mismo paquete.
+
+**`evaluate_decision_alignment(decision_result, identity_profile) → Dict`**:
+- Evalúa 4 factores:
+  - **Risk tolerance** (tabla 9 entradas: risk × tolerance → score)
+  - **Category–values** (keywords de 5 dominios vs valores del principal)
+  - **Autonomy** (nivel de autonomía × delegation_comfort)
+  - **Decision style** (approach + expertise matching)
+- Composite score = promedio ponderado igualitario de los 4 factores
+- Label: `aligned` (>=0.70), `tension` (>=0.40), `misaligned` (<0.40)
+- Genera `reasoning` string con scores individuales y explicación
+- Siempre retorna `"observational": True`
+
+**Integración en Orchestrator (paso 3c, post-decision engine, pre-planner)**:
+1. Obtiene `IdentityProfile` via `get_state().identity_manager`
+2. Crea `IdentityDecisionModulator()` y llama `evaluate_decision_alignment()`
+3. Almacena resultado en `evaluation_results["identity_decision_alignment"]`
+4. Emite evento `identity.decision_alignment_evaluated` via EventBus
+5. Non-blocking (try/except)
+6. Pasa `decision_modulation_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_decision_alignment`)
+
+**Refactor Phase 6C en context_weighting**: Reemplazó matching por substring (`content_preview[:40]`) con matching por `memory_id` via parámetro `context_line_ids`. Se añadió `build_context_with_metadata()` a `MemoryManager` que retorna `(context_str, line_ids)` paralelo. Se añadió `content_hash` (SHA-256) a scores de memory_bridge.
+
+**Garantías**: Estrictamente observacional — NUNCA modifica decisiones, routing, selección de agentes, ni comportamiento de governance. Output es metadata advisory.
+
+### 21.13 Confidence Engine — `confidence.py` (Phase 6D)
+
+**`IdentityConfidenceEngine`** — Capa de modulación de autonomía soft. Completamente stateless, sin parámetros de constructor, sin dependencia de IdentityProfile u orchestrator/events/cognition.
+
+**`compute_confidence(enforcement_result, policy_result, decision_modulation_result, memory_affinity_result) → Dict`**:
+- Extrae 4 señales (todas opcionales):
+  - **Similarity** (enforcement): score cosine identity (w=0.30)
+  - **Memory affinity** (memory_bridge): avg_similarity agregada (w=0.20)
+  - **Decision alignment** (decision_modulation): identity_decision_alignment (w=0.25)
+  - **Policy severity** (policy): none→1.0, low→0.70, medium→0.40, high→0.10 (w=0.25)
+- Weighted average de señales disponibles, normalizado por pesos presentes
+- Cuando no hay señales → default neutral 0.50 (medium, modifier 0)
+- Confidence levels: high (>=0.75, +1), medium (0.50–0.74, 0), low (<0.50, -1)
+- Primer componente no-observacional (`observational: False`) — produce `autonomy_modifier` (advisory, no enacted)
+- Output incluye `signal_contributions` y `signals_available` para transparencia
+
+**Integración en Orchestrator (paso 3d, post-decision modulation, pre-planner)**:
+1. Crea `IdentityConfidenceEngine()` y llama `compute_confidence()`
+2. En paso 3d solo `decision_modulation_result` está disponible (enforcement, policy, memory affinity se computan después)
+3. Almacena resultado en `evaluation_results["identity_confidence"]`
+4. Emite evento `identity.confidence_computed` via EventBus
+5. Non-blocking (try/except)
+6. Pasa `confidence_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_confidence`)
+
+**Garantías**: Produce `autonomy_modifier` como metadata advisory — NUNCA modifica `DecisionEngine.evaluate()`, `Planner.build()`, routing, ni generación.
+
+### 21.14 Tests — 415 tests unitarios
+
+- `tests/test_identity_module.py`: 47 tests (Phase 4) — schema, embedding, versioning, manager, integración
+- `tests/test_identity_enforcement.py`: 30 tests (Phase 5A) — constructor, no_baseline, aligned, drift_detected, severity, invariantes, persistencia
+- `tests/test_identity_policy.py`: 55 tests (Phase 5B) — severity computation, action resolution, evaluate_action, disabled config, statelessness, reason strings, module isolation, edge cases, constants
+- `tests/test_identity_feedback.py`: 41 tests (Phase 5C) — no-feedback conditions, feedback generation, hint content/determinism, no-mutation, statelessness, module isolation, edge cases
+- `tests/test_identity_memory_bridge.py`: 55 tests (Phase 6A) — basic scoring, disabled paths, edge cases, on-the-fly embedding, determinism, no-mutation, statelessness, aggregate stats, similarity bounds, observational-only guarantee, import isolation, disabled result format, mixed formats, content_hash validation
+- `tests/test_identity_context_weighting.py`: 46 tests (Phase 6B+6C refactor) — basic annotation, no mutation, passthrough, analysis block, determinism, statelessness, import isolation, edge cases, tag format, ID-based matching, no substring dependency
+- `tests/test_identity_decision_modulation.py`: 72 tests (Phase 6C) — result structure, observational flag, label thresholds, risk alignment, category-values, autonomy, decision style, determinism, no mutation, statelessness, invalid inputs, reasoning, import isolation, integration wiring, comprehensive scenarios
+- `tests/test_identity_confidence.py`: 75 tests (Phase 6D) — import isolation, class structure, no-input defaults, similarity extraction, memory affinity extraction, decision alignment extraction, policy severity extraction, confidence levels, autonomy modifiers, weighted average, all signals combined, partial signals, edge cases, determinism, no mutations
 
 ---
 
@@ -1164,7 +1345,7 @@ Settings → DB → ModelRouter → Crew → Memory → Skills → Training → 
 
 ## 23. OBSERVACIONES Y PROBLEMAS CONOCIDOS
 
-1. **Identity fidelity tiene componente embedding** — Phase 4 añadió `identity_similarity` en AlignmentEvaluator usando cosine similarity contra un baseline embedding de 384 dimensiones (all-MiniLM-L6-v2). El score se trackea en `AlignmentReport` pero NO se incluye en `overall_score` hasta validar con datos reales. El fidelity del dashboard de analytics sigue siendo heurístico (correction-count based).
+1. **Identity fidelity tiene componente embedding + enforcement + policy + feedback + memory bridge + context weighting** — Phase 4 añadió `identity_similarity` en AlignmentEvaluator usando cosine similarity. Phase 5A activa esta señal via `IdentityEnforcer`: cuando similarity < drift_threshold, se emite `identity.drift_checked` con status `drift_detected` y severity. Phase 5B agrega `IdentityPolicyEngine`: clasifica severidad (none/low/medium/high), mapea a acciones configurables via `governance.yaml → identity_control`, emite `identity.policy_evaluated`. Phase 5C agrega `IdentityFeedbackController`: genera hints determinísticos de corrección cuando action == rewrite_request AND severity == high, emite `identity.feedback_generated`, persiste como `identity_feedback`. Phase 6A agrega `IdentityMemoryBridge`: analiza afinidad memoria–identidad pre-generación (paso 2b del orchestrator), cosine similarity por memoria vs baseline, emite `identity.memory_affinity_analyzed`, persiste como `identity_memory_affinity`. Phase 6B agrega `IdentityContextWeighter`: anota líneas de memoria en el prompt con `[IDENTITY_ALIGNED]` o `[LOW_IDENTITY_ALIGNMENT]` basado en scores de Phase 6A (paso 3b del orchestrator), emite `identity.context_weighted`, almacena como `identity_context_weighting`. Todo es **advisory** — no bloquea ni altera respuestas.
 
 2. **Governance review es automática** — no hay human-in-the-loop real. El GovernanceAgent revisa via LLM pero **auto-approves** si el JSON no parsea. No hay mecanismo de pausa para esperar decisión del principal.
 
@@ -1188,7 +1369,7 @@ Settings → DB → ModelRouter → Crew → Memory → Skills → Training → 
 
 ## 24. ESTADO ACTUAL VS PLANIFICADO
 
-### Completado (Phase 1 + 2 + 3 + 3.5 + 4)
+### Completado (Phase 1 + 2 + 3 + 3.5 + 4 + 5A-C + 6A-C)
 - Full crew de 5 agentes con orchestrator (pipeline de 10+ pasos)
 - Sistema de memoria de 4 niveles (ChromaDB + SQLite)
 - Model Router con 3 proveedores + cadena de fallback + conteo de tokens real
@@ -1207,6 +1388,10 @@ Settings → DB → ModelRouter → Crew → Memory → Skills → Training → 
 - **Learn-topic skill** — pipeline web search → LLM summarize → chunk → ChromaDB, activable desde chat ("aprende sobre X") y UI Skills, 261 líneas
 - **3 Modos Cognitivos** — selector cíclico en chat para nivel de inteligencia (Full/Memory+LLM/Memory Only), Knowledge Boundary + Knowledge Status Header en system prompt (Modo 2), filtro de memoria semántica (Modos 2-3), retorno directo de memoria sin LLM (Modo 3), indicadores de fuente (🧠/🌐) y modo por mensaje
 - **Identity Core (Phase 4)** — módulo `src/identity/` con IdentityProfile versionado (Pydantic), baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), semantic versioning con persistencia en config_versions, SHA-256 change detection, identity_similarity en AlignmentEvaluator via cosine similarity, inyección read-only en DecisionEngine, 47 unit tests
+- **Identity Memory Bridge (Phase 6A)** — `src/identity/memory_bridge.py` con `IdentityMemoryBridge`: capa pre-generación que analiza afinidad entre memorias recuperadas y baseline embedding del principal. Cosine similarity por memoria + agregados avg/max/min. Estrictamente observacional (no modifica, filtra ni re-ordena). Orchestrator paso 2b (post-recall, pre-corrections). Persistencia como eval_type `identity_memory_affinity`. 53 unit tests
+- **Identity-Aware Context Weighting (Phase 6B)** — `src/identity/context_weighting.py` con `IdentityContextWeighter`: anota líneas de memoria en el prompt con `[IDENTITY_ALIGNED]` o `[LOW_IDENTITY_ALIGNMENT]` basado en scores de Phase 6A. Matching por `memory_id` via `context_line_ids` (refactor Phase 6C). Adjunta bloque "Identity Context Analysis". Estrictamente soft (no elimina, no reordena, no modifica contenido). Orchestrator paso 3b. 46 unit tests
+- **Identity-Aware Decision Modulation (Phase 6C)** — `src/identity/decision_modulation.py` con `IdentityDecisionModulator`: evalúa alineación decisión–identidad en 4 factores (risk tolerance, category–values, autonomía, decision style). Orchestrator paso 3c (post-decision engine, pre-planner). Persistido como `identity_decision_alignment`. Estrictamente observacional — nunca modifica decisiones. `build_context_with_metadata()` añadido a MemoryManager. `content_hash` (SHA-256) añadido a memory_bridge. 72 unit tests
+- **Identity Confidence Engine (Phase 6D)** — `src/identity/confidence.py` con `IdentityConfidenceEngine`: agrega señales de identidad (enforcement similarity, policy severity, decision alignment, memory affinity) en confidence score ponderado (0.0–1.0) + autonomy_modifier (+1/0/-1). Primer componente no-observacional. Degradación graceful para inputs faltantes. Orchestrator paso 3d (post-decision modulation, pre-planner). Persistido como `identity_confidence`. 75 unit tests
 
 ### Planificado (Phase 4+)
 | Item | Prioridad | Descripción |
@@ -1261,11 +1446,16 @@ iame.lol/
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
 │   │   │   └── orchestrator.py    (1336 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
-│   │   ├── identity/                         # Módulo de identidad formal (Phase 4)
-│   │   │   ├── __init__.py          (8 ln) # Re-exports: IdentityProfile, IdentityManager
+│   │   ├── identity/                         # Módulo de identidad formal (Phase 4-6B)
+│   │   │   ├── __init__.py          (8 ln) # Re-exports: IdentityProfile, IdentityManager, IdentityMemoryBridge, IdentityContextWeighter
 │   │   │   ├── schema.py         (101 ln) # IdentityProfile Pydantic model
 │   │   │   ├── embedding.py      (215 ln) # Identity text + ChromaDB embedding + cosine similarity
 │   │   │   ├── versioning.py     (215 ln) # Semantic versioning + SHA-256 + Postgres persistence
+│   │   │   ├── enforcement.py     (90 ln) # Phase 5A: Soft drift detection
+│   │   │   ├── policy.py         (165 ln) # Phase 5B: Reactive identity control
+│   │   │   ├── feedback.py       (110 ln) # Phase 5C: Controlled identity feedback
+│   │   │   ├── memory_bridge.py  (165 ln) # Phase 6A: Identity-memory affinity analyser
+│   │   │   ├── context_weighting.py(200 ln) # Phase 6B: Soft identity-aware context annotation
 │   │   │   └── manager.py        (255 ln) # Singleton lifecycle manager
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
@@ -1283,7 +1473,7 @@ iame.lol/
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
-│   ├── tests/                                # 12 archivos + conftest.py
+│   ├── tests/                                # 19 archivos + conftest.py
 │   │   ├── conftest.py            (100 ln) # Fixtures compartidos
 │   │   ├── test_cognition.py      (235 ln) # 49 tests puros (Phase 3)
 │   │   ├── test_orchestrator.py   (161 ln) # Tests del pipeline
@@ -1296,6 +1486,11 @@ iame.lol/
 │   │   ├── test_model_router.py   (112 ln) # Tests del router
 │   │   ├── test_skills.py         (103 ln) # Tests de skills
 │   │   ├── test_identity_module.py(310 ln) # Tests del módulo de identidad (Phase 4, 47 tests)
+│   │   ├── test_identity_enforcement.py(240 ln) # Tests de enforcement (Phase 5A, 30 tests)
+│   │   ├── test_identity_policy.py (~280 ln) # Tests de policy engine (Phase 5B, 55 tests)
+│   │   ├── test_identity_feedback.py(~290 ln) # Tests de feedback controller (Phase 5C, 41 tests)
+│   │   ├── test_identity_memory_bridge.py(~430 ln) # Tests de memory bridge (Phase 6A, 53 tests)
+│   │   ├── test_identity_context_weighting.py(~350 ln) # Tests de context weighting (Phase 6B, 40 tests)
 │   │   ├── test_config.py          (86 ln) # Tests de configuración
 │   │   └── test_basics.py          (59 ln) # Tests básicos de importación
 │   └── configs → ../configs                  # Symlink a configs/
@@ -1335,12 +1530,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~10,400 líneas en `agent/src/` (incluye identity/ ~790 ln nuevas)
-**Total de tests**: 2,161 líneas en 14 archivos (272 tests, 272 passing)
+**Total de código backend (Python)**: ~11,100 líneas en `agent/src/` (incluye identity/ ~1670 ln)
+**Total de tests**: ~3,620 líneas en 20 archivos (646 tests, 646 passing)
 **Total de código frontend (TypeScript/TSX)**: ~8,100 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2025-06-19 — Phase 4 Identity Core (IdentityProfile versionado, baseline embedding 384-dim, identity_similarity en AlignmentEvaluator, inyección en DecisionEngine)*
-*77 endpoints, 1285 ln orchestrator, 434 ln training manager, 261 ln learn-topic, 790 ln identity module, 767 ln API client*
-*272 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
+*Última actualización: 2026-02-18 — Phase 6D Identity Confidence Engine (IdentityConfidenceEngine, identity.confidence_computed events, identity_confidence evaluations, orchestrator step 3d, weighted confidence scoring, autonomy_modifier, graceful degradation, 75 unit tests)*
+*77 endpoints, 1407 ln orchestrator, 434 ln training manager, 261 ln learn-topic, ~1670 ln identity module, 873 ln API client*
+*646 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
