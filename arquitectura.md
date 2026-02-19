@@ -350,8 +350,14 @@ class Orchestrator:
 | 2 | **Decision Engine** | `DecisionEngine.evaluate()` — determina strategy, agent, risk, review gates. Resultado: `DecisionResult` (frozen). | No | <1ms |
 | 3c | **Identity Decision Modulation** | Evalúa alignment entre `DecisionResult` e `IdentityProfile` en 4 factores: risk tolerance, category–values, autonomía, decision style. Composite score → label (aligned/tension/misaligned). Estrictamente observacional — nunca modifica decisiones. Phase 6C. | No | <1ms |
 | 3d | **Identity Confidence** | Agrega señales de identidad (enforcement similarity, policy severity, decision alignment, memory affinity) en confidence score ponderado (0.0–1.0) + autonomy_modifier (+1/0/-1). Primer componente no-observacional — metadata advisory. Degradación graceful con inputs faltantes. Phase 6D. | No | <1ms |
+| 3e | **Autonomy Modulation** | Ajusta governance threshold basado en confidence level: low → -0.10 (más estricto), medium → 0.0, high → +0.05 (relajado). Threshold clamped a [0.0, 1.0]. Solo emite evento `identity.autonomy_adjusted` cuando hay ajuste. Metadata advisory inyectada en governance_review trace. Phase 7A. | No | <1ms |
+| 3f | **Behavioral Bias** | Deriva soft planning bias desde señales de identidad: `recommended_planner_mode` (conservative/deep/none) + `style_bias` (tone_weight, assertiveness, depth_bias, creativity_bias). Basado en confidence, alignment, communication_style, values, decision_making. No modifica DecisionEngine ni governance. Advisory-only. Emite `identity.behavioral_bias_applied`. Phase 8A. | No | <1ms |
+| 3g | **Prompt Integration** | Renderiza metadata de Phase 8A (`style_bias` + `recommended_planner_mode`) como bloque de texto determinístico `[IDENTITY STYLE PREFERENCES]` y lo inyecta (prepend) en el system prompt antes de las instrucciones principales. Guards: None/not dict/observational/bias_not_applied/no style_bias → skip. Emite `identity.prompt_injected`. Phase 8B. | No | <1ms |
+| 6d | **Memory Consolidation Weighting** | Ajusta importancia de memoria pre-storage usando identity confidence (Phase 6D) y decision alignment (Phase 6C). Factor = 1.0 ± 0.10 (confidence) ± 0.05 (alignment), clamped [0.75, 1.25]. Non-blocking, no previene storage, no elimina ni muta contenido. Emite `identity.memory_consolidation_adjusted`. Phase 7C. | No | <1ms |
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
 | 4 | **Memory Recall + Mode Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si cognitive_mode ≥ 2**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
+| 2b | **Identity Memory Bridge** | Analiza afinidad entre cada memoria recuperada y baseline embedding del principal. Cosine similarity por memoria + agregados avg/max/min. Estrictamente observacional (no modifica, filtra ni re-ordena). Phase 6A. | No | <5ms |
+| 2c | **Identity-Weighted Retrieval** | Re-rankea memorias usando `weighted_score = semantic_similarity * 0.8 + identity_affinity * 0.2`. Sort estable descendente. Si affinity no disponible, preserva orden original. Estrictamente non-destructive (mismos items, sin filtrado). Phase 7B. | No | <1ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
 | 3b | **Identity Context Weighting** | Anota cada línea de memoria en el contexto con `[IDENTITY_ALIGNED]` (similarity ≥ avg) o `[LOW_IDENTITY_ALIGNMENT]` (similarity < avg) basado en scores de afinidad de Phase 6A. Matching por `memory_id` via `context_line_ids` (refactor Phase 6C). Adjunta bloque "Identity Context Analysis" con conteos. Estrictamente soft: no elimina, no reordena, no modifica contenido. | No | <1ms |
 | 6 | **Prompt Build + Mode Logic** | Fusiona: memory context + correction context + extra context + conversation history. **Modo 3**: retorno directo de memoria sin LLM — ensambla líneas `[tier/category] text` de memorias recuperadas. **Modo 2**: inyecta Knowledge Status Header (con/sin datos aprendidos). **Modo 1**: sin restricciones. | No | <1ms |
@@ -359,6 +365,9 @@ class Orchestrator:
 | 8 | **Identity Review** | **Per plan**: Si el Plan incluye paso `identity_review`, el IdentityCoreAgent revisa el output para alineación con la personalidad del principal. Puede reescribir la respuesta. | Sí | 500-3000ms |
 | 9 | **Governance Review** | **Per plan**: Si el Plan incluye paso `governance_review`, el GovernanceAgent revisa el output. Produce JSON con `approved`, `risk_level`, `flags`, `revised_content`. Auto-approves en parse errors. | Sí | 500-3000ms |
 | 10 | **Memory Store + Evaluation + Persist** | (a) Almacena en working + episodic memory. (b) Ejecuta 5 módulos de evaluación heurística (sin LLM). (c) Persiste a Postgres (fire-and-forget): interaction, trace_nodes, evaluations, token_usage. | No | 10-100ms |
+| 9a | **Identity Health Monitor** | Post-persistence, fuera del pipeline principal. Agrega señales de identidad longitudinales (últimas 50 interacciones): avg_similarity, avg_confidence, drift_rate, high_severity_policy_rate, sustained_low_confidence, instability_index (0-1). Clasifica: stable (<0.25) / monitor (<0.50) / unstable (<0.70) / critical (≥0.70). Emite `identity.health_evaluated`. Estrictamente observacional — no afecta la interacción actual. Phase 9A. | No | 5-50ms |
+| 9b | **Identity Health Regulation** | Post-health monitor, antes del return. Capa de meta-control adaptativa que reacciona a señales de salud de Phase 9A. Ajusta governance threshold (stable: 0, monitor: -0.05, unstable: -0.10, critical: -0.15) e identity weight (stable: 0, monitor: +0.05, unstable: +0.10, critical: +0.15). Clamp threshold [0.0, 1.0], identity_weight [0.0, 0.5]. Emite `identity.health_regulated` (solo cuando regulation_applied). Determinístico, stateless, metadata-only — nunca modifica identidad, decisiones, routing, LLM outputs ni interacción actual. Phase 9B. | No | 1-5ms |
+| 9c | **Identity Evolution Analysis** | Post-health regulation, antes del return. Analiza trayectoria de identidad a largo plazo (últimas 200 interacciones): similarity_trend (regresión lineal), confidence_trend, sustained_high_confidence (últimas 10 > 0.75), sustained_similarity_shift (últimas 20 difieren > 0.08), drift_rate, avg_instability, high_severity_rate. Criterios de evolución: sustained_high_conf AND (trend > 0 OR sustained_shift) AND drift_rate < 0.25 AND avg_confidence > 0.70. Rechazo: instability > 0.60 OR high_severity > 0.20. Si candidato: computa centroid embedding (últimas 30 respuestas), calcula shift_magnitude = 1 - cosine_similarity(baseline, centroid), versión bump (minor 0.05-0.10, major > 0.10). Emite `identity.evolution_analyzed`. Persistido como `identity_evolution_analysis`. Proposal-only — `requires_human_approval: True` siempre, `observational: True`, nunca modifica IdentityProfile, baseline, decisiones, routing ni governance. Phase 10A. | No | 5-50ms |
 
 **Routing por categoría** (`_route()` method):
 ```python
@@ -1061,13 +1070,13 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ## 21. IDENTITY CORE — MÓDULO DE IDENTIDAD FORMAL (Phase 4)
 
-Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (11 archivos, ~1670 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
+Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (18 archivos, ~3340 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
 
 ### 21.1 Arquitectura del Módulo
 
 ```
 src/identity/
-├── __init__.py            # Re-exports: IdentityProfile, IdentityManager, IdentityEnforcer, IdentityPolicyEngine, IdentityMemoryBridge, IdentityContextWeighter, IdentityDecisionModulator, IdentityConfidenceEngine
+├── __init__.py            # Re-exports: IdentityProfile, IdentityManager, IdentityEnforcer, IdentityPolicyEngine, IdentityMemoryBridge, IdentityContextWeighter, IdentityDecisionModulator, IdentityConfidenceEngine, IdentityAutonomyModulator, IdentityRetrievalWeighter, IdentityConsolidationWeighter, IdentityBehavioralBias, IdentityPromptIntegrator, IdentityHealthMonitor, IdentityHealthRegulator, IdentityEvolutionEngine
 ├── schema.py      (~105) # Pydantic model IdentityProfile
 ├── embedding.py   (~215) # Text composition + ChromaDB embedding + cosine similarity
 ├── versioning.py  (~215) # Semantic versioning + SHA-256 hashing + Postgres persistence
@@ -1078,6 +1087,14 @@ src/identity/
 ├── context_weighting.py(~200) # Phase 6B: Soft identity-aware context annotation (IdentityContextWeighter)
 ├── decision_modulation.py(~280) # Phase 6C: Observational decision-identity alignment (IdentityDecisionModulator)
 ├── confidence.py  (~230) # Phase 6D: Soft autonomy modulation (IdentityConfidenceEngine)
+├── autonomy_modulation.py(~175) # Phase 7A: Soft governance coupling (IdentityAutonomyModulator)
+├── retrieval_weighting.py(~210) # Phase 7B: Identity-weighted memory retrieval (IdentityRetrievalWeighter)
+├── consolidation_weighting.py(~210) # Phase 7C: Identity-weighted memory consolidation (IdentityConsolidationWeighter)
+├── behavioral_bias.py(~500) # Phase 8A: Identity behavioral bias layer (IdentityBehavioralBias)
+├── prompt_integration.py(~195) # Phase 8B: Soft identity prompt integration (IdentityPromptIntegrator)
+├── health_monitor.py(~320)  # Phase 9A: Identity longitudinal monitoring (IdentityHealthMonitor)
+├── health_regulation.py(~260) # Phase 9B: Health-aware adaptive regulation (IdentityHealthRegulator)
+├── evolution.py   (~600) # Phase 10A: Dynamic identity evolution engine (IdentityEvolutionEngine)
 └── manager.py     (~255) # Singleton lifecycle manager
 ```
 
@@ -1309,7 +1326,56 @@ identity_control:
 
 **Garantías**: Produce `autonomy_modifier` como metadata advisory — NUNCA modifica `DecisionEngine.evaluate()`, `Planner.build()`, routing, ni generación.
 
-### 21.14 Tests — 415 tests unitarios
+### 21.14 Autonomy Modulation — `autonomy_modulation.py` (Phase 7A)
+
+**`IdentityAutonomyModulator`** — Soft governance coupling. Completamente stateless, sin parámetros de constructor, sin dependencia de IdentityProfile, orchestrator, cognition, events, o governance.
+
+**`compute_adjusted_threshold(confidence_result, current_threshold) → Dict`**:
+- Recibe output de `IdentityConfidenceEngine.compute_confidence()` + threshold base (default 0.5)
+- Deltas por nivel:
+  - `low` → -0.10 (governance más estricta, threshold baja)
+  - `medium` → 0.0 (sin cambio)
+  - `high` → +0.05 (governance ligeramente relajada, threshold sube)
+- Threshold clamped a [0.0, 1.0] via `_MIN_THRESHOLD` / `_MAX_THRESHOLD`
+- Guards: None, non-dict, missing level → no adjustment (autonomy_adjusted=False)
+- Deterministic — identical inputs always produce identical outputs
+- Output: `{adjusted_threshold, adjustment_delta, autonomy_adjusted, reason, confidence_level, confidence_score, original_threshold}`
+
+**Integración en Orchestrator (paso 3e, post-confidence, pre-planner)**:
+1. Crea `IdentityAutonomyModulator()` y llama `compute_adjusted_threshold(confidence_result, 0.5)`
+2. Almacena resultado en `evaluation_results["identity_autonomy_modulation"]`
+3. Solo emite evento `identity.autonomy_adjusted` via EventBus cuando `autonomy_adjusted` es True
+4. Inyecta `effective_governance_sensitivity` y `autonomy_adjusted` en trace node de governance_review  (metadata, no cambia comportamiento)
+5. Non-blocking (try/except)
+6. Pasa `autonomy_modulation_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_autonomy_modulation`, solo si autonomy_adjusted)
+
+**Garantías**: NUNCA modifica `DecisionEngine.evaluate()`, `Planner.build()`, prompt building, routing, ni generación. Solo afecta metadata de governance review.
+
+### 21.15 Retrieval Weighting — `retrieval_weighting.py` (Phase 7B)
+
+**`IdentityRetrievalWeighter`** — Re-ranking de memorias basado en identidad. Completamente stateless, sin parámetros de constructor, sin dependencia de IdentityProfile, orchestrator, cognition, events, o governance.
+
+**`rerank_memories(recalled_memories, memory_affinity_scores) → Dict`**:
+- Recibe memorias recuperadas + output de `IdentityMemoryBridge.analyze_memories()`
+- Para cada memoria computa: `weighted_score = semantic_similarity * 0.8 + identity_affinity * 0.2`
+- `semantic_similarity` derivado de ChromaDB distance: `1.0 / (1.0 + max(0, distance))`
+- `identity_affinity` del Phase 6A scores (default 0.5 si falta)
+- Sort estable descendente por `weighted_score` (ties preservan orden original)
+- Guards: None, empty, disabled, non-dict → passthrough (weighting_applied=False)
+- Estrictamente non-destructive: mismos items, mismo count, sin filtrado, sin mutación
+- Output: `{reranked_memories, weighting_applied, observational: False, memory_count, average_weighted_score, scoring_details}`
+
+**Integración en Orchestrator (paso 2c, post-memory bridge, pre-corrections)**:
+1. Crea `IdentityRetrievalWeighter()` y llama `rerank_memories(recalled_memories, memory_affinity_result)`
+2. Si `weighting_applied`, reemplaza `recalled_memories` con lista re-rankeada
+3. Almacena resultado en `evaluation_results["identity_retrieval_weighting"]`
+4. Emite evento `identity.retrieval_reranked` via EventBus (solo si weighting_applied)
+5. Non-blocking (try/except)
+6. Pasa `retrieval_weighting_result` a `save_all_evaluations()` para persistencia Postgres (eval_type `identity_retrieval_weighting`, solo si weighting_applied)
+
+**Garantías**: NUNCA filtra, elimina, o trunca memorias. NUNCA modifica contenido. NUNCA altera conteo. Deterministic, stateless, no LLM.
+
+### 21.16 Tests — 627 tests unitarios
 
 - `tests/test_identity_module.py`: 47 tests (Phase 4) — schema, embedding, versioning, manager, integración
 - `tests/test_identity_enforcement.py`: 30 tests (Phase 5A) — constructor, no_baseline, aligned, drift_detected, severity, invariantes, persistencia
@@ -1319,6 +1385,14 @@ identity_control:
 - `tests/test_identity_context_weighting.py`: 46 tests (Phase 6B+6C refactor) — basic annotation, no mutation, passthrough, analysis block, determinism, statelessness, import isolation, edge cases, tag format, ID-based matching, no substring dependency
 - `tests/test_identity_decision_modulation.py`: 72 tests (Phase 6C) — result structure, observational flag, label thresholds, risk alignment, category-values, autonomy, decision style, determinism, no mutation, statelessness, invalid inputs, reasoning, import isolation, integration wiring, comprehensive scenarios
 - `tests/test_identity_confidence.py`: 75 tests (Phase 6D) — import isolation, class structure, no-input defaults, similarity extraction, memory affinity extraction, decision alignment extraction, policy severity extraction, confidence levels, autonomy modifiers, weighted average, all signals combined, partial signals, edge cases, determinism, no mutations
+- `tests/test_identity_autonomy_modulation.py`: 59 tests (Phase 7A) — import isolation, class structure, no-confidence data guards, low/medium/high adjustments, boundary conditions (clamping), autonomy_adjusted flag, reason strings, determinism, no mutations, statelessness, integration wiring, persistence acceptance
+- `tests/test_identity_retrieval_weighting.py`: 56 tests (Phase 7B) — import isolation, class structure, no-affinity fallback, basic reranking, scoring formula (80/20 weights), tie handling (stable sort), edge cases (empty/single/missing fields), default affinity, distance conversion, determinism, no mutations, statelessness, integration wiring, persistence acceptance
+- `tests/test_identity_consolidation_weighting.py`: 86 tests (Phase 7C) — basic functionality, return structure, confidence signal thresholds (high/mid/low/boundary), alignment signal thresholds (aligned/mid/misaligned/boundary), combined signals, clamping behavior, memory metadata handling, missing/malformed inputs, determinism, no mutation, import isolation, integration wiring, factor component details, signals available count
+- `tests/test_identity_behavioral_bias.py`: 96 tests (Phase 8A) — constructor/class structure, return structure, confidence scenarios (low/mid/high/boundary), alignment scenarios, tone_weight mapping (positive/negative/mixed/threshold), assertiveness (assertive/cautious/mixed values + approach keywords), creativity_bias (creative/analytical keywords + confidence proxy), depth_bias (confidence-based + alignment adjustments), reasoning directive, planner mode already-set guards, signals count, determinism, no mutation, edge cases (malformed inputs, dict profiles, report fallback), import isolation, integration wiring, alignment report fallback
+- `tests/test_identity_prompt_integration.py`: 72 tests (Phase 8B) — constructor/statelessness, None returns (9 guards), block format (header/footer/4 style values/planner modes/line order), inject_into_prompt (prepend/passthrough/None handling), build_result (metadata structure), determinism, no mutation, edge cases (string/None fallback, negative/zero/one values), no duplicate injection, import isolation (no orchestrator/cognition/events/evaluation/planner/identity_schema imports), integration wiring (exports/__init__/orchestrator/persistence), no response modification, end-to-end flows
+- `tests/test_identity_health_monitor.py`: 93 tests (Phase 9A) — constructor/statelessness, empty window (None/empty list/non-list), partial/missing signals, all-stable scenario, high drift rate, sustained low confidence (threshold/boundary/insufficient window), instability index (formula/weights/components), clamping (0-1 bounds), health classification (stable/monitor/unstable/critical/boundaries), policy severity rate (high/critical/mixed/case-insensitive), determinism, no mutation, import isolation (no orchestrator/cognition/events/evaluation/planner imports), integration wiring (exports/__init__/orchestrator/persistence/get_recent_identity_signals), build_result (analyzed/skipped/None), window size handling, edge cases (non-dict interactions/string floats/negative values), end-to-end flows
+- `tests/test_identity_health_regulation.py`: 119 tests (Phase 9B) — regulate function, threshold adjustments (stable/monitor/unstable/critical), identity weight adjustments, clamping bounds, guard clauses (None/invalid), regulation_applied flag, monitoring_intensity levels, build_result format, determinism, no mutation, import isolation, integration wiring
+- `tests/test_identity_evolution.py`: 97 tests (Phase 10A) — insufficient data (None/empty/too few/non-list), positive evolution (candidate/version/shift/embedding/risk), negative scenarios (low confidence/no sustained/high drift/negative trend/stable identity), high instability rejection (>0.60), high severity rejection (>0.20 high/critical rate), version bump correctness (minor/major/none), shift magnitude calculation (cosine similarity), linear trend computation (OLS slope), centroid embedding (last 30, normalization), determinism (same input → same output), no mutation (profile/signals unchanged), import isolation (no orchestrator/cognition/events/router/agents/evaluation), edge cases (missing keys/None values/non-dict entries/window size 0/-1/empty baseline/mixed severities), build_result (strips embedding/preserves fields/None handling), result structure completeness (all keys present), risk level computation (low/medium/high), sustained checks (confidence window/shift delta), export validation (__init__/__all__)
 
 ---
 
@@ -1369,7 +1443,7 @@ identity_control:
 
 ## 24. ESTADO ACTUAL VS PLANIFICADO
 
-### Completado (Phase 1 + 2 + 3 + 3.5 + 4 + 5A-C + 6A-C)
+### Completado (Phase 1 + 2 + 3 + 3.5 + 4 + 5A-C + 6A-D + 7A-C + 8A-B + 9A-B + 10A)
 - Full crew de 5 agentes con orchestrator (pipeline de 10+ pasos)
 - Sistema de memoria de 4 niveles (ChromaDB + SQLite)
 - Model Router con 3 proveedores + cadena de fallback + conteo de tokens real
@@ -1392,8 +1466,16 @@ identity_control:
 - **Identity-Aware Context Weighting (Phase 6B)** — `src/identity/context_weighting.py` con `IdentityContextWeighter`: anota líneas de memoria en el prompt con `[IDENTITY_ALIGNED]` o `[LOW_IDENTITY_ALIGNMENT]` basado en scores de Phase 6A. Matching por `memory_id` via `context_line_ids` (refactor Phase 6C). Adjunta bloque "Identity Context Analysis". Estrictamente soft (no elimina, no reordena, no modifica contenido). Orchestrator paso 3b. 46 unit tests
 - **Identity-Aware Decision Modulation (Phase 6C)** — `src/identity/decision_modulation.py` con `IdentityDecisionModulator`: evalúa alineación decisión–identidad en 4 factores (risk tolerance, category–values, autonomía, decision style). Orchestrator paso 3c (post-decision engine, pre-planner). Persistido como `identity_decision_alignment`. Estrictamente observacional — nunca modifica decisiones. `build_context_with_metadata()` añadido a MemoryManager. `content_hash` (SHA-256) añadido a memory_bridge. 72 unit tests
 - **Identity Confidence Engine (Phase 6D)** — `src/identity/confidence.py` con `IdentityConfidenceEngine`: agrega señales de identidad (enforcement similarity, policy severity, decision alignment, memory affinity) en confidence score ponderado (0.0–1.0) + autonomy_modifier (+1/0/-1). Primer componente no-observacional. Degradación graceful para inputs faltantes. Orchestrator paso 3d (post-decision modulation, pre-planner). Persistido como `identity_confidence`. 75 unit tests
+- **Autonomy Sensitivity Integration (Phase 7A)** — `src/identity/autonomy_modulation.py` con `IdentityAutonomyModulator`: soft governance coupling que ajusta governance threshold basado en identity confidence level. Low → -0.10 (más estricto), medium → 0.0, high → +0.05 (relajado). Threshold clamped [0.0, 1.0]. Orchestrator paso 3e (post-confidence, pre-planner). Solo emite evento cuando hay ajuste. Metadata inyectada en governance_review trace. Persistido como `identity_autonomy_modulation`. 59 unit tests
+- **Identity-Weighted Memory Retrieval (Phase 7B)** — `src/identity/retrieval_weighting.py` con `IdentityRetrievalWeighter`: re-ranking de memorias usando `weighted_score = semantic_similarity * 0.8 + identity_affinity * 0.2`. Sort estable descendente. Si affinity no disponible, preserva orden original. Estrictamente non-destructive (mismos items, sin filtrado, sin mutación). Orchestrator paso 2c (post-memory bridge, pre-corrections). Persistido como `identity_retrieval_weighting`. 56 unit tests
+- **Identity-Weighted Memory Consolidation (Phase 7C)** — `src/identity/consolidation_weighting.py` con `IdentityConsolidationWeighter`: ajusta importancia de memoria pre-storage usando confidence (Phase 6D, ±0.10) y decision alignment (Phase 6C, ±0.05). Factor clamped [0.75, 1.25]. Non-blocking, no previene storage, no elimina ni muta contenido. Orchestrator paso 6d (post-governance, pre-memory store). Persistido como `identity_consolidation_weighting`. 86 unit tests
+- **Identity Behavioral Bias (Phase 8A)** — `src/identity/behavioral_bias.py` con `IdentityBehavioralBias`: soft identity-guided planning bias que deriva `recommended_planner_mode` (conservative/deep/none) y `style_bias` (tone_weight, assertiveness, depth_bias, creativity_bias) desde señales de identidad (confidence, alignment, communication_style, values, decision_making). Advisory-only — no modifica DecisionEngine, governance ni evaluaciones. Orchestrator paso 3f (post-autonomy modulation, pre-planner). Persistido como `identity_behavioral_bias`. 96 unit tests
+- **Soft Identity Prompt Integration (Phase 8B)** — `src/identity/prompt_integration.py` con `IdentityPromptIntegrator`: renderiza metadata de Phase 8A (`style_bias` + `recommended_planner_mode`) como bloque de texto determinístico `[IDENTITY STYLE PREFERENCES]` y lo inyecta (prepend con `\n\n`) en el system prompt. Guards: None/not dict/observational/bias_not_applied/no style_bias → skip (retorna None). 4 valores de estilo (tone_weight, assertiveness, depth_bias, creativity_bias) con defaults 0.50. Orchestrator paso 3g (post-cognitive mode routing, pre-prompt build trace). Emite `identity.prompt_injected`. Persistido como `identity_prompt_integration`. No modifica DecisionEngine, Planner, governance, evaluaciones, memoria ni respuesta. 72 unit tests
+- **Identity Longitudinal Monitoring (Phase 9A)** — `src/identity/health_monitor.py` con `IdentityHealthMonitor`: capa observacional post-persistencia que agrega señales de identidad longitudinales sobre ventana deslizante de últimas N interacciones. Métricas: avg_identity_similarity, avg_confidence_score, drift_rate, high_severity_policy_rate, sustained_low_confidence, instability_index (0-1 compuesto). Clasificación: stable (<0.25) / monitor (<0.50) / unstable (<0.70) / critical (≥0.70). Lee señales históricas via `get_recent_identity_signals()` en persistence. Orchestrator paso 9a (post-persistence, fuera del pipeline principal — no afecta interacción actual). Emite `identity.health_evaluated`. Persistido como `identity_health_monitor`. Estrictamente observacional — no modifica IdentityProfile, DecisionEngine, Planner, retrieval, prompt, governance thresholds ni bloquea ejecución. 93 unit tests
+- **Health-Aware Adaptive Regulation (Phase 9B)** — `src/identity/health_regulation.py` con `IdentityHealthRegulator`: capa de meta-control adaptativa que reacciona a señales de salud de Phase 9A. Ajusta governance threshold (stable: 0, monitor: -0.05, unstable: -0.10, critical: -0.15) e identity weight (stable: 0, monitor: +0.05, unstable: +0.10, critical: +0.15). Clamp threshold [0.0, 1.0], identity_weight [0.0, 0.5]. Orchestrator paso 9b (post-health monitor, pre-return). Emite `identity.health_regulated` (solo cuando regulation_applied). Persistido como `identity_health_regulation`. Determinístico, stateless, metadata-only — nunca modifica identidad, decisiones, routing, LLM outputs, prompt, governance actual ni interacción actual. 119 unit tests
+- **Dynamic Identity Evolution Engine (Phase 10A)** — `src/identity/evolution.py` con `IdentityEvolutionEngine`: motor de evolución dinámica de identidad, proposal-only y governance-gated. Analiza trayectoria de identidad a largo plazo (ventana de 200 interacciones): similarity_trend + confidence_trend (regresión lineal OLS), sustained_high_confidence (últimas 10 > 0.75), sustained_similarity_shift (últimas 20 difieren > 0.08 del baseline), drift_rate, avg_instability, high_severity_rate. Criterios de evolución: sustained_high_conf AND (trend > 0 OR sustained_shift) AND drift_rate < 0.25 AND avg_confidence > 0.70. Rechazo: instability mean > 0.60 OR high_severity_rate > 0.20. Candidato: computa centroid embedding (últimas 30 response_embedding, normalizado), shift_magnitude = 1.0 - cosine_similarity(baseline, centroid), version bump (< 0.05 → no, 0.05-0.10 → minor, > 0.10 → major). Risk level (low/medium/high). Siempre `requires_human_approval: True`, `observational: True`. Orchestrator paso 9c (post-health regulation, pre-return). Emite `identity.evolution_analyzed`. Persistido como `identity_evolution_analysis`. Stateless, determinístico, sin LLM — nunca modifica IdentityProfile, baseline_embedding, decisiones, routing, governance ni estado del sistema. 97 unit tests
 
-### Planificado (Phase 4+)
+### Planificado (Phase 10B+)
 | Item | Prioridad | Descripción |
 |------|-----------|-------------|
 | **Human-in-the-Loop** | ALTA | Mecanismo de pausa para approval queue de governance |
@@ -1473,7 +1555,7 @@ iame.lol/
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
-│   ├── tests/                                # 19 archivos + conftest.py
+│   ├── tests/                                # 22 archivos + conftest.py
 │   │   ├── conftest.py            (100 ln) # Fixtures compartidos
 │   │   ├── test_cognition.py      (235 ln) # 49 tests puros (Phase 3)
 │   │   ├── test_orchestrator.py   (161 ln) # Tests del pipeline
@@ -1530,12 +1612,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~11,100 líneas en `agent/src/` (incluye identity/ ~1670 ln)
-**Total de tests**: ~3,620 líneas en 20 archivos (646 tests, 646 passing)
+**Total de código backend (Python)**: ~13,320 líneas en `agent/src/` (incluye identity/ ~3840 ln)
+**Total de tests**: ~7,300 líneas en 28 archivos (1324 tests, 1324 passing)
 **Total de código frontend (TypeScript/TSX)**: ~8,100 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2026-02-18 — Phase 6D Identity Confidence Engine (IdentityConfidenceEngine, identity.confidence_computed events, identity_confidence evaluations, orchestrator step 3d, weighted confidence scoring, autonomy_modifier, graceful degradation, 75 unit tests)*
-*77 endpoints, 1407 ln orchestrator, 434 ln training manager, 261 ln learn-topic, ~1670 ln identity module, 873 ln API client*
-*646 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
+*Última actualización: 2026-02-19 — Phase 10A Dynamic Identity Evolution Engine (IdentityEvolutionEngine, identity.evolution_analyzed events, identity_evolution_analysis evaluations, orchestrator step 9c post-health regulation, proposal-only + governance-gated, centroid embedding + shift magnitude + version bump, 97 unit tests)*
+*77 endpoints, ~1975 ln orchestrator, 434 ln training manager, 261 ln learn-topic, ~3840 ln identity module, 873 ln API client*
+*1324 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
