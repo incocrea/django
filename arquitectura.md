@@ -49,7 +49,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 
 **Filosofía de diseño**: El sistema opera en **$0/mes** usando exclusivamente tiers gratuitos (Gemini Free, Groq Free, Neon Free, ChromaDB local, Ollama local). La privacidad es prioridad: datos de identidad nunca salen de la máquina local; solo los outputs de agentes van a LLMs cloud.
 
-**Estado actual**: Phase 6B completada (Identity-Aware Context Weighting — Soft Mode). El módulo de identidad formal provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno. Phase 5A agrega `IdentityEnforcer` como señal de observabilidad activa. Phase 5B agrega `IdentityPolicyEngine` como capa reactiva configurable (none/log/flag/rewrite_request/block). Phase 5C agrega `IdentityFeedbackController` como capa de feedback controlado: genera hints de corrección de identidad determinísticos cuando policy_result.action == "rewrite_request" AND severity == "high", sin modificar respuestas, sin re-ejecutar LLM, sin alterar scores. Phase 6A agrega `IdentityMemoryBridge` como capa pre-generación de análisis de afinidad memoria–identidad: calcula cosine similarity entre cada memoria recuperada y el baseline embedding del principal, produciendo metadata observacional (scores individuales + agregados avg/max/min) sin modificar, filtrar ni re-ordenar memorias. Phase 6B agrega `IdentityContextWeighter` como capa de anotación soft de contexto: anota cada línea de memoria en el prompt con `[IDENTITY_ALIGNED]` o `[LOW_IDENTITY_ALIGNMENT]` basado en scores de afinidad de Phase 6A, adjuntando bloque de análisis — sin eliminar, reordenar ni modificar contenido.
+**Estado actual**: Phase 10A completada (Dynamic Identity Evolution Engine). El módulo de identidad formal (`src/identity/`, 20 archivos, ~4008 líneas) provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno. Phase 5A agrega `IdentityEnforcer` como señal de observabilidad activa. Phase 5B agrega `IdentityPolicyEngine` como capa reactiva configurable (none/log/flag/rewrite_request/block). Phase 5C agrega `IdentityFeedbackController` como capa de feedback controlado. Phase 6A agrega `IdentityMemoryBridge` para análisis de afinidad memoria–identidad. Phase 6B agrega `IdentityContextWeighter` para anotación soft de contexto. Phase 6C agrega `IdentityDecisionModulator` para evaluación de alignment decisión–identidad. Phase 6D agrega `IdentityConfidenceEngine` para agregación de señales de identidad en confidence score. Phase 7A agrega `IdentityAutonomyModulator` para ajuste de governance threshold basado en confianza. Phase 7B agrega `IdentityRetrievalWeighter` para re-ranking de memoria ponderado por identidad. Phase 7C agrega `IdentityConsolidationWeighter` para ajuste de importancia de memoria pre-storage. Phase 8A agrega `IdentityBehavioralBias` para bias de planificación guiado por identidad. Phase 8B agrega `IdentityPromptIntegrator` para inyección de preferencias de estilo en system prompt. Phase 9A agrega `IdentityHealthMonitor` para monitoreo longitudinal de salud de identidad. Phase 9B agrega `IdentityHealthRegulator` para regulación adaptativa basada en salud. Phase 10A agrega `IdentityEvolutionEngine` para análisis y propuesta de evolución de identidad (proposal-only, requires_human_approval).
 
 ---
 
@@ -60,19 +60,19 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 │                 DASHBOARD (Next.js 15 / React 19 / Tailwind / shadcn/ui)     │
 │                 Puerto 3000 — 12 rutas + WebSocket client                    │
 ├──────────────────────────┬───────────────────────────────────────────────────┤
-│  Zustand Store (151 ln)  │  API Client — lib/api.ts (767 ln, ~74 métodos)   │
+│  Zustand Store (165 ln)  │  API Client — lib/api.ts (826 ln, ~84 métodos)   │
 │  Estado global del UI    │  Comunicación tipada con el backend               │
 ├──────────────────────────┴───────────────────────────────────────────────────┤
 │                                     ▼ HTTP / WebSocket                       │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│         FastAPI Backend — Puerto 8000 — Prefijo /api — 77 endpoints          │
-│                           routes.py (2233 ln) + main.py (249 ln)             │
+│         FastAPI Backend — Puerto 8000 — Prefijo /api — 88 endpoints          │
+│                           routes.py (2615 ln) + main.py (324 ln)             │
 ├──────────┬───────────┬──────────┬───────────┬──────────┬─────────────────────┤
 │ COGNICIÓN│ ORQUESTA- │ AGENT    │ MEMORIA   │ EVALUA-  │ TRACE              │
 │ Decision │ DOR       │ CREW (5) │ 4 niveles │ CIÓN     │ Collector          │
 │ Engine   │ Pipeline  │          │ Manager   │ 5 módulos│ 13 tipos nodo      │
 │ (138 ln) │ 10+ pasos │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
-│ Planner  │ (1336 ln) │ Business │           │ (1796 ln │                    │
+│ Planner  │ (2021 ln) │ Business │           │ (1796 ln │                    │
 │ (118 ln) │ + 3 Modos │ Comms    │           │  total)  │                    │
 │ Categ.   │           │ Tech     │           │          │                    │
 │ (18 ln)  │           │ Govern.  │           │          │                    │
@@ -100,7 +100,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 | **Backend** | Python + FastAPI + uvicorn | 3.11+ | API REST + WebSocket, orquestación multi-agente | Puerto 8000, `--reload` en dev |
 | **Frontend** | Next.js + React + TypeScript | 15 / 19 / 5.7 | Dashboard de control con 12 rutas | Puerto 3000, App Router |
 | **UI** | shadcn/ui + Tailwind CSS + lucide-react | 3.4 | Componentes primitivos + tema lab oscuro | Variables CSS: lab-text, lab-card, accent-glow |
-| **Estado UI** | Zustand | 5 | Store global del cliente | 151 líneas |
+| **Estado UI** | Zustand | 5 | Store global del cliente | 165 líneas |
 | **LLM primario** | Google Gemini 2.5 Flash | — | Proveedor principal (free tier) | Via google-generativeai SDK |
 | **LLM secundario** | Groq (Llama 3.3 70B) | — | Fallback #1 (free tier) | Via groq SDK |
 | **LLM local** | Ollama (llama3.1:8b) | — | Fallback #2 + modo privacidad | Siempre disponible localmente |
@@ -159,7 +159,7 @@ class Settings(BaseSettings):
 
 ## 5. CAPA DE ENTRADA — API REST + WebSocket
 
-### 5.1 Composition Root — `agent/src/api/main.py` (249 líneas)
+### 5.1 Composition Root — `agent/src/api/main.py` (324 líneas)
 
 Punto de entrada de la aplicación. El `AppState` global singleton mantiene todos los componentes inicializados:
 
@@ -196,7 +196,7 @@ class AppState:
 - `ServiceMonitorMiddleware` — logea requests >5s como slow, registra errores 500
 - `CORSMiddleware` — permite `localhost:3000` (dashboard)
 
-### 5.2 API Endpoints — `agent/src/api/routes.py` (2233 líneas, 77 endpoints)
+### 5.2 API Endpoints — `agent/src/api/routes.py` (2615 líneas, 88 endpoints)
 
 Todas las rutas bajo prefijo `/api`. Patrón uniforme:
 
@@ -219,15 +219,15 @@ async def handler():
 | **Config Reload** | `/router/reload`, `/persona/reload` | POST×2 | Hot-reload de models.json y persona.yaml sin reinicio |
 | **Persona** | `/persona/info`, `/persona/traits`, `/persona/values`, `/persona/communication`, `/persona/boundaries` | GET, PUT×4 | Lectura y escritura de todos los aspectos de la personalidad |
 | **Crew** | `/crew/agents` | GET | Lista de agentes con roles y descripciones |
-| **Trace** | `/trace/list`, `/trace/{id}`, `/trace/latest/graph`, `/trace/replay` | GET×3, POST | Trazas cognitivas, grafos React Flow, replay paso a paso |
+| **Trace** | `/trace/list`, `/trace/{id}`, `/trace/latest/graph`, `/trace/replay`, `/trace/{id}` (DELETE), `/trace` (DELETE) | GET×3, POST, DELETE×2 | Trazas cognitivas, grafos React Flow, replay paso a paso, eliminación individual y masiva |
 | **Persistence** | `/interactions`, `/interactions/{id}/trace`, `/interactions/{id}/evaluations`, `/token-usage/persisted` | GET×4 | Datos persistidos en Postgres |
-| **Memory** | `/memory/stats`, `/memory/search`, `/memory/semantic/store`, `/memory/semantic/{id}` (PUT, DELETE), `/memory/episodic/{id}` (DELETE) | GET, POST×2, PUT, DELETE×2 | CRUD completo del sistema de memoria |
+| **Memory** | `/memory/stats`, `/memory/search`, `/memory/semantic/store`, `/memory/semantic/{id}` (PUT, DELETE), `/memory/episodic/{id}` (DELETE), `/memory/bulk-delete` | GET, POST×3, PUT, DELETE×2 | CRUD completo del sistema de memoria + eliminación masiva |
 | **Skills** | `/skills`, `/skills/{id}/toggle`, `/skills/web-research`, `/skills/learn-topic` | GET, POST×3 | Gestión de habilidades + herramienta de aprendizaje + learn-topic pipeline |
-| **Training** | `/training/status`, `/training/session/start`, `/training/session/end`, `/training/correction`, `/training/history`, `/training/upload-samples`, `/training/exchange`, `/training/interview/questions`, `/training/interview/answer` | GET×2, POST×7 | Sesiones de entrenamiento, correcciones, upload de muestras de escritura, free conversation exchanges, guided interview Q&A |
+| **Training** | `/training/status`, `/training/session/start`, `/training/session/end`, `/training/correction`, `/training/history`, `/training/upload-samples`, `/training/exchange`, `/training/interview/questions`, `/training/interview/answer`, `/training/corrections`, `/training/corrections/{id}`, `/training/suggestions` | GET×3, POST×7, PUT, DELETE×2 | Sesiones de entrenamiento, correcciones CRUD, upload de muestras de escritura, free conversation exchanges, guided interview Q&A |
 | **Models** | `/models/config`, `/models/assignment`, `/models/profile`, `/models/test` | GET, PUT×2, POST | Gestión de proveedores LLM, perfiles, asignaciones por agente |
-| **Evaluation** | `/evaluation/overview`, quality/×3, alignment/×2, legal/×3, decisions/×5, rollback/×5 | GET×14, POST×3, PUT×1 | 19 endpoints para los 5 módulos de evaluación |
+| **Evaluation** | `/evaluation/overview`, quality/×3, alignment/×2, legal/×3, decisions/×5, rollback/×5, `/evaluation/data` (DELETE) | GET×14, POST×3, PUT×1, DELETE | 20 endpoints para los 5 módulos de evaluación + eliminación masiva |
 | **Governance** | `/governance/config`, `/governance/audit-log`, `/governance/approvals`, `/governance/emergency-stop`, `/governance/emergency-resume`, `/governance/emergency-status` | GET×3, POST×2, GET×1 | Configuración, auditoría, aprobaciones, parada de emergencia |
-| **Analytics** | `/analytics/overview`, `/analytics/identity-fidelity`, `/analytics/autonomy`, `/analytics/token-usage` | GET×4 | KPIs, fidelidad de identidad, métricas de autonomía, uso de tokens |
+| **Analytics** | `/analytics/overview`, `/analytics/identity-fidelity`, `/analytics/autonomy`, `/analytics/token-usage`, `/analytics/events` (DELETE), `/analytics/tokens` (DELETE) | GET×4, DELETE×2 | KPIs, fidelidad de identidad, métricas de autonomía, uso de tokens, eliminación de datos |
 
 ### 5.3 WebSocket — `/api/ws`
 
@@ -326,7 +326,7 @@ class Planner:
 
 ## 7. CAPA DE ORQUESTACIÓN — Pipeline de 10 Pasos
 
-### `agent/src/flows/orchestrator.py` (1285 líneas)
+### `agent/src/flows/orchestrator.py` (2021 líneas)
 
 El Orchestrator es el **cerebro central** del sistema. Recibe un mensaje de usuario y lo procesa a través de un pipeline determinístico de 10+ pasos, donde cada paso emite eventos vía EventBus y crea nodos de trace vía TraceCollector.
 
@@ -889,17 +889,34 @@ Conexión a Neon Postgres via **psycopg2** (síncrono, autocommit). **Totalmente
 | `token_usage` | SERIAL | Cada llamada LLM individual | provider, model, tokens_used, latency_ms, cost_estimate, role |
 | `memory_operations` | SERIAL | Cada operación de memoria | tier, action, target_id, before_state, after_state, rolled_back |
 
-### 17.2 Persistence Repository — `agent/src/db/persistence.py` (491 líneas)
+### 17.2 Persistence Repository — `agent/src/db/persistence.py` (1295 líneas)
 
 Repositorio fire-and-forget que nunca bloquea ni crashea el pipeline:
 
 ```python
 class PersistenceRepository:
+    # Write methods
     def save_interaction(...)      → bool   # Guarda metadata de interacción
     def save_trace_nodes(...)      → Dict   # Bulk insert de nodos + edges, retorna {node_id: pk}
-    def save_all_evaluations(...)  → bool   # Guarda quality, alignment, legal, decisions
+    def save_all_evaluations(...)  → bool   # Guarda quality, alignment, legal, decisions, identity evals
     def save_token_usage(...)      → bool   # Guarda uso de tokens (via callback del ModelRouter)
     def save_memory_operation(...) → bool   # Guarda operación de memoria (via callback del RollbackManager)
+    
+    # Read methods (21 public total)
+    def get_evaluation_quality(...)    → list  # Evaluaciones de calidad desde Postgres
+    def get_evaluation_alignment(...)  → list  # Evaluaciones de alignment
+    def get_evaluation_legal_risk(...) → list  # Evaluaciones de riesgo legal
+    def get_evaluation_decisions(...)  → list  # Evaluaciones de decisiones
+    def get_evaluation_rollback(...)   → list  # Evaluaciones de rollback
+    def get_recent_identity_signals(...) → list  # Señales de identidad recientes
+    def list_traces(...)               → list  # Lista de trazas
+    def get_analytics_overview(...)    → dict  # Overview de analytics
+    def get_autonomy_stats(...)        → dict  # Estadísticas de autonomía
+    
+    # Delete methods
+    def delete_evaluation_data(...)    → dict  # Elimina datos de evaluación
+    def delete_analytics_events(...)   → dict  # Elimina eventos de analytics
+    def delete_analytics_tokens(...)   → dict  # Elimina datos de token usage
 ```
 
 **Principio de diseño**: Cada método tiene `try/except` interno. Un fallo de persistencia NUNCA afecta la respuesta al usuario.
@@ -922,8 +939,8 @@ class PersistenceRepository:
 - **Next.js 15** (App Router) + **React 19** + **TypeScript 5.7**
 - **Tailwind CSS 3.4** + **shadcn/ui** para componentes
 - **Tema lab oscuro** con variables CSS: `lab-text`, `lab-text-dim`, `lab-card`, `lab-surface`, `lab-border`, `accent-glow`, `accent-primary`, `status-green/amber/red/blue`
-- **Zustand 5** para state management global (151 líneas)
-- **API client** centralizado en `lib/api.ts` (767 líneas, ~74 métodos tipados)
+- **Zustand 5** para state management global (165 líneas)
+- **API client** centralizado en `lib/api.ts` (826 líneas, ~84 métodos tipados)
 - **i18n** vía `lib/i18n/` — soporta `en.json` (~531 keys) + `es.json`
 - Directiva `"use client"` en todas las páginas interactivas
 
@@ -952,11 +969,11 @@ class PersistenceRepository:
 | `components/chat/` | 2 componentes | 218 | ChatPanel (input + message list + cognitive mode cycling selector + submission) + MessageBubble (render individual con metadata + knowledge source indicators + cognitive mode indicator) |
 | `components/layout/` | 3 componentes | 266 | Sidebar (navegación agrupada en 4 secciones: Core, Identity & Training, Infrastructure, Observability), Header (breadcrumb + system status), ClientShell (wrapper con font loading) |
 | `components/trace/` | 1 componente | 267 | TraceNode — nodo custom de React Flow con expand/collapse, colores por tipo, métricas inline |
-| `components/ui/` | 9 componentes | 340 | Primitivos shadcn/ui: badge, button, card, input, progress, scroll-area, separator, tabs, tooltip |
+| `components/ui/` | 10 componentes | 340 | Primitivos shadcn/ui: badge, button, card, confirm-dialog, input, progress, scroll-area, separator, tabs, tooltip |
 
-### 18.4 API Client — `dashboard/lib/api.ts` (~767 líneas)
+### 18.4 API Client — `dashboard/lib/api.ts` (~826 líneas)
 
-~74 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, persisted token usage, learn-topic, free conversation exchange, guided interview, y knowledge sources:
+~84 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, persisted token usage, learn-topic, free conversation exchange, guided interview, knowledge sources, training corrections CRUD, trace/evaluation/analytics deletion, y memory bulk-delete:
 
 ```typescript
 export const api = {
@@ -1070,7 +1087,7 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ## 21. IDENTITY CORE — MÓDULO DE IDENTIDAD FORMAL (Phase 4)
 
-Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (18 archivos, ~3340 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
+Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (20 archivos, ~4008 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
 
 ### 21.1 Arquitectura del Módulo
 
@@ -1508,15 +1525,15 @@ iame.lol/
 │   │   │   ├── governance_agent.py  (132 ln) # Meta-agente de cumplimiento
 │   │   │   └── crew.py             (111 ln) # Inicialización y gestión del crew
 │   │   ├── api/
-│   │   │   ├── main.py             (280 ln) # Composition root + AppState + lifespan + Identity wiring
-│   │   │   └── routes.py          (2233 ln) # 77 endpoints REST + WebSocket
+│   │   │   ├── main.py             (324 ln) # Composition root + AppState + lifespan + Identity wiring
+│   │   │   └── routes.py          (2615 ln) # 88 endpoints REST + WebSocket
 │   │   ├── cognition/                        # Capa cognitiva OBLIGATORIA
 │   │   │   ├── __init__.py          (20 ln) # Re-exports: DecisionEngine, Planner, TaskCategory
 │   │   │   ├── decision_engine.py  (150 ln) # Motor de decisión inmutable (+identity_profile, Phase 4)
 │   │   │   └── planner.py         (118 ln) # Planificador stateless
 │   │   ├── db/
 │   │   │   ├── database.py        (289 ln) # Postgres connection + 10 tablas
-│   │   │   └── persistence.py     (491 ln) # Fire-and-forget persistence repository
+│   │   │   └── persistence.py    (1295 ln) # Fire-and-forget persistence repository (21 public + 6 private methods)
 │   │   ├── evaluation/                       # 5 módulos heurísticos
 │   │   │   ├── quality_scorer.py   (383 ln) # Calidad en 5 dimensiones → grade A-F
 │   │   │   ├── alignment_evaluator.py(420 ln) # Alineación con persona + identity_similarity (Phase 4)
@@ -1527,18 +1544,28 @@ iame.lol/
 │   │   │   └── event_bus.py       (128 ln) # Pub/Sub + WS + Audit
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
-│   │   │   └── orchestrator.py    (1336 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
-│   │   ├── identity/                         # Módulo de identidad formal (Phase 4-6B)
-│   │   │   ├── __init__.py          (8 ln) # Re-exports: IdentityProfile, IdentityManager, IdentityMemoryBridge, IdentityContextWeighter
-│   │   │   ├── schema.py         (101 ln) # IdentityProfile Pydantic model
-│   │   │   ├── embedding.py      (215 ln) # Identity text + ChromaDB embedding + cosine similarity
-│   │   │   ├── versioning.py     (215 ln) # Semantic versioning + SHA-256 + Postgres persistence
-│   │   │   ├── enforcement.py     (90 ln) # Phase 5A: Soft drift detection
-│   │   │   ├── policy.py         (165 ln) # Phase 5B: Reactive identity control
-│   │   │   ├── feedback.py       (110 ln) # Phase 5C: Controlled identity feedback
-│   │   │   ├── memory_bridge.py  (165 ln) # Phase 6A: Identity-memory affinity analyser
-│   │   │   ├── context_weighting.py(200 ln) # Phase 6B: Soft identity-aware context annotation
-│   │   │   └── manager.py        (255 ln) # Singleton lifecycle manager
+│   │   │   └── orchestrator.py   (2021 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
+│   │   ├── identity/                         # Módulo de identidad formal (Phase 4-10A, 20 archivos)
+│   │   │   ├── __init__.py         (~20 ln) # Re-exports de todos los componentes
+│   │   │   ├── schema.py         (~105 ln) # IdentityProfile Pydantic model
+│   │   │   ├── embedding.py      (~215 ln) # Identity text + ChromaDB embedding + cosine similarity
+│   │   │   ├── versioning.py     (~215 ln) # Semantic versioning + SHA-256 + Postgres persistence
+│   │   │   ├── enforcement.py     (~90 ln) # Phase 5A: Soft drift detection
+│   │   │   ├── policy.py         (~165 ln) # Phase 5B: Reactive identity control
+│   │   │   ├── feedback.py       (~110 ln) # Phase 5C: Controlled identity feedback
+│   │   │   ├── memory_bridge.py  (~165 ln) # Phase 6A: Identity-memory affinity analyser
+│   │   │   ├── context_weighting.py(~200 ln) # Phase 6B: Soft identity-aware context annotation
+│   │   │   ├── decision_modulation.py(~280 ln) # Phase 6C: Decision-identity alignment analyser
+│   │   │   ├── confidence.py     (~230 ln) # Phase 6D: Identity confidence engine
+│   │   │   ├── autonomy_modulation.py(~175 ln) # Phase 7A: Soft governance coupling
+│   │   │   ├── retrieval_weighting.py(~210 ln) # Phase 7B: Identity-weighted memory retrieval
+│   │   │   ├── consolidation_weighting.py(~210 ln) # Phase 7C: Identity-weighted memory consolidation
+│   │   │   ├── behavioral_bias.py(~500 ln) # Phase 8A: Identity behavioral bias layer
+│   │   │   ├── prompt_integration.py(~195 ln) # Phase 8B: Soft identity prompt integration
+│   │   │   ├── health_monitor.py (~320 ln) # Phase 9A: Identity longitudinal monitoring
+│   │   │   ├── health_regulation.py(~260 ln) # Phase 9B: Health-aware adaptive regulation
+│   │   │   ├── evolution.py      (~600 ln) # Phase 10A: Dynamic identity evolution engine
+│   │   │   └── manager.py        (~255 ln) # Singleton lifecycle manager
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
 │   │   ├── router/
@@ -1555,7 +1582,7 @@ iame.lol/
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
-│   ├── tests/                                # 22 archivos + conftest.py
+│   ├── tests/                                # 28 archivos + conftest.py (1438 tests)
 │   │   ├── conftest.py            (100 ln) # Fixtures compartidos
 │   │   ├── test_cognition.py      (235 ln) # 49 tests puros (Phase 3)
 │   │   ├── test_orchestrator.py   (161 ln) # Tests del pipeline
@@ -1572,7 +1599,17 @@ iame.lol/
 │   │   ├── test_identity_policy.py (~280 ln) # Tests de policy engine (Phase 5B, 55 tests)
 │   │   ├── test_identity_feedback.py(~290 ln) # Tests de feedback controller (Phase 5C, 41 tests)
 │   │   ├── test_identity_memory_bridge.py(~430 ln) # Tests de memory bridge (Phase 6A, 53 tests)
-│   │   ├── test_identity_context_weighting.py(~350 ln) # Tests de context weighting (Phase 6B, 40 tests)
+│   │   ├── test_identity_context_weighting.py(~350 ln) # Tests de context weighting (Phase 6B, 46 tests)
+│   │   ├── test_identity_decision_modulation.py(~450 ln) # Tests de decision modulation (Phase 6C, 72 tests)
+│   │   ├── test_identity_confidence.py(~400 ln) # Tests de confidence engine (Phase 6D, 75 tests)
+│   │   ├── test_identity_autonomy_modulation.py(~350 ln) # Tests de autonomy modulation (Phase 7A, 59 tests)
+│   │   ├── test_identity_retrieval_weighting.py(~380 ln) # Tests de retrieval weighting (Phase 7B, 56 tests)
+│   │   ├── test_identity_consolidation_weighting.py(~420 ln) # Tests de consolidation (Phase 7C, 86 tests)
+│   │   ├── test_identity_behavioral_bias.py(~500 ln) # Tests de behavioral bias (Phase 8A, 96 tests)
+│   │   ├── test_identity_prompt_integration.py(~400 ln) # Tests de prompt integration (Phase 8B, 72 tests)
+│   │   ├── test_identity_health_monitor.py(~480 ln) # Tests de health monitor (Phase 9A, 93 tests)
+│   │   ├── test_identity_health_regulation.py(~520 ln) # Tests de health regulation (Phase 9B, 119 tests)
+│   │   ├── test_identity_evolution.py(~500 ln) # Tests de evolution engine (Phase 10A, 97 tests)
 │   │   ├── test_config.py          (86 ln) # Tests de configuración
 │   │   └── test_basics.py          (59 ln) # Tests básicos de importación
 │   └── configs → ../configs                  # Symlink a configs/
@@ -1588,17 +1625,17 @@ iame.lol/
 │   │   ├── memory/page.tsx        (494 ln) # Memory Lab (con edición inline)
 │   │   ├── governance/page.tsx    (481 ln) # Governance Console (approval actions funcionales)
 │   │   ├── analytics/page.tsx     (269 ln) # Analytics Dashboard
-│   │   ├── trace/page.tsx         (474 ln) # Cognitive Trace viewer
-│   │   └── evaluation/page.tsx    (698 ln) # Evaluation Dashboard
+│   │   ├── trace/page.tsx         (716 ln) # Cognitive Trace viewer
+│   │   └── evaluation/page.tsx    (879 ln) # Evaluation Dashboard (Postgres reads + delete)
 │   ├── components/
 │   │   ├── command-center/       (1026 ln) # 7 componentes del dashboard principal
 │   │   ├── chat/                  (218 ln) # ChatPanel + MessageBubble
 │   │   ├── layout/                (266 ln) # Sidebar (4 grupos) + Header + ClientShell
 │   │   ├── trace/                 (267 ln) # TraceNode (React Flow custom)
-│   │   └── ui/                    (340 ln) # 9 primitivos shadcn/ui
+│   │   └── ui/                    (340 ln) # 10 primitivos shadcn/ui (incl. confirm-dialog)
 │   └── lib/
-│       ├── api.ts                 (767 ln) # API client (~74 métodos)
-│       ├── store.ts               (151 ln) # Zustand global store (17 state fields)
+│       ├── api.ts                 (826 ln) # API client (~84 métodos)
+│       ├── store.ts               (165 ln) # Zustand global store (17 state fields, persist middleware)
 │       ├── hooks/                           # Custom React hooks
 │       └── i18n/                            # en.json + es.json
 ├── configs/                                  # Archivos de configuración
@@ -1612,12 +1649,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~13,320 líneas en `agent/src/` (incluye identity/ ~3840 ln)
-**Total de tests**: ~7,300 líneas en 28 archivos (1324 tests, 1324 passing)
-**Total de código frontend (TypeScript/TSX)**: ~8,100 líneas en `dashboard/`
+**Total de código backend (Python)**: ~15,600 líneas en `agent/src/` (incluye identity/ ~4008 ln)
+**Total de tests**: ~9,667 líneas en 28 archivos (1438 tests, 1438 passing)
+**Total de código frontend (TypeScript/TSX)**: ~9,264 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2026-02-19 — Phase 10A Dynamic Identity Evolution Engine (IdentityEvolutionEngine, identity.evolution_analyzed events, identity_evolution_analysis evaluations, orchestrator step 9c post-health regulation, proposal-only + governance-gated, centroid embedding + shift magnitude + version bump, 97 unit tests)*
-*77 endpoints, ~1975 ln orchestrator, 434 ln training manager, 261 ln learn-topic, ~3840 ln identity module, 873 ln API client*
-*1324 tests passing — Preparado para auditoría de especialistas en conciencias virtuales*
+*Última actualización: 2025-02-19 — Phase 10A completada. 88 endpoints, 2021 ln orchestrator, 1295 ln persistence (21 public methods), 4008 ln identity module (20 archivos), 826 ln API client (~84 métodos), 1438 tests passing.*
+*Evaluation Dashboard lee desde Postgres con fallback in-memory. Chat persiste entre refreshes (Zustand persist). Trace IDs únicos por interacción (uuid4). Delete endpoints para trace, evaluation, analytics, training corrections.*
+*Preparado para auditoría de especialistas en conciencias virtuales*
