@@ -1,7 +1,7 @@
-# IAme — Arquitectura Completa del Sistema
+# Django — Arquitectura Completa del Sistema
 
 > **Documento de referencia técnica para auditoría de arquitectura de conciencia virtual.**
-> Este documento describe con total precisión el estado actual del sistema IAme (Autonomous Digital Delegate System — ADLRA), un sistema multi-agente diseñado para aprender a representar la identidad, personalidad y estilo de toma de decisiones de su principal (humano) a través de entrenamiento progresivo, memoria contextual y retroalimentación humana directa.
+> Este documento describe con total precisión el estado actual del sistema "Django" (no como el framework de phyton), un sistema multi-agente diseñado para aprender a representar la identidad, personalidad y estilo de toma de decisiones de su principal (humano) a través de entrenamiento progresivo, memoria contextual y retroalimentación humana directa.
 
 > **🚨 REGLA CRÍTICA: Este documento DEBE actualizarse cada vez que se modifique cualquier aspecto de la arquitectura del proyecto.**
 
@@ -39,7 +39,7 @@
 
 ## 1. VISIÓN GENERAL DEL SISTEMA
 
-IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que aprende progresivamente a actuar como su "principal" (el humano que lo entrena). No es un chatbot genérico — es una **identidad virtual personalizada** que:
+Django es un **delegado digital autónomo**: un sistema de IA multi-agente que aprende progresivamente a actuar como su "principal" (el humano que lo entrena). No es un chatbot genérico — es una **identidad virtual personalizada** que:
 
 - **Piensa** con la misma estructura de decisión que su principal (valores, prioridades, tolerancia al riesgo).
 - **Habla** con el mismo estilo de comunicación (formalidad, humor, empatía, verbosidad calibrada).
@@ -49,7 +49,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 
 **Filosofía de diseño**: El sistema opera en **$0/mes** usando exclusivamente tiers gratuitos (Gemini Free, Groq Free, Neon Free, ChromaDB local, Ollama local). La privacidad es prioridad: datos de identidad nunca salen de la máquina local; solo los outputs de agentes van a LLMs cloud.
 
-**Estado actual**: Phase 10A completada (Dynamic Identity Evolution Engine). El módulo de identidad formal (`src/identity/`, 20 archivos, ~4008 líneas) provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno. Phase 5A agrega `IdentityEnforcer` como señal de observabilidad activa. Phase 5B agrega `IdentityPolicyEngine` como capa reactiva configurable (none/log/flag/rewrite_request/block). Phase 5C agrega `IdentityFeedbackController` como capa de feedback controlado. Phase 6A agrega `IdentityMemoryBridge` para análisis de afinidad memoria–identidad. Phase 6B agrega `IdentityContextWeighter` para anotación soft de contexto. Phase 6C agrega `IdentityDecisionModulator` para evaluación de alignment decisión–identidad. Phase 6D agrega `IdentityConfidenceEngine` para agregación de señales de identidad en confidence score. Phase 7A agrega `IdentityAutonomyModulator` para ajuste de governance threshold basado en confianza. Phase 7B agrega `IdentityRetrievalWeighter` para re-ranking de memoria ponderado por identidad. Phase 7C agrega `IdentityConsolidationWeighter` para ajuste de importancia de memoria pre-storage. Phase 8A agrega `IdentityBehavioralBias` para bias de planificación guiado por identidad. Phase 8B agrega `IdentityPromptIntegrator` para inyección de preferencias de estilo en system prompt. Phase 9A agrega `IdentityHealthMonitor` para monitoreo longitudinal de salud de identidad. Phase 9B agrega `IdentityHealthRegulator` para regulación adaptativa basada en salud. Phase 10A agrega `IdentityEvolutionEngine` para análisis y propuesta de evolución de identidad (proposal-only, requires_human_approval).
+**Estado actual**: Phase 10D.1 completada (Governance Hardening). El módulo de identidad formal (`src/identity/`, 22 archivos, ~6080 líneas) provee un `IdentityProfile` versionado, con baseline embedding de 384 dimensiones (all-MiniLM-L6-v2), inyectado en DecisionEngine y AlignmentEvaluator para drift detection basado en similitud coseno. Phase 5A agrega `IdentityEnforcer` como señal de observabilidad activa. Phase 5B agrega `IdentityPolicyEngine` como capa reactiva configurable (none/log/flag/rewrite_request/block). Phase 5C agrega `IdentityFeedbackController` como capa de feedback controlado. Phase 6A agrega `IdentityMemoryBridge` para análisis de afinidad memoria–identidad. Phase 6B agrega `IdentityContextWeighter` para anotación soft de contexto. Phase 6C agrega `IdentityDecisionModulator` para evaluación de alignment decisión–identidad. Phase 6D agrega `IdentityConfidenceEngine` para agregación de señales de identidad en confidence score. Phase 7A agrega `IdentityAutonomyModulator` para ajuste de governance threshold basado en confianza. Phase 7B agrega `IdentityRetrievalWeighter` para re-ranking de memoria ponderado por identidad. Phase 7C agrega `IdentityConsolidationWeighter` para ajuste de importancia de memoria pre-storage. Phase 8A agrega `IdentityBehavioralBias` para bias de planificación guiado por identidad. Phase 8B agrega `IdentityPromptIntegrator` para inyección de preferencias de estilo en system prompt. Phase 9A agrega `IdentityHealthMonitor` para monitoreo longitudinal de salud de identidad. Phase 9B agrega `IdentityHealthRegulator` para regulación adaptativa basada en salud. Phase 10A agrega `IdentityEvolutionEngine` para análisis y propuesta de evolución de identidad (proposal-only, requires_human_approval). Phase 10B agrega `IdentityShadowSimulator` para simulación de evolución en clon in-memory sin mutar la identidad real. Phase 10C agrega `IdentityVersionControl` para versionado inmutable de identidad con apply controlado y rollback seguro (710 líneas, 120 unit tests). Phase 10D agrega interfaz de governance de identidad (dashboard `/identity-governance`, 11 endpoints, 4 tabs: Versions/Evolution/Shadow/Health, 55 unit tests). Phase 10D.1 aplica governance hardening (5 defectos D1–D5: reject event fix con EventBus singleton, approve audit event, activate symmetry/idempotency, delete active guard — 20 unit tests).
 
 ---
 
@@ -58,21 +58,21 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                 DASHBOARD (Next.js 15 / React 19 / Tailwind / shadcn/ui)     │
-│                 Puerto 3000 — 12 rutas + WebSocket client                    │
+│                 Puerto 3000 — 13 rutas + WebSocket client                    │
 ├──────────────────────────┬───────────────────────────────────────────────────┤
-│  Zustand Store (165 ln)  │  API Client — lib/api.ts (826 ln, ~84 métodos)   │
+│  Zustand Store (165 ln)  │  API Client — lib/api.ts (1117 ln, ~96 métodos)  │
 │  Estado global del UI    │  Comunicación tipada con el backend               │
 ├──────────────────────────┴───────────────────────────────────────────────────┤
 │                                     ▼ HTTP / WebSocket                       │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│         FastAPI Backend — Puerto 8000 — Prefijo /api — 88 endpoints          │
-│                           routes.py (2615 ln) + main.py (324 ln)             │
+│         FastAPI Backend — Puerto 8000 — Prefijo /api — 99 endpoints          │
+│                           routes.py (3264 ln) + main.py (324 ln)             │
 ├──────────┬───────────┬──────────┬───────────┬──────────┬─────────────────────┤
 │ COGNICIÓN│ ORQUESTA- │ AGENT    │ MEMORIA   │ EVALUA-  │ TRACE              │
 │ Decision │ DOR       │ CREW (5) │ 4 niveles │ CIÓN     │ Collector          │
 │ Engine   │ Pipeline  │          │ Manager   │ 5 módulos│ 13 tipos nodo      │
 │ (138 ln) │ 10+ pasos │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
-│ Planner  │ (2021 ln) │ Business │           │ (1796 ln │                    │
+│ Planner  │ (2135 ln) │ Business │           │ (1796 ln │                    │
 │ (118 ln) │ + 3 Modos │ Comms    │           │  total)  │                    │
 │ Categ.   │           │ Tech     │           │          │                    │
 │ (18 ln)  │           │ Govern.  │           │          │                    │
@@ -98,7 +98,7 @@ IAme es un **delegado digital autónomo**: un sistema de IA multi-agente que apr
 | Capa | Tecnología | Versión | Propósito | Notas |
 |------|-----------|---------|-----------|-------|
 | **Backend** | Python + FastAPI + uvicorn | 3.11+ | API REST + WebSocket, orquestación multi-agente | Puerto 8000, `--reload` en dev |
-| **Frontend** | Next.js + React + TypeScript | 15 / 19 / 5.7 | Dashboard de control con 12 rutas | Puerto 3000, App Router |
+| **Frontend** | Next.js + React + TypeScript | 15 / 19 / 5.7 | Dashboard de control con 13 rutas | Puerto 3000, App Router |
 | **UI** | shadcn/ui + Tailwind CSS + lucide-react | 3.4 | Componentes primitivos + tema lab oscuro | Variables CSS: lab-text, lab-card, accent-glow |
 | **Estado UI** | Zustand | 5 | Store global del cliente | 165 líneas |
 | **LLM primario** | Google Gemini 2.5 Flash | — | Proveedor principal (free tier) | Via google-generativeai SDK |
@@ -196,7 +196,7 @@ class AppState:
 - `ServiceMonitorMiddleware` — logea requests >5s como slow, registra errores 500
 - `CORSMiddleware` — permite `localhost:3000` (dashboard)
 
-### 5.2 API Endpoints — `agent/src/api/routes.py` (2615 líneas, 88 endpoints)
+### 5.2 API Endpoints — `agent/src/api/routes.py` (3264 líneas, 99 endpoints)
 
 Todas las rutas bajo prefijo `/api`. Patrón uniforme:
 
@@ -228,6 +228,7 @@ async def handler():
 | **Evaluation** | `/evaluation/overview`, quality/×3, alignment/×2, legal/×3, decisions/×5, rollback/×5, `/evaluation/data` (DELETE) | GET×14, POST×3, PUT×1, DELETE | 20 endpoints para los 5 módulos de evaluación + eliminación masiva |
 | **Governance** | `/governance/config`, `/governance/audit-log`, `/governance/approvals`, `/governance/emergency-stop`, `/governance/emergency-resume`, `/governance/emergency-status` | GET×3, POST×2, GET×1 | Configuración, auditoría, aprobaciones, parada de emergencia |
 | **Analytics** | `/analytics/overview`, `/analytics/identity-fidelity`, `/analytics/autonomy`, `/analytics/token-usage`, `/analytics/events` (DELETE), `/analytics/tokens` (DELETE) | GET×4, DELETE×2 | KPIs, fidelidad de identidad, métricas de autonomía, uso de tokens, eliminación de datos |
+| **Identity Governance** | `/identity/versions`, `/identity/versions/{id}` (GET+DELETE), `/identity/snapshot`, `/identity/activate/{id}`, `/identity/rollback/{id}`, `/identity/evolution`, `/identity/evolution/{id}/approve`, `/identity/evolution/{id}/reject`, `/identity/shadow`, `/identity/health` | GET×5, POST×4, DELETE×1 | 11 endpoints. Versiones de identidad (list, get, delete con guard contra activa), snapshots con metadata (version, tags, label, notes), activación idempotente, rollback, evolución (approve/reject con audit events), shadow simulation, health signals. Phase 10D + 10D.1 hardening (D1–D5) |
 
 ### 5.3 WebSocket — `/api/ws`
 
@@ -326,7 +327,7 @@ class Planner:
 
 ## 7. CAPA DE ORQUESTACIÓN — Pipeline de 10 Pasos
 
-### `agent/src/flows/orchestrator.py` (2021 líneas)
+### `agent/src/flows/orchestrator.py` (2135 líneas)
 
 El Orchestrator es el **cerebro central** del sistema. Recibe un mensaje de usuario y lo procesa a través de un pipeline determinístico de 10+ pasos, donde cada paso emite eventos vía EventBus y crea nodos de trace vía TraceCollector.
 
@@ -368,6 +369,8 @@ class Orchestrator:
 | 9a | **Identity Health Monitor** | Post-persistence, fuera del pipeline principal. Agrega señales de identidad longitudinales (últimas 50 interacciones): avg_similarity, avg_confidence, drift_rate, high_severity_policy_rate, sustained_low_confidence, instability_index (0-1). Clasifica: stable (<0.25) / monitor (<0.50) / unstable (<0.70) / critical (≥0.70). Emite `identity.health_evaluated`. Estrictamente observacional — no afecta la interacción actual. Phase 9A. | No | 5-50ms |
 | 9b | **Identity Health Regulation** | Post-health monitor, antes del return. Capa de meta-control adaptativa que reacciona a señales de salud de Phase 9A. Ajusta governance threshold (stable: 0, monitor: -0.05, unstable: -0.10, critical: -0.15) e identity weight (stable: 0, monitor: +0.05, unstable: +0.10, critical: +0.15). Clamp threshold [0.0, 1.0], identity_weight [0.0, 0.5]. Emite `identity.health_regulated` (solo cuando regulation_applied). Determinístico, stateless, metadata-only — nunca modifica identidad, decisiones, routing, LLM outputs ni interacción actual. Phase 9B. | No | 1-5ms |
 | 9c | **Identity Evolution Analysis** | Post-health regulation, antes del return. Analiza trayectoria de identidad a largo plazo (últimas 200 interacciones): similarity_trend (regresión lineal), confidence_trend, sustained_high_confidence (últimas 10 > 0.75), sustained_similarity_shift (últimas 20 difieren > 0.08), drift_rate, avg_instability, high_severity_rate. Criterios de evolución: sustained_high_conf AND (trend > 0 OR sustained_shift) AND drift_rate < 0.25 AND avg_confidence > 0.70. Rechazo: instability > 0.60 OR high_severity > 0.20. Si candidato: computa centroid embedding (últimas 30 respuestas), calcula shift_magnitude = 1 - cosine_similarity(baseline, centroid), versión bump (minor 0.05-0.10, major > 0.10). Emite `identity.evolution_analyzed`. Persistido como `identity_evolution_analysis`. Proposal-only — `requires_human_approval: True` siempre, `observational: True`, nunca modifica IdentityProfile, baseline, decisiones, routing ni governance. Phase 10A. | No | 5-50ms |
+| 9d | **Shadow Identity Simulation** | Post-evolution analysis, antes de persistencia final. Si hay evolution_candidate, construye clon in-memory (deep copy) del IdentityProfile y aplica cambios propuestos solo al shadow. Computa señales comparativas: hypothetical_similarity_shift, confidence_shift, drift_rate_change, instability_delta. Risk score ponderado (instability 0.30 + drift 0.25 + similarity 0.25 + confidence 0.20), clamped [0,1]. Risk grade: safe (<0.25) / cautious (<0.50) / risky (<0.70) / destabilizing (≥0.70). Produce structural diff (version, embedding, big_five, values, communication_style, boundaries). Emite `identity.shadow_simulated`. Persistido como `identity_shadow_simulation`. NUNCA muta el IdentityProfile real. `observational: True`, `requires_human_approval: True` siempre. Stateless, determinístico, sin LLM, sin IO, sin DB writes. Phase 10B. | No | 1-10ms |
+| 9e | **Identity Version Candidate** | Post-shadow simulation, antes de persistencia. Si evolution_candidate == True AND shadow risk_grade in (safe, cautious) AND identity activa presente: crea snapshot inmutable del IdentityProfile actual con `IdentityVersionControl.build_version_candidate()`. Snapshot incluye: UUID version_id, ISO timestamp, SHA-256 content_hash, evolución metadata (proposed_version, shift_magnitude, shadow_risk_grade/score, evolution_risk_level). Resultado compacto via `build_result()` (strip snapshot/profile_data) almacenado en `evaluation_results["identity_version_candidate"]`. Emite `identity.version_candidate_created`. Persistido como `identity_version_candidate`. NUNCA auto-aplica cambios, NUNCA muta IdentityProfile, NUNCA modifica runtime. `observational: True`, `requires_human_approval: True` siempre. Proposal-only — el principal debe aprobar y ejecutar apply/rollback manualmente. Phase 10C. | No | <1ms |
 
 **Routing por categoría** (`_route()` method):
 ```python
@@ -889,7 +892,7 @@ Conexión a Neon Postgres via **psycopg2** (síncrono, autocommit). **Totalmente
 | `token_usage` | SERIAL | Cada llamada LLM individual | provider, model, tokens_used, latency_ms, cost_estimate, role |
 | `memory_operations` | SERIAL | Cada operación de memoria | tier, action, target_id, before_state, after_state, rolled_back |
 
-### 17.2 Persistence Repository — `agent/src/db/persistence.py` (1295 líneas)
+### 17.2 Persistence Repository — `agent/src/db/persistence.py` (1313 líneas)
 
 Repositorio fire-and-forget que nunca bloquea ni crashea el pipeline:
 
@@ -940,11 +943,11 @@ class PersistenceRepository:
 - **Tailwind CSS 3.4** + **shadcn/ui** para componentes
 - **Tema lab oscuro** con variables CSS: `lab-text`, `lab-text-dim`, `lab-card`, `lab-surface`, `lab-border`, `accent-glow`, `accent-primary`, `status-green/amber/red/blue`
 - **Zustand 5** para state management global (165 líneas)
-- **API client** centralizado en `lib/api.ts` (826 líneas, ~84 métodos tipados)
+- **API client** centralizado en `lib/api.ts` (1117 líneas, ~96 métodos tipados)
 - **i18n** vía `lib/i18n/` — soporta `en.json` (~531 keys) + `es.json`
 - Directiva `"use client"` en todas las páginas interactivas
 
-### 18.2 Rutas del Dashboard (12 páginas)
+### 18.2 Rutas del Dashboard (13 páginas)
 
 | Ruta | Página | Líneas | Funcionalidad |
 |------|--------|--------|--------------|
@@ -960,6 +963,7 @@ class PersistenceRepository:
 | `/analytics` | Analytics Dashboard | 269 | Identity fidelity gauge, autonomy metrics, token usage charts (recharts), events breakdown by type/agent/risk |
 | `/trace` | Cognitive Trace | 474 | Lista de trazas recientes, visualización React Flow del pipeline (nodos custom con expand/collapse), replay paso a paso |
 | `/evaluation` | Evaluation Dashboard | 698 | Vista unificada de los 5 módulos: quality trends, alignment scores, legal risk flags, business decisions, memory rollback log |
+| `/identity-governance` | Identity Governance | 66 + 295 + 255 + 240 + 295 + 225 | 4 tabs: Versions (snapshot modal with version/tags/label/notes, status badges Active/Candidate/Historical, tag badges, activation confirmation dialog), Evolution (approve/reject candidates), Shadow Simulation (risk grades, structural diff), Identity Health (signals timeline, CSS bar charts, pre-training baseline badge). Components: `create-snapshot-modal.tsx` (modal with tag multi-select + custom tags + version validation) |
 
 ### 18.3 Componentes Clave
 
@@ -971,9 +975,9 @@ class PersistenceRepository:
 | `components/trace/` | 1 componente | 267 | TraceNode — nodo custom de React Flow con expand/collapse, colores por tipo, métricas inline |
 | `components/ui/` | 10 componentes | 340 | Primitivos shadcn/ui: badge, button, card, confirm-dialog, input, progress, scroll-area, separator, tabs, tooltip |
 
-### 18.4 API Client — `dashboard/lib/api.ts` (~826 líneas)
+### 18.4 API Client — `dashboard/lib/api.ts` (~1117 líneas)
 
-~84 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, persisted token usage, learn-topic, free conversation exchange, guided interview, knowledge sources, training corrections CRUD, trace/evaluation/analytics deletion, y memory bulk-delete:
+~96 métodos tipados que mapean 1:1 a los endpoints del backend. Incluye métodos para service-log, interactions persistence, persisted token usage, learn-topic, free conversation exchange, guided interview, knowledge sources, training corrections CRUD, trace/evaluation/analytics deletion, y memory bulk-delete:
 
 ```typescript
 export const api = {
@@ -1087,13 +1091,13 @@ Estas garantías fueron establecidas en Phase 3 (Architectural Hardening) y son 
 
 ## 21. IDENTITY CORE — MÓDULO DE IDENTIDAD FORMAL (Phase 4)
 
-Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (20 archivos, ~4008 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
+Phase 4 introduce un módulo de identidad estructurado en `agent/src/identity/` (22 archivos, ~6080 líneas) que formaliza la representación de la identidad del principal en un `IdentityProfile` versionado, con embedding baseline y drift detection.
 
 ### 21.1 Arquitectura del Módulo
 
 ```
 src/identity/
-├── __init__.py            # Re-exports: IdentityProfile, IdentityManager, IdentityEnforcer, IdentityPolicyEngine, IdentityMemoryBridge, IdentityContextWeighter, IdentityDecisionModulator, IdentityConfidenceEngine, IdentityAutonomyModulator, IdentityRetrievalWeighter, IdentityConsolidationWeighter, IdentityBehavioralBias, IdentityPromptIntegrator, IdentityHealthMonitor, IdentityHealthRegulator, IdentityEvolutionEngine
+├── __init__.py            # Re-exports: IdentityProfile, IdentityManager, IdentityEnforcer, IdentityPolicyEngine, IdentityMemoryBridge, IdentityContextWeighter, IdentityDecisionModulator, IdentityConfidenceEngine, IdentityAutonomyModulator, IdentityRetrievalWeighter, IdentityConsolidationWeighter, IdentityBehavioralBias, IdentityPromptIntegrator, IdentityHealthMonitor, IdentityHealthRegulator, IdentityEvolutionEngine, IdentityShadowSimulator, IdentityVersionControl
 ├── schema.py      (~105) # Pydantic model IdentityProfile
 ├── embedding.py   (~215) # Text composition + ChromaDB embedding + cosine similarity
 ├── versioning.py  (~215) # Semantic versioning + SHA-256 hashing + Postgres persistence
@@ -1112,6 +1116,8 @@ src/identity/
 ├── health_monitor.py(~320)  # Phase 9A: Identity longitudinal monitoring (IdentityHealthMonitor)
 ├── health_regulation.py(~260) # Phase 9B: Health-aware adaptive regulation (IdentityHealthRegulator)
 ├── evolution.py   (~600) # Phase 10A: Dynamic identity evolution engine (IdentityEvolutionEngine)
+├── shadow_simulation.py(~528) # Phase 10B: Shadow identity simulation layer (IdentityShadowSimulator)
+├── version_control.py(~710) # Phase 10C: Immutable identity versioning + controlled apply + rollback (IdentityVersionControl)
 └── manager.py     (~255) # Singleton lifecycle manager
 ```
 
@@ -1392,7 +1398,7 @@ identity_control:
 
 **Garantías**: NUNCA filtra, elimina, o trunca memorias. NUNCA modifica contenido. NUNCA altera conteo. Deterministic, stateless, no LLM.
 
-### 21.16 Tests — 627 tests unitarios
+### 21.16 Tests — 802 tests unitarios
 
 - `tests/test_identity_module.py`: 47 tests (Phase 4) — schema, embedding, versioning, manager, integración
 - `tests/test_identity_enforcement.py`: 30 tests (Phase 5A) — constructor, no_baseline, aligned, drift_detected, severity, invariantes, persistencia
@@ -1410,6 +1416,8 @@ identity_control:
 - `tests/test_identity_health_monitor.py`: 93 tests (Phase 9A) — constructor/statelessness, empty window (None/empty list/non-list), partial/missing signals, all-stable scenario, high drift rate, sustained low confidence (threshold/boundary/insufficient window), instability index (formula/weights/components), clamping (0-1 bounds), health classification (stable/monitor/unstable/critical/boundaries), policy severity rate (high/critical/mixed/case-insensitive), determinism, no mutation, import isolation (no orchestrator/cognition/events/evaluation/planner imports), integration wiring (exports/__init__/orchestrator/persistence/get_recent_identity_signals), build_result (analyzed/skipped/None), window size handling, edge cases (non-dict interactions/string floats/negative values), end-to-end flows
 - `tests/test_identity_health_regulation.py`: 119 tests (Phase 9B) — regulate function, threshold adjustments (stable/monitor/unstable/critical), identity weight adjustments, clamping bounds, guard clauses (None/invalid), regulation_applied flag, monitoring_intensity levels, build_result format, determinism, no mutation, import isolation, integration wiring
 - `tests/test_identity_evolution.py`: 97 tests (Phase 10A) — insufficient data (None/empty/too few/non-list), positive evolution (candidate/version/shift/embedding/risk), negative scenarios (low confidence/no sustained/high drift/negative trend/stable identity), high instability rejection (>0.60), high severity rejection (>0.20 high/critical rate), version bump correctness (minor/major/none), shift magnitude calculation (cosine similarity), linear trend computation (OLS slope), centroid embedding (last 30, normalization), determinism (same input → same output), no mutation (profile/signals unchanged), import isolation (no orchestrator/cognition/events/router/agents/evaluation), edge cases (missing keys/None values/non-dict entries/window size 0/-1/empty baseline/mixed severities), build_result (strips embedding/preserves fields/None handling), result structure completeness (all keys present), risk level computation (low/medium/high), sustained checks (confidence window/shift delta), export validation (__init__/__all__)
+- `tests/test_identity_versioning.py`: 120 tests (Phase 10C) — snapshot creation (UUID/timestamp/hash/profile_data/evolution_source), snapshot immutability (deep copy verification, hash stability), deterministic hash (same profile → same hash, different profiles → different hash), version ordering (timestamp descending, filtering), get_version (by UUID lookup), diff_versions (structural diff: big_five deltas, values Jaccard, communication_style, boundaries, embedding_changed, hash_match/identical detection), apply candidate isolation (profile_candidate construction, hash verification, no runtime mutation), rollback correctness (operation tag, target_version_id, same guarantees as apply), no-mutation guarantees (original profile/snapshot unchanged after all operations), import isolation (no orchestrator/cognition/events/router/agents imports), build_version_candidate (evolution/shadow guards, metadata capture, snapshot construction), build_apply_result (human confirmation, hash match, ready flag), build_result (strips snapshot/profile_data, preserves scalars, governance defaults), verify_integrity (SHA-256 recompute, tamper detection), prepare_store (human confirmation guard, ready_to_persist flag), edge cases (empty embedding, no values/boundaries, minimal fields, non-dict inputs), determinism (same input → same output)
+- `tests/test_identity_governance.py`: 71 tests (Phase 10D) — versions endpoint (empty/list/limit/detail found/not found), snapshot creation (from profile/stores correctly/unique IDs/no profile marker/preserves data), snapshot immutability (hash consistency/integrity check/tamper detection), activation flow (requires confirmation/no auto-apply/candidate return/rollback candidate), evolution endpoint (empty/approve creates snapshot/approve has version_id), evolution reject (non-mutating/returns interaction_id), shadow endpoint (empty/result structure/skipped result), shadow comparison (structural diff present/empty diff), health endpoint (empty signals/structure/with signals/latest summary/no persistence), no-mutation guarantees (7 tests), response structure (8 tests), edge cases (8 tests), snapshot metadata (tags/label/notes storage, backward compatible, custom version, metadata does not affect hash, multiple tags, empty metadata), version validation (valid/invalid vX.Y.Z formats, auto-assign when empty), snapshot persistence metadata (store with metadata, retrieve with metadata, versions list includes metadata)
 
 ---
 
@@ -1460,11 +1468,11 @@ identity_control:
 
 ## 24. ESTADO ACTUAL VS PLANIFICADO
 
-### Completado (Phase 1 + 2 + 3 + 3.5 + 4 + 5A-C + 6A-D + 7A-C + 8A-B + 9A-B + 10A)
+### Completado (Phase 1 + 2 + 3 + 3.5 + 4 + 5A-C + 6A-D + 7A-C + 8A-B + 9A-B + 10A-D.1)
 - Full crew de 5 agentes con orchestrator (pipeline de 10+ pasos)
 - Sistema de memoria de 4 niveles (ChromaDB + SQLite)
 - Model Router con 3 proveedores + cadena de fallback + conteo de tokens real
-- 12 páginas de dashboard (todas funcionales)
+- 13 páginas de dashboard (todas funcionales)
 - 5 módulos de evaluación heurística (quality, alignment, legal risk, decisions, rollback)
 - Cognitive trace con visualización React Flow (13 tipos de nodo)
 - Governance console (config viewer, audit log, approval queue, emergency stop/resume)
@@ -1491,14 +1499,17 @@ identity_control:
 - **Identity Longitudinal Monitoring (Phase 9A)** — `src/identity/health_monitor.py` con `IdentityHealthMonitor`: capa observacional post-persistencia que agrega señales de identidad longitudinales sobre ventana deslizante de últimas N interacciones. Métricas: avg_identity_similarity, avg_confidence_score, drift_rate, high_severity_policy_rate, sustained_low_confidence, instability_index (0-1 compuesto). Clasificación: stable (<0.25) / monitor (<0.50) / unstable (<0.70) / critical (≥0.70). Lee señales históricas via `get_recent_identity_signals()` en persistence. Orchestrator paso 9a (post-persistence, fuera del pipeline principal — no afecta interacción actual). Emite `identity.health_evaluated`. Persistido como `identity_health_monitor`. Estrictamente observacional — no modifica IdentityProfile, DecisionEngine, Planner, retrieval, prompt, governance thresholds ni bloquea ejecución. 93 unit tests
 - **Health-Aware Adaptive Regulation (Phase 9B)** — `src/identity/health_regulation.py` con `IdentityHealthRegulator`: capa de meta-control adaptativa que reacciona a señales de salud de Phase 9A. Ajusta governance threshold (stable: 0, monitor: -0.05, unstable: -0.10, critical: -0.15) e identity weight (stable: 0, monitor: +0.05, unstable: +0.10, critical: +0.15). Clamp threshold [0.0, 1.0], identity_weight [0.0, 0.5]. Orchestrator paso 9b (post-health monitor, pre-return). Emite `identity.health_regulated` (solo cuando regulation_applied). Persistido como `identity_health_regulation`. Determinístico, stateless, metadata-only — nunca modifica identidad, decisiones, routing, LLM outputs, prompt, governance actual ni interacción actual. 119 unit tests
 - **Dynamic Identity Evolution Engine (Phase 10A)** — `src/identity/evolution.py` con `IdentityEvolutionEngine`: motor de evolución dinámica de identidad, proposal-only y governance-gated. Analiza trayectoria de identidad a largo plazo (ventana de 200 interacciones): similarity_trend + confidence_trend (regresión lineal OLS), sustained_high_confidence (últimas 10 > 0.75), sustained_similarity_shift (últimas 20 difieren > 0.08 del baseline), drift_rate, avg_instability, high_severity_rate. Criterios de evolución: sustained_high_conf AND (trend > 0 OR sustained_shift) AND drift_rate < 0.25 AND avg_confidence > 0.70. Rechazo: instability mean > 0.60 OR high_severity_rate > 0.20. Candidato: computa centroid embedding (últimas 30 response_embedding, normalizado), shift_magnitude = 1.0 - cosine_similarity(baseline, centroid), version bump (< 0.05 → no, 0.05-0.10 → minor, > 0.10 → major). Risk level (low/medium/high). Siempre `requires_human_approval: True`, `observational: True`. Orchestrator paso 9c (post-health regulation, pre-return). Emite `identity.evolution_analyzed`. Persistido como `identity_evolution_analysis`. Stateless, determinístico, sin LLM — nunca modifica IdentityProfile, baseline_embedding, decisiones, routing, governance ni estado del sistema. 97 unit tests
+- **Shadow Identity Simulation Layer (Phase 10B)** — `src/identity/shadow_simulation.py` con `IdentityShadowSimulator`: capa de simulación de evolución no-mutante. Toma propuesta de Phase 10A, construye clon in-memory (deep copy) del IdentityProfile, aplica cambios propuestos solo al shadow, computa señales comparativas (similarity_shift, confidence_shift, drift_rate_change, instability_delta). Risk score ponderado (instability 0.30 + drift 0.25 + similarity 0.25 + confidence 0.20), clamped [0,1]. Risk grade: safe (<0.25) / cautious (<0.50) / risky (<0.70) / destabilizing (≥0.70). Produce structural diff (version, embedding, big_five, values, communication_style, boundaries, drift_threshold). NUNCA muta el IdentityProfile real, NUNCA auto-aplica cambios, NUNCA modifica runtime. Orchestrator paso 9d (post-evolution analysis, pre-persistence). Emite `identity.shadow_simulated`. Persistido como `identity_shadow_simulation`. `observational: True`, `requires_human_approval: True` siempre. Stateless, determinístico, sin LLM, sin IO, sin DB writes. Completa el closed cognitive safety loop: observabilidad → regulación → propuesta de evolución → simulación antes del cambio. 120 unit tests
+- **Identity Versioning & Controlled Apply (Phase 10C)** — `src/identity/version_control.py` con `IdentityVersionControl`: sistema de versionado inmutable de identidad con apply controlado y rollback seguro. `create_snapshot()` genera snapshot inmutable con UUID version_id, ISO timestamp, SHA-256 content_hash, deep-copied profile_data y evolution_source. `diff_versions()` produce diff estructural completo (big_five deltas, values Jaccard, communication_style, boundaries, embedding_changed, hash_match/identical detection). `apply_version()` y `rollback_to()` retornan candidatos de IdentityProfile para revisión humana — NUNCA auto-aplican. `build_version_candidate()` construye candidato desde datos de evolution (Phase 10A) + shadow (Phase 10B), con guards: evolution_candidate True, shadow risk_grade in (safe, cautious), current_identity presente. `verify_snapshot_integrity()` recomputa SHA-256 para detección de tampering. `build_result()` genera output compacto para persistencia (strip snapshot/profile_data). `prepare_store()` prepara snapshot para almacenamiento con human confirmation guard. Orchestrator paso 9e (post-shadow simulation, pre-persistence). Emite `identity.version_candidate_created`. Persistido como `identity_version_candidate`. CERO mutación automática, CERO auto-apply, CERO modificación de runtime. `observational: True`, `requires_human_approval: True` siempre. Stateless, determinístico, 710 líneas, sin LLM, sin IO, import-isolated (solo IdentityProfile de schema). 120 unit tests
+- **Identity Governance Interface (Phase 10D)** — Integración no-intrusiva en el dashboard para gestionar versiones de identidad, propuestas de evolución, simulaciones shadow y monitoreo de salud. Nueva ruta `/identity-governance` con 4 tabs: Versions (snapshot modal con version/tags/label/notes, status badges Active/Candidate/Historical, activation dialog), Evolution (approve/reject candidates con risk badges), Shadow Simulation (risk grades, structural diff, tablas comparativas), Identity Health (signals timeline con CSS bar charts, health classification, pre-training baseline badge). 11 endpoints backend. Navegación: sidebar link, Command Center quick action, Identity Studio "View Versions" link. No modifica páginas, rutas ni componentes existentes. 55 unit tests
+- **Governance Hardening (Phase 10D.1)** — Parche de hardening dirigido por auditoría que corrige 5 defectos (D1–D5): D1 (CRITICAL): reject endpoint arreglado — reemplazó constructor `EventBus()` roto + kwargs emit con singleton `event_bus` + `await event_bus.emit(IAmeEvent(...))`. D2 (MEDIUM): approve endpoint ahora emite evento de auditoría `identity.evolution_approved`. D3 (LOW): activate event incluye `destructive: False` (simetría con rollback `destructive: True`). D4 (LOW): DELETE `/identity/versions/{id}` ahora protege contra eliminación de versión activa (retorna 409). D5 (LOW): activate endpoint retorna early con `already_active: True` para re-activación idempotente. Scope: solo `routes.py` parcheado — sin cambios en orchestrator, evolution engine, version control, snapshot, health ni shadow. 20 unit tests en `test_identity_governance_hardening.py` (5 clases de test)
 
-### Planificado (Phase 10B+)
+### Planificado (Phase 11+)
 | Item | Prioridad | Descripción |
 |------|-----------|-------------|
 | **Human-in-the-Loop** | ALTA | Mecanismo de pausa para approval queue de governance |
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
 | **Real Identity Fidelity** | MEDIA | Baseline embedding implementado (Phase 4). Falta: ponderar identity_similarity en overall_score, dashboard gauge, drift alertas |
-| **Persona Version Control** | ALTA | Snapshots, diffs, rollback, ramas experimentales |
 | **Document Chunking Pipeline** | ALTA | Chunking inteligente (500-1000 tokens con overlap) |
 | **Memory Consolidation** | ALTA | Job background para resumir episodic → semantic |
 | **Multi-Agent Collaboration** | MEDIA | Llamadas paralelas a agentes + agregación |
@@ -1526,14 +1537,14 @@ iame.lol/
 │   │   │   └── crew.py             (111 ln) # Inicialización y gestión del crew
 │   │   ├── api/
 │   │   │   ├── main.py             (324 ln) # Composition root + AppState + lifespan + Identity wiring
-│   │   │   └── routes.py          (2615 ln) # 88 endpoints REST + WebSocket
+│   │   │   └── routes.py          (3264 ln) # 99 endpoints REST + WebSocket
 │   │   ├── cognition/                        # Capa cognitiva OBLIGATORIA
 │   │   │   ├── __init__.py          (20 ln) # Re-exports: DecisionEngine, Planner, TaskCategory
 │   │   │   ├── decision_engine.py  (150 ln) # Motor de decisión inmutable (+identity_profile, Phase 4)
 │   │   │   └── planner.py         (118 ln) # Planificador stateless
 │   │   ├── db/
 │   │   │   ├── database.py        (289 ln) # Postgres connection + 10 tablas
-│   │   │   └── persistence.py    (1295 ln) # Fire-and-forget persistence repository (21 public + 6 private methods)
+│   │   │   └── persistence.py    (1308 ln) # Fire-and-forget persistence repository (25 public + 6 private methods)
 │   │   ├── evaluation/                       # 5 módulos heurísticos
 │   │   │   ├── quality_scorer.py   (383 ln) # Calidad en 5 dimensiones → grade A-F
 │   │   │   ├── alignment_evaluator.py(420 ln) # Alineación con persona + identity_similarity (Phase 4)
@@ -1544,9 +1555,9 @@ iame.lol/
 │   │   │   └── event_bus.py       (128 ln) # Pub/Sub + WS + Audit
 │   │   ├── flows/
 │   │   │   ├── categories.py       (18 ln) # TaskCategory enum (compartido)
-│   │   │   └── orchestrator.py   (2021 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
-│   │   ├── identity/                         # Módulo de identidad formal (Phase 4-10A, 20 archivos)
-│   │   │   ├── __init__.py         (~20 ln) # Re-exports de todos los componentes
+│   │   │   └── orchestrator.py   (2135 ln) # Pipeline de 10+ pasos + 3 modos cognitivos
+│   │   ├── identity/                         # Módulo de identidad formal (Phase 4-10D.1, 22 archivos)
+│   │   │   ├── __init__.py         (~52 ln) # Re-exports de todos los componentes (19 exports)
 │   │   │   ├── schema.py         (~105 ln) # IdentityProfile Pydantic model
 │   │   │   ├── embedding.py      (~215 ln) # Identity text + ChromaDB embedding + cosine similarity
 │   │   │   ├── versioning.py     (~215 ln) # Semantic versioning + SHA-256 + Postgres persistence
@@ -1565,6 +1576,8 @@ iame.lol/
 │   │   │   ├── health_monitor.py (~320 ln) # Phase 9A: Identity longitudinal monitoring
 │   │   │   ├── health_regulation.py(~260 ln) # Phase 9B: Health-aware adaptive regulation
 │   │   │   ├── evolution.py      (~600 ln) # Phase 10A: Dynamic identity evolution engine
+│   │   │   ├── shadow_simulation.py(~528 ln) # Phase 10B: Shadow identity simulation layer
+│   │   │   ├── version_control.py(~710 ln) # Phase 10C: Immutable identity versioning + controlled apply + rollback
 │   │   │   └── manager.py        (~255 ln) # Singleton lifecycle manager
 │   │   ├── memory/
 │   │   │   └── manager.py         (520 ln) # 4-tier unified memory
@@ -1582,7 +1595,7 @@ iame.lol/
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
-│   ├── tests/                                # 28 archivos + conftest.py (1438 tests)
+│   ├── tests/                                # 33 archivos + conftest.py (1724 tests)
 │   │   ├── conftest.py            (100 ln) # Fixtures compartidos
 │   │   ├── test_cognition.py      (235 ln) # 49 tests puros (Phase 3)
 │   │   ├── test_orchestrator.py   (161 ln) # Tests del pipeline
@@ -1610,11 +1623,15 @@ iame.lol/
 │   │   ├── test_identity_health_monitor.py(~480 ln) # Tests de health monitor (Phase 9A, 93 tests)
 │   │   ├── test_identity_health_regulation.py(~520 ln) # Tests de health regulation (Phase 9B, 119 tests)
 │   │   ├── test_identity_evolution.py(~500 ln) # Tests de evolution engine (Phase 10A, 97 tests)
+│   │   ├── test_identity_shadow_simulation.py(~720 ln) # Tests de shadow simulation (Phase 10B, 120 tests)
+│   │   ├── test_identity_versioning.py(~938 ln) # Tests de version control (Phase 10C, 120 tests)
+│   │   ├── test_identity_governance.py(~580 ln) # Tests de identity governance (Phase 10D, 55 tests)
+│   │   ├── test_identity_governance_hardening.py(~350 ln) # Tests de governance hardening (Phase 10D.1, 20 tests)
 │   │   ├── test_config.py          (86 ln) # Tests de configuración
 │   │   └── test_basics.py          (59 ln) # Tests básicos de importación
 │   └── configs → ../configs                  # Symlink a configs/
 ├── dashboard/                                # Frontend Next.js 15
-│   ├── app/                                  # 12 rutas (App Router)
+│   ├── app/                                  # 13 rutas (App Router)
 │   │   ├── page.tsx               (189 ln) # Command Center
 │   │   ├── chat/page.tsx           (11 ln) # Chat wrapper
 │   │   ├── identity/page.tsx      (417 ln) # Identity Studio
@@ -1626,7 +1643,8 @@ iame.lol/
 │   │   ├── governance/page.tsx    (481 ln) # Governance Console (approval actions funcionales)
 │   │   ├── analytics/page.tsx     (269 ln) # Analytics Dashboard
 │   │   ├── trace/page.tsx         (716 ln) # Cognitive Trace viewer
-│   │   └── evaluation/page.tsx    (879 ln) # Evaluation Dashboard (Postgres reads + delete)
+│   │   ├── evaluation/page.tsx    (879 ln) # Evaluation Dashboard (Postgres reads + delete)
+│   │   └── identity-governance/page.tsx (66 ln) # Identity Governance (4 tabs: Versions/Evolution/Shadow/Health)
 │   ├── components/
 │   │   ├── command-center/       (1026 ln) # 7 componentes del dashboard principal
 │   │   ├── chat/                  (218 ln) # ChatPanel + MessageBubble
@@ -1634,7 +1652,7 @@ iame.lol/
 │   │   ├── trace/                 (267 ln) # TraceNode (React Flow custom)
 │   │   └── ui/                    (340 ln) # 10 primitivos shadcn/ui (incl. confirm-dialog)
 │   └── lib/
-│       ├── api.ts                 (826 ln) # API client (~84 métodos)
+│       ├── api.ts                 (1117 ln) # API client (~96 métodos)
 │       ├── store.ts               (165 ln) # Zustand global store (17 state fields, persist middleware)
 │       ├── hooks/                           # Custom React hooks
 │       └── i18n/                            # en.json + es.json
@@ -1649,12 +1667,12 @@ iame.lol/
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
-**Total de código backend (Python)**: ~15,600 líneas en `agent/src/` (incluye identity/ ~4008 ln)
-**Total de tests**: ~9,667 líneas en 28 archivos (1438 tests, 1438 passing)
-**Total de código frontend (TypeScript/TSX)**: ~9,264 líneas en `dashboard/`
+**Total de código backend (Python)**: ~20,472 líneas en `agent/src/` (incluye identity/ ~6080 ln)
+**Total de tests**: ~16,350 líneas en 33 archivos (1724 tests, 1724 passing)
+**Total de código frontend (TypeScript/TSX)**: ~11,988 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2025-02-19 — Phase 10A completada. 88 endpoints, 2021 ln orchestrator, 1295 ln persistence (21 public methods), 4008 ln identity module (20 archivos), 826 ln API client (~84 métodos), 1438 tests passing.*
+*Última actualización: 2025-02-19 — Phase 10D.1 completada. 99 endpoints, 2135 ln orchestrator, 1308 ln persistence (25 public methods), 6080 ln identity module (22 archivos), 1117 ln API client (~96 métodos). Phase 10D: Identity Governance Interface — /identity-governance con 4 tabs (Versions/Evolution/Shadow/Health), 11 endpoints, POST /identity/snapshot con metadata, status badges, activation dialog, 55 tests. Phase 10D.1: Governance Hardening — 5 defectos D1–D5 corregidos (reject event, approve audit, activate symmetry/idempotency, delete active guard), 20 tests.*
 *Evaluation Dashboard lee desde Postgres con fallback in-memory. Chat persiste entre refreshes (Zustand persist). Trace IDs únicos por interacción (uuid4). Delete endpoints para trace, evaluation, analytics, training corrections.*
 *Preparado para auditoría de especialistas en conciencias virtuales*
