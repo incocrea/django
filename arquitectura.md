@@ -65,13 +65,13 @@ Django es un **delegado digital autónomo**: un sistema de IA multi-agente que a
 ├──────────────────────────┴───────────────────────────────────────────────────┤
 │                                     ▼ HTTP / WebSocket                       │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│         FastAPI Backend — Puerto 8000 — Prefijo /api — 99 endpoints          │
+│         FastAPI Backend — Puerto 8000 — Prefijo /api — 100 endpoints          │
 │                           routes.py (3264 ln) + main.py (324 ln)             │
 ├──────────┬───────────┬──────────┬───────────┬──────────┬─────────────────────┤
 │ COGNICIÓN│ ORQUESTA- │ AGENT    │ MEMORIA   │ EVALUA-  │ TRACE              │
 │ Decision │ DOR       │ CREW (5) │ 4 niveles │ CIÓN     │ Collector          │
 │ Engine   │ Pipeline  │          │ Manager   │ 5 módulos│ 13 tipos nodo      │
-│ (138 ln) │ 10+ pasos │ Identity │ (520 ln)  │ heuríst. │ (342 ln)           │
+│ (138 ln) │ 10+ pasos │ Identity │ (~810 ln) │ heuríst. │ (342 ln)           │
 │ Planner  │ (2135 ln) │ Business │           │ (1796 ln │                    │
 │ (118 ln) │ + 3 Modos │ Comms    │           │  total)  │                    │
 │ Categ.   │           │ Tech     │           │          │                    │
@@ -196,7 +196,7 @@ class AppState:
 - `ServiceMonitorMiddleware` — logea requests >5s como slow, registra errores 500
 - `CORSMiddleware` — permite `localhost:3000` (dashboard)
 
-### 5.2 API Endpoints — `agent/src/api/routes.py` (3264 líneas, 99 endpoints)
+### 5.2 API Endpoints — `agent/src/api/routes.py` (3264 líneas, 100 endpoints)
 
 Todas las rutas bajo prefijo `/api`. Patrón uniforme:
 
@@ -221,7 +221,7 @@ async def handler():
 | **Crew** | `/crew/agents` | GET | Lista de agentes con roles y descripciones |
 | **Trace** | `/trace/list`, `/trace/{id}`, `/trace/latest/graph`, `/trace/replay`, `/trace/{id}` (DELETE), `/trace` (DELETE) | GET×3, POST, DELETE×2 | Trazas cognitivas, grafos React Flow, replay paso a paso, eliminación individual y masiva |
 | **Persistence** | `/interactions`, `/interactions/{id}/trace`, `/interactions/{id}/evaluations`, `/token-usage/persisted` | GET×4 | Datos persistidos en Postgres |
-| **Memory** | `/memory/stats`, `/memory/search`, `/memory/semantic/store`, `/memory/semantic/{id}` (PUT, DELETE), `/memory/episodic/{id}` (DELETE), `/memory/bulk-delete` | GET, POST×3, PUT, DELETE×2 | CRUD completo del sistema de memoria + eliminación masiva |
+| **Memory** | `/memory/stats`, `/memory/search`, `/memory/semantic/store`, `/memory/semantic/{id}` (PUT, DELETE), `/memory/episodic/{id}` (DELETE), `/memory/bulk-delete`, `/memory/working/clear` | GET, POST×4, PUT, DELETE×2 | CRUD completo del sistema de memoria + eliminación masiva + limpieza de working memory por conversación |
 | **Skills** | `/skills`, `/skills/{id}/toggle`, `/skills/web-research`, `/skills/learn-topic` | GET, POST×3 | Gestión de habilidades + herramienta de aprendizaje + learn-topic pipeline |
 | **Training** | `/training/status`, `/training/session/start`, `/training/session/end`, `/training/correction`, `/training/history`, `/training/upload-samples`, `/training/exchange`, `/training/interview/questions`, `/training/interview/answer`, `/training/corrections`, `/training/corrections/{id}`, `/training/suggestions` | GET×3, POST×7, PUT, DELETE×2 | Sesiones de entrenamiento, correcciones CRUD, upload de muestras de escritura, free conversation exchanges, guided interview Q&A |
 | **Models** | `/models/config`, `/models/assignment`, `/models/profile`, `/models/test` | GET, PUT×2, POST | Gestión de proveedores LLM, perfiles, asignaciones por agente |
@@ -356,7 +356,7 @@ class Orchestrator:
 | 3g | **Prompt Integration** | Renderiza metadata de Phase 8A (`style_bias` + `recommended_planner_mode`) como bloque de texto determinístico `[IDENTITY STYLE PREFERENCES]` y lo inyecta (prepend) en el system prompt antes de las instrucciones principales. Guards: None/not dict/observational/bias_not_applied/no style_bias → skip. Emite `identity.prompt_injected`. Phase 8B. | No | <1ms |
 | 6d | **Memory Consolidation Weighting** | Ajusta importancia de memoria pre-storage usando identity confidence (Phase 6D) y decision alignment (Phase 6C). Factor = 1.0 ± 0.10 (confidence) ± 0.05 (alignment), clamped [0.75, 1.25]. Non-blocking, no previene storage, no elimina ni muta contenido. Emite `identity.memory_consolidation_adjusted`. Phase 7C. | No | <1ms |
 | 3 | **Planner** | `Planner.build()` — construye Plan con pasos ordenados. Respeta `governance_enabled` del Orchestrator. | No | <1ms |
-| 4 | **Memory Recall + Mode Filter** | Consulta working memory (RAM) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si cognitive_mode ≥ 2**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
+| 4 | **Memory Recall + Mode Filter** | Consulta working memory **per-conversation** (RAM, aislado por `conversation_id`) + episodic (ChromaDB cosine search) + semantic (ChromaDB cosine search). Máximo 3 resultados por tier. Budget de ~2000 tokens. **Si cognitive_mode ≥ 2**: filtra `memories["semantic"]` para solo incluir chunks con `category=="learned_knowledge"`. | No | 50-200ms |
 | 2b | **Identity Memory Bridge** | Analiza afinidad entre cada memoria recuperada y baseline embedding del principal. Cosine similarity por memoria + agregados avg/max/min. Estrictamente observacional (no modifica, filtra ni re-ordena). Phase 6A. | No | <5ms |
 | 2c | **Identity-Weighted Retrieval** | Re-rankea memorias usando `weighted_score = semantic_similarity * 0.8 + identity_affinity * 0.2`. Sort estable descendente. Si affinity no disponible, preserva orden original. Estrictamente non-destructive (mismos items, sin filtrado). Phase 7B. | No | <1ms |
 | 5 | **Correction Injection** | Extrae correcciones conductuales de ProceduralMemory (SQLite) para el agente target. Se inyectan como reglas en el prompt. | No | <5ms |
@@ -931,7 +931,7 @@ class PersistenceRepository:
 | **Neon Postgres** | Cloud (remoto) | Persistencia relacional | Conversaciones, mensajes, audit log, interacciones, traces, evaluaciones, token usage, memory ops |
 | **ChromaDB** | `chroma_data/` (local) | Vector store | Episodic memory (logs de interacciones), Semantic memory (knowledge base, writing samples) |
 | **SQLite** | `data/procedural.db` (local) | Memoria procedimental | Correcciones del training, workflows, estrategias |
-| **RAM** | In-process | Cache rápida | Working memory (20 msgs), últimas 100 traces, últimos 200 reports de evaluación |
+| **RAM** | In-process | Cache rápida | Working memory (per-conversation, max 20 msgs/conv, max 50 sessions, LRU eviction, 1h TTL), últimas 100 traces, últimos 200 reports de evaluación |
 
 ---
 
@@ -1430,7 +1430,7 @@ identity_control:
 | Conversaciones + mensajes | Neon Postgres | — | Sí | Sí |
 | Audit log (eventos) | Neon Postgres | — | Sí | Sí |
 | Service logs | Archivos rotativos (5×2MB) | — | — | Sí |
-| Working memory (buffer) | RAM (Python list) | max 20 | — | No — se pierde |
+| Working memory (buffer) | RAM (OrderedDict per conversation) | max 20/conv, max 50 conv, LRU | — | No — se pierde |
 | **Traces cognitivos** | **RAM + Postgres** | 100 | Ilimitado | **Sí** |
 | **Evaluaciones** | **RAM + Postgres** | 200 | Ilimitado | **Sí** |
 | **Decisiones detectadas** | **RAM + Postgres** | 500 | Ilimitado | **Sí** |
@@ -1515,7 +1515,7 @@ identity_control:
 | **Multi-Agent Collaboration** | MEDIA | Llamadas paralelas a agentes + agregación |
 | **Identity Drift Detection** | MEDIA | Embeddings baseline + alerta de drift |
 | **Autonomous Skill Acquisition** | MEDIA | Learning Agent pipeline avanzado (learn-topic básico ya implementado, falta "Teach Me" UI y adquisición autónoma) |
-| **External Integrations** | MEDIA | Email, calendar, Slack/Discord |
+| **External Integrations** | MEDIA | Email, calendar, Slack (Discord bot ya implementado — ver sección 26) |
 | **QLoRA Fine-Tuning** | BAJA | PEFT + Unsloth para modelo privado |
 | **Self-Modification System** | BAJA | Acceso al codebase con governance |
 
@@ -1537,7 +1537,7 @@ iame.lol/
 │   │   │   └── crew.py             (111 ln) # Inicialización y gestión del crew
 │   │   ├── api/
 │   │   │   ├── main.py             (324 ln) # Composition root + AppState + lifespan + Identity wiring
-│   │   │   └── routes.py          (3264 ln) # 99 endpoints REST + WebSocket
+│   │   │   └── routes.py          (3264 ln) # 100 endpoints REST + WebSocket
 │   │   ├── cognition/                        # Capa cognitiva OBLIGATORIA
 │   │   │   ├── __init__.py          (20 ln) # Re-exports: DecisionEngine, Planner, TaskCategory
 │   │   │   ├── decision_engine.py  (150 ln) # Motor de decisión inmutable (+identity_profile, Phase 4)
@@ -1580,7 +1580,7 @@ iame.lol/
 │   │   │   ├── version_control.py(~710 ln) # Phase 10C: Immutable identity versioning + controlled apply + rollback
 │   │   │   └── manager.py        (~255 ln) # Singleton lifecycle manager
 │   │   ├── memory/
-│   │   │   └── manager.py         (520 ln) # 4-tier unified memory
+│   │   │   └── manager.py         (~810 ln) # 4-tier unified memory (per-conversation working)
 │   │   ├── router/
 │   │   │   └── model_router.py    (360 ln) # Gemini→Groq→Ollama fallback
 │   │   ├── skills/
@@ -1595,7 +1595,7 @@ iame.lol/
 │   │   ├── config.py               (98 ln) # Pydantic BaseSettings
 │   │   ├── service_logger.py      (218 ln) # Rotating file logger
 │   │   └── watchdog.py            (111 ln) # Service health watchdog
-│   ├── tests/                                # 33 archivos + conftest.py (1724 tests)
+│   ├── tests/                                # 33 archivos + conftest.py (1728 tests)
 │   │   ├── conftest.py            (100 ln) # Fixtures compartidos
 │   │   ├── test_cognition.py      (235 ln) # 49 tests puros (Phase 3)
 │   │   ├── test_orchestrator.py   (161 ln) # Tests del pipeline
@@ -1652,7 +1652,7 @@ iame.lol/
 │   │   ├── trace/                 (267 ln) # TraceNode (React Flow custom)
 │   │   └── ui/                    (340 ln) # 10 primitivos shadcn/ui (incl. confirm-dialog)
 │   └── lib/
-│       ├── api.ts                 (1117 ln) # API client (~96 métodos)
+│       ├── api.ts                 (1117 ln) # API client (~97 métodos)
 │       ├── store.ts               (165 ln) # Zustand global store (17 state fields, persist middleware)
 │       ├── hooks/                           # Custom React hooks
 │       └── i18n/                            # en.json + es.json
@@ -1662,17 +1662,106 @@ iame.lol/
 │   ├── skills.json                (~30 ln) # Registro de skills
 │   └── governance.yaml            (254 ln) # Framework de gobernanza
 ├── data/                                     # (gitignored) Training data
+├── scripts/
+│   └── discord_bot.py            (~575 ln) # Discord bot — participante natural (ver sección 26)
 ├── docs/
 │   └── arquitectura.md                       # Este documento
 └── Base Guideline.md                         # Estrategia general del proyecto
 ```
 
 **Total de código backend (Python)**: ~20,472 líneas en `agent/src/` (incluye identity/ ~6080 ln)
-**Total de tests**: ~16,350 líneas en 33 archivos (1724 tests, 1724 passing)
+**Total de tests**: ~16,400 líneas en 33 archivos (1728 tests, 1728 passing)
 **Total de código frontend (TypeScript/TSX)**: ~11,988 líneas en `dashboard/`
 
 ---
 
-*Última actualización: 2025-02-19 — Phase 10D.1 completada. 99 endpoints, 2135 ln orchestrator, 1308 ln persistence (25 public methods), 6080 ln identity module (22 archivos), 1117 ln API client (~96 métodos). Phase 10D: Identity Governance Interface — /identity-governance con 4 tabs (Versions/Evolution/Shadow/Health), 11 endpoints, POST /identity/snapshot con metadata, status badges, activation dialog, 55 tests. Phase 10D.1: Governance Hardening — 5 defectos D1–D5 corregidos (reject event, approve audit, activate symmetry/idempotency, delete active guard), 20 tests.*
+## 26. DISCORD BOT — INTEGRACIÓN COMO PARTICIPANTE NATURAL
+
+### 26.1 Arquitectura General
+
+```
+scripts/discord_bot.py (~575 ln)
+├── discord.py v2.6.4             # Discord gateway + intents (messages, members, guilds)
+├── httpx v0.28.1                 # HTTP client async → POST /api/chat
+├── PID lock file                 # agent/discord_bot.pid (tasklist-based, atexit cleanup)
+└── VS Code Task                  # "Discord: Django Bot" (instanceLimit: 1)
+```
+
+**Bot**: "Django" (Intents: message_content, guilds, members)
+**Dependencias**: discord.py, httpx (ambos en `agent/venv`)
+**Token**: `DISCORD_BOT_TOKEN` en `.env`
+**Ejecución**: `${workspaceFolder}/agent/venv/Scripts/python.exe ${workspaceFolder}/scripts/discord_bot.py`
+
+### 26.2 Flujo de Interacción Completo
+
+```
+Usuario escribe en Discord → on_message()
+  │ Track user en known_users (display_name, username, message_count)
+  │ Almacenar mensaje en channel_buffers[channel_id] (deque maxlen=30)
+  │
+  ├─ ¿Comando? (!reset, !who, !full, !memory) → manejar directamente
+  │   └─ !reset → POST /memory/working/clear (conversation_id) + limpiar estado local
+  │
+  ├─ ¿Debe responder? (mención, reply, name trigger, o LLM decide)
+  │   ├─ Construir GROUP_CONTEXT_PROMPT con:
+  │   │   • [CONTEXTO EN TIEMPO REAL — DISCORD] header
+  │   │   • Nombre del servidor, canal, lista de miembros (guild.members)
+  │   │   • Últimos 30 mensajes del channel buffer
+  │   │   • Override: ignora restricciones de Knowledge Status para datos real-time
+  │   │
+  │   ├─ call_django_api():
+  │   │   • Tag del mensaje como "[user_name] mensaje"
+  │   │   • POST /api/chat con {message, conversation_id, cognitive_mode=2, context}
+  │   │   • conversation_id = per-channel (almacenado en channel_conversations dict)
+  │   │   • Backend crea/reutiliza conversación en Postgres
+  │   │   • Orchestrator procesa por pipeline completo de 10+ pasos
+  │   │   • Respuesta almacenada en working memory per-conversation (aislada)
+  │   │
+  │   ├─ ¿Respuesta contiene [SILENT]? → no hacer nada (LLM eligió no responder)
+  │   ├─ De lo contrario → simular typing → split en chunks ≤2000 chars → enviar
+  │   └─ Cooldown: MIN_RESPONSE_GAP = 8 segundos entre respuestas por canal
+  │
+  └─ !reset → limpia conversation_id del canal + POST /memory/working/clear
+```
+
+### 26.3 Aislamiento de Memoria
+
+Cada canal de Discord obtiene su propio `conversation_id` aislado:
+
+| Fuente | conversation_id | Working Memory |
+|--------|----------------|----------------|
+| Discord #general | `discord-channel-{id1}` | Instancia independiente |
+| Discord #random | `discord-channel-{id2}` | Instancia independiente |
+| Dashboard /chat | `dashboard-{uuid}` | Instancia independiente |
+
+- `channel_conversations`: dict local en el bot que mapea `channel_id → conversation_id`
+- El backend mantiene `OrderedDict[str, WorkingMemory]` con LRU eviction (max 50 sessions)
+- Sesiones inactivas >1h se auto-limpian
+- `!reset` limpia tanto el estado local como la working memory del backend
+
+### 26.4 Funcionalidades Clave
+
+| Característica | Implementación |
+|---------------|----------------|
+| **Per-channel conversations** | Cada canal tiene `conversation_id` propio → working memory aislada |
+| **Member awareness** | `guild.chunk()` on startup + `build_member_list()` → inyectado en cada prompt |
+| **Real-time context override** | GROUP_CONTEXT_PROMPT override explícito de Knowledge Status |
+| **Natural participation** | LLM decide cuándo hablar via token `[SILENT]` |
+| **Cognitive mode 2** | Memory+LLM (no web search) para todas las interacciones Discord |
+| **Typing simulation** | `async with channel.typing()` durante procesamiento |
+| **Rate limiting** | MIN_RESPONSE_GAP = 8s entre respuestas por canal |
+| **PID lock** | `agent/discord_bot.pid` — file-based, sin WMIC, atexit cleanup |
+| **Comandos** | `!full` (mode 1), `!memory` (mode 3), `!reset`/`!nueva`/`!new`, `!who`/`!quien` |
+
+### 26.5 Anti-Duplicación
+
+- Task command usa `venv/Scripts/python.exe` directamente (evita doble ejecución shim)
+- `instanceLimit: 1` en VS Code Task — re-run mata instancia anterior
+- PID lock file con `tasklist`-based alive check (sin WMIC)
+- PROHIBIDO: `run_in_terminal` con `isBackground: true` para el bot
+
+---
+
+*Última actualización: 2026-02-20 — Discord Bot Integration + Per-Conversation Working Memory. 100 endpoints (+1: POST /memory/working/clear), 1728 tests (+4). Discord bot (`scripts/discord_bot.py`, ~575 ln): participante natural en Discord via discord.py + httpx → POST /api/chat, conversaciones per-channel, member awareness (guild.chunk + build_member_list), contexto en tiempo real con override de Knowledge Status, token [SILENT] para participación selectiva, cognitive mode 2, simulación de typing, cooldown 8s, PID lock file-based. Working memory refactorizado de singleton global a OrderedDict per-conversation_id con LRU eviction (max 50 sessions), auto-cleanup de sesiones inactivas >1h, backward-compatible .working property, nuevo endpoint POST /memory/working/clear. Órdenes: !full, !memory, !reset (ahora limpia working memory del backend), !who.*
 *Evaluation Dashboard lee desde Postgres con fallback in-memory. Chat persiste entre refreshes (Zustand persist). Trace IDs únicos por interacción (uuid4). Delete endpoints para trace, evaluation, analytics, training corrections.*
 *Preparado para auditoría de especialistas en conciencias virtuales*
