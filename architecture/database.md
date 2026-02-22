@@ -10,7 +10,7 @@ Este documento describe la **capa de persistencia** de Django — los 3 sistemas
 
 ### ¿Qué cubre este documento?
 
-Documenta las **3 bases de datos** (Neon Postgres remoto, ChromaDB local, SQLite local), las **15 tablas de Postgres** organizadas en 4 grupos (Core, Persistence, Hybrid Search, Teleología), el `DatabaseManager` (289 líneas) que maneja las conexiones, y el `PersistenceRepository` (1,507 líneas, 25+ métodos) que proporciona escritura fire-and-forget y lectura de todos los artefactos del pipeline.
+Documenta las **3 bases de datos** (Neon Postgres remoto, ChromaDB local, SQLite local), las **15 tablas de Postgres** organizadas en 4 grupos (Core, Persistence, Hybrid Search, Teleología), el `DatabaseManager` (408 líneas) que maneja las conexiones, y el `PersistenceRepository` (1,507 líneas, 25+ métodos) que proporciona escritura fire-and-forget y lectura de todos los artefactos del pipeline.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -148,7 +148,7 @@ Archivo: `data/procedural.db`. Almacena correcciones de [training](../dashboard/
 
 ---
 
-## Database Manager — `src/db/database.py` (354 líneas)
+## Database Manager — `src/db/database.py` (408 líneas)
 
 Gestión de conexión y schema:
 - `.connect()` + `.initialize_schema()` → crea las 15 tablas si no existen

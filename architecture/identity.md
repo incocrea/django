@@ -64,14 +64,14 @@ Representación formal, versionada y embedding-backed de la identidad del princi
 | `schema.py` | ~105 | 4 | `IdentityProfile` | Pydantic model — version, Big Five, values, comm_style, baseline_embedding 384-dim, drift_threshold, content_hash (SHA-256) |
 | `embedding.py` | ~215 | 4 | — | `build_identity_text()` + `compute_baseline_embedding()` (all-MiniLM-L6-v2) + `cosine_similarity()` |
 | `versioning.py` | ~215 | 4 | `IdentityVersionManager` | Semantic versioning, SHA-256 hashing, persistence via config_versions |
-| `manager.py` | ~255 | 4 | `IdentityManager` | Singleton — load/save/rebuild profile. DB first, fallback YAML. Short-circuit si hash unchanged |
+| `manager.py` | ~416 | 4 | `IdentityManager` | Singleton — load/save/rebuild profile. DB first, fallback YAML. Short-circuit si hash unchanged |
 | `enforcement.py` | ~90 | 5A | `IdentityEnforcer` | Evalúa similarity vs drift_threshold → `{status, similarity, threshold, severity}` |
 | `policy.py` | ~165 | 5B | `IdentityPolicyEngine` | Clasifica severidad de drift → acción (none/log/flag/rewrite_request/block) via [governance.yaml](../config/README.md) |
 | `feedback.py` | ~110 | 5C | `IdentityFeedbackController` | Genera hints de corrección cuando action==rewrite_request AND severity==high |
 | `memory_bridge.py` | ~165 | 6A | `IdentityMemoryBridge` | Cosine similarity per recalled memory vs baseline embedding |
 | `context_weighting.py` | ~200 | 6B | `IdentityContextWeighter` | Tags `[IDENTITY_ALIGNED]` / `[LOW_IDENTITY_ALIGNMENT]` en líneas de contexto |
-| `decision_modulation.py` | ~280 | 6C | `IdentityDecisionModulator` | Evalúa decision–identity alignment (4 factores) |
-| `confidence.py` | ~230 | 6D | `IdentityConfidenceEngine` | Agrega señales → confidence score (0-1) + autonomy_modifier (+1/0/-1) |
+| `decision_modulation.py` | ~333 | 6C | `IdentityDecisionModulator` | Evalúa decision–identity alignment (4 factores) |
+| `confidence.py` | ~264 | 6D | `IdentityConfidenceEngine` | Agrega señales → confidence score (0-1) + autonomy_modifier (+1/0/-1) |
 | `autonomy_modulation.py` | ~175 | 7A | `IdentityAutonomyModulator` | Ajusta governance threshold según confidence level |
 | `retrieval_weighting.py` | ~210 | 7B | `IdentityRetrievalWeighter` | Re-rank: weighted_score = 0.8×semantic + 0.2×identity affinity |
 | `consolidation_weighting.py` | ~210 | 7C | `IdentityConsolidationWeighter` | Ajusta memory importance pre-storage (factor 0.75-1.25) |

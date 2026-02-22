@@ -1,14 +1,14 @@
-# API REST — 113 Endpoints
+# API REST — 116 Endpoints
 
 > [← Base de Datos](../architecture/database.md) · [Dashboard →](../dashboard/README.md)
 
-**Archivo**: `src/api/routes.py` (3,594 líneas)
+**Archivo**: `src/api/routes.py` (3,707 líneas)
 
 ---
 
 ## Sobre este documento
 
-Este documento es la **referencia completa de los 113 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
+Este documento es la **referencia completa de los 116 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
 
 ### ¿Qué cubre este documento?
 
@@ -30,7 +30,7 @@ La API es la **interfaz pública del backend** — la única forma de comunicars
 ### ¿Cómo interactúa con las demás piezas?
 
 La API es el **puente central**:
-- **[Dashboard](../dashboard/README.md)**: `lib/api.ts` (~114 métodos) consume estos endpoints. Cada página del dashboard mapea a un grupo de endpoints específico
+- **[Dashboard](../dashboard/README.md)**: `lib/api.ts` (~111 métodos) consume estos endpoints. Cada página del dashboard mapea a un grupo de endpoints específico
 - **[Discord Bot](../integrations/README.md)**: usa `POST /api/chat` y `POST /memory/working/clear` exclusivamente
 - **[Pipeline](../architecture/pipeline.md)**: el handler de `POST /chat` crea la conversación en DB, guarda mensajes, emite eventos de estado, y llama a `orchestrator.process()`
 - **[Base de Datos](../architecture/database.md)**: la mayoría de endpoints leen/escriben Postgres y/o ChromaDB — la columna "DB" de cada tabla lo indica
@@ -46,7 +46,7 @@ El patrón general de cada endpoint es: lazy import de `get_state()` → acceder
 
 | Métrica | Valor |
 |---------|-------|
-| Total endpoints | **113** |
+| Total endpoints | **116** |
 | GET | 55 |
 | POST | 35 |
 | PUT | 10 |
@@ -64,7 +64,7 @@ async def handler():
     return {"status": "ok", **result}
 ```
 
-Cliente dashboard: `dashboard/lib/api.ts` (~114 métodos) → ver [Dashboard](../dashboard/README.md).
+Cliente dashboard: `dashboard/lib/api.ts` (~111 métodos) → ver [Dashboard](../dashboard/README.md).
 
 ---
 

@@ -16,8 +16,8 @@ ADLRA es un sistema compuesto por muchas piezas que trabajan juntas para lograr 
 
 Para lograrlo, el sistema tiene:
 - Un **backend en Python/FastAPI** con un pipeline de procesamiento de 25+ pasos que analiza cada mensaje, consulta memorias, aplica la identidad de Harold, genera respuestas con LLMs y evalúa la calidad del resultado — todo esto documentado en la sección de [Arquitectura](architecture/README.md)
-- Un **dashboard en Next.js** con 14 páginas donde Harold puede configurar la personalidad de Django, entrenarle, ver sus memorias, monitorear su rendimiento y controlar su gobernanza — documentado en la sección de [Dashboard](dashboard/README.md)
-- **113 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
+- Un **dashboard en Next.js** con 15 páginas donde Harold puede configurar la personalidad de Django, entrenarle, ver sus memorias, monitorear su rendimiento y controlar su gobernanza — documentado en la sección de [Dashboard](dashboard/README.md)
+- **116 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
 - **Integraciones externas** como el bot de Discord y el sistema de modelos LLM con fallback automático — en [Integraciones](integrations/README.md)
 - **Archivos de configuración** que definen quién es Harold, qué modelos usar, qué habilidades tiene Django y qué límites no puede cruzar — en [Configuración](config/README.md)
 
@@ -44,7 +44,7 @@ Todo esto se inicializa en un orden preciso cuando el servidor arranca — docum
 - **Si quieres el panorama general**: empieza por [Arquitectura](architecture/README.md) y luego [Pipeline](architecture/pipeline.md)
 - **Si quieres entender una pieza específica**: usa la tabla de navegación rápida abajo
 - **Si eres Django leyendo sobre ti mismo**: ve a la sección "Para Django" al final de este documento
-- **Si necesitas la referencia monolítica completa**: [Baseline.md](Baseline.md) tiene todo en un solo archivo (1,458 líneas)
+- **Si necesitas la referencia monolítica completa**: [Baseline.md](Baseline.md) tiene todo en un solo archivo (1,137 líneas)
 
 ---
 
@@ -58,8 +58,8 @@ Esta documentación está organizada para ser explorada tanto por humanos como p
 |---------------|------|
 | Entender qué es ADLRA y cómo funciona | [Arquitectura General](architecture/README.md) |
 | Ver cómo se procesa cada mensaje | [Pipeline del Orchestrator](architecture/pipeline.md) |
-| Conocer los 113 endpoints de la API | [Referencia API](api/README.md) |
-| Explorar las 14 páginas del dashboard | [Dashboard](dashboard/README.md) |
+| Conocer los 116 endpoints de la API | [Referencia API](api/README.md) |
+| Explorar las 15 páginas del dashboard | [Dashboard](dashboard/README.md) |
 | Entender el sistema de identidad de Django | [Sistema de Identidad](architecture/identity.md) |
 | Ver la configuración del sistema | [Configuración](config/README.md) |
 | Entender las integraciones (Discord, LLMs) | [Integraciones](integrations/README.md) |
@@ -73,7 +73,7 @@ Esta documentación está organizada para ser explorada tanto por humanos como p
 ```
 docs/
 ├── README.md                          ← Estás aquí
-├── Baseline.md                        # Referencia monolítica completa (1,458 líneas)
+├── Baseline.md                        # Referencia monolítica completa (1,137 líneas)
 │
 ├── architecture/                      # Cómo funciona el sistema
 │   ├── README.md                      #   Resumen, métricas, stack, estructura de archivos
@@ -90,9 +90,9 @@ docs/
 │   └── database.md                    #   Postgres + ChromaDB + SQLite + Persistence
 │
 ├── api/
-│   └── README.md                      #   113 endpoints agrupados por sección
+│   └── README.md                      #   116 endpoints agrupados por sección
 │
-├── dashboard/                         # Las 14 páginas del dashboard
+├── dashboard/                         # Las 15 páginas del dashboard
 │   ├── README.md                      #   Overview, componentes, store, hooks, i18n
 │   ├── command-center.md              #   / — KPIs, estado, acciones rápidas
 │   ├── chat.md                        #   /chat — Conversación con Django
@@ -125,12 +125,12 @@ docs/
 
 | Métrica | Valor |
 |---------|-------|
-| Backend Python | 25,217 líneas, 88 archivos |
-| Tests pytest | 20,041 líneas, 46 archivos |
+| Backend Python | 25,217 líneas, 89 archivos |
+| Tests pytest | 20,041 líneas, 47 archivos |
 | Dashboard Next.js | 12,490 líneas |
 | **Total** | **57,748 líneas** |
-| Endpoints API | 113 (55 GET, 35 POST, 10 PUT, 12 DELETE, 1 WS) |
-| Páginas dashboard | 14 |
+| Endpoints API | 116 (55 GET, 35 POST, 10 PUT, 12 DELETE, 1 WS) |
+| Páginas dashboard | 15 |
 | Módulos de identidad | 22 archivos, 6,080 líneas |
 | Fases completadas | 17 |
 | Costo operativo | $0/mes |

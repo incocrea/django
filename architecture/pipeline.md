@@ -2,7 +2,7 @@
 
 > [← Arquitectura](README.md) · [Agentes →](agents.md)
 
-**Archivo**: `src/flows/orchestrator.py` (2,230 líneas)
+**Archivo**: `src/flows/orchestrator.py` (2,716 líneas)
 
 ---
 
@@ -100,7 +100,7 @@ Cada paso emite eventos via [EventBus](events.md) y crea nodos via [TraceCollect
 
 ## Middleware Pipeline
 
-**Archivo**: `src/flows/middleware.py` (164 líneas)
+**Archivo**: `src/flows/middleware.py` (196 líneas)
 
 `MiddlewareRegistry` con `MiddlewarePosition` enum (9 hooks). Permite inyectar lógica en puntos del pipeline sin modificar el orchestrator.
 
@@ -113,7 +113,7 @@ API: `GET /middleware/list`, `POST /middleware/{name}/toggle` → ver [API](../a
 
 ## Ejecución Paralela
 
-**Archivo**: `src/flows/parallel_executor.py` (170 líneas)
+**Archivo**: `src/flows/parallel_executor.py` (204 líneas)
 
 `ParallelExecutor` — 2+ agentes concurrentes vía `asyncio.gather`. `ResponseAggregator` fusiona resultados. Se activa cuando `Strategy.MULTI_AGENT` (ver [cognition](cognition.md)).
 

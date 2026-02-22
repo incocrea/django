@@ -44,7 +44,7 @@ Cada uno de esos documentos explica una pieza en detalle, pero este documento te
 ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sistema consta de:
 
 - **Backend**: FastAPI con [pipeline de 25+ pasos](pipeline.md), [5 agentes LLM](agents.md), [22 módulos de identidad](identity.md), [4 niveles de memoria](memory.md), [sistema teleológico](teleology.md)
-- **Frontend**: [Dashboard Next.js 15](../dashboard/README.md) con 14 páginas de control
+- **Frontend**: [Dashboard Next.js 15](../dashboard/README.md) con 15 páginas de control
 - **Integraciones**: [Bot de Discord](../integrations/README.md) para conversación natural
 - **LLMs**: [Cadena Gemini → Groq → Ollama](../integrations/README.md) con circuit breaker
 - **Costo operativo**: $0/mes (todos servicios en tier gratuito)
@@ -74,14 +74,14 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 ```
 iame.lol/
 ├── agent/                                    # Backend Python FastAPI
-│   ├── src/                                  # 25,217 líneas, 88 archivos
+│   ├── src/                                  # 25,217 líneas, 89 archivos
 │   │   ├── agents/          (878 ln, 8 files) # → agents.md
-│   │   ├── api/           (3,998 ln, 3 files) # → ../api/README.md
+│   │   ├── api/           (4,110 ln, 3 files) # → ../api/README.md
 │   │   ├── cognition/       (349 ln, 3 files) # → cognition.md
 │   │   ├── db/            (1,916 ln, 3 files) # → database.md
 │   │   ├── evaluation/    (2,151 ln, 6 files) # → evaluation.md
 │   │   ├── events/          (151 ln, 2 files) # → events.md
-│   │   ├── flows/         (2,583 ln, 5 files) # → pipeline.md
+│   │   ├── flows/         (3,116 ln, 5 files) # → pipeline.md
 │   │   ├── governance/         (1 file)       # Stub
 │   │   ├── identity/      (6,080 ln, 22 files)# → identity.md
 │   │   ├── memory/        (1,636 ln, 4 files) # → memory.md
@@ -89,7 +89,7 @@ iame.lol/
 │   │   ├── security/        (429 ln, 4 files) # → security.md
 │   │   ├── skills/        (1,364 ln, 6 files) # → ../dashboard/skill-manager.md
 │   │   ├── teleology/    (2,294 ln, 11 files) # → teleology.md
-│   │   ├── trace/           (361 ln, 2 files) # → events.md
+│   │   ├── trace/           (~408 ln, 2 files) # → events.md
 │   │   ├── training/        (521 ln, 2 files) # → ../dashboard/training-center.md
 │   │   ├── config.py                  (117 ln)# → ../config/README.md
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
@@ -97,8 +97,8 @@ iame.lol/
 │   ├── tests/                                 # → ../development/README.md
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # → ../dashboard/README.md
-│   ├── app/                                   # 14 rutas (App Router)
-│   ├── components/                            # 28 archivos en 6 directorios
+│   ├── app/                                   # 15 rutas (App Router)
+│   ├── components/                            # 31 archivos en 7 directorios
 │   ├── lib/                                   # api.ts, store.ts, hooks/, i18n/
 │   └── ...
 ├── configs/                                   # → ../config/README.md
@@ -114,14 +114,14 @@ iame.lol/
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        DASHBOARD (Next.js 15)                   │
-│  14 páginas · Zustand store · WebSocket · api.ts (114 methods)  │
+│  15 páginas · Zustand store · WebSocket · api.ts (111 methods)  │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ HTTP/WS :3000 → :8000
 ┌──────────────────────────────┴──────────────────────────────────┐
 │                         FastAPI Backend                          │
 │  ┌──────────┐  ┌───────────────────────────────────────────┐    │
 │  │ Routes   │→ │           ORCHESTRATOR (25+ steps)        │    │
-│  │ (113 ep) │  │  Classify → Cognition → Memory → LLM →   │    │
+│  │ (116 ep) │  │  Classify → Cognition → Memory → LLM →   │    │
 │  └──────────┘  │  Identity → Governance → Eval → Store     │    │
 │                └──────────┬────────────────────────────────┘    │
 │  ┌────────────────────────┼────────────────────────────────┐    │
@@ -149,7 +149,7 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 2,230 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 2,716 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
 | Cognition | [cognition.md](cognition.md) | 349 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,636 | 4-tier memory system |
@@ -166,7 +166,7 @@ iame.lol/
 ## Temas Relacionados
 
 - [Cómo arranca el sistema](startup.md) — AppState, lifespan, inicialización
-- [API REST completa](../api/README.md) — 113 endpoints
-- [Dashboard](../dashboard/README.md) — 14 páginas de control
+- [API REST completa](../api/README.md) — 116 endpoints
+- [Dashboard](../dashboard/README.md) — 15 páginas de control
 - [Configuración](../config/README.md) — persona.yaml, models.json, governance.yaml
 - [Desarrollo](../development/README.md) — Convenciones, tests, roadmap

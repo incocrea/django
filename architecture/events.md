@@ -10,7 +10,7 @@ Este documento describe el **sistema nervioso** de Django — los dos mecanismos
 
 ### ¿Qué cubre este documento?
 
-Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (358 líneas) que genera grafos compatibles con React Flow, el `TraceStore` (100 trazas en memoria), y los 32 tipos de nodos de traza que representan cada paso del pipeline.
+Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (407 líneas) que genera grafos compatibles con React Flow, el `TraceStore` (100 trazas en memoria), y los 32 tipos de nodos de traza que representan cada paso del pipeline.
 
 ### ¿Cuál es su función en la arquitectura?
 

@@ -10,7 +10,7 @@ Este documento es la **guía práctica para desarrolladores** (y para Copilot) �
 
 ### ¿Qué cubre este documento?
 
-Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (46 archivos, ~20,041 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
+Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (47 archivos, ~20,041 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -52,7 +52,7 @@ Este documento **referencia a todos los demás** porque cubre el proyecto comple
 | Client directive | `"use client"` en todas las páginas interactivas |
 | Estado global | Zustand store (`lib/store.ts`) |
 | Estado local | `useState` / `useReducer` |
-| API | Centralizada en `lib/api.ts` (~114 métodos) |
+| API | Centralizada en `lib/api.ts` (~111 métodos) |
 | UI | shadcn/ui primitives + custom lab theme |
 | i18n | `lib/i18n/` — `en.json` + `es.json` (631 keys) |
 
@@ -113,7 +113,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 - **No LLM calls** — todos los tests usan mocks
 - **Patrón**: `test_{module}.py` con clases `Test{Feature}`
 
-### Archivos de Test (46 archivos, ~20,041 líneas)
+### Archivos de Test (47 archivos, ~20,041 líneas)
 
 | Archivo | Líneas | Módulo Testeado |
 |---------|--------|-----------------|

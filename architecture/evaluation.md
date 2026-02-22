@@ -48,11 +48,11 @@ La evaluación es el **sistema de control de calidad** de Django. Mientras que l
 
 | Módulo | Archivo | Líneas | Qué Mide |
 |--------|---------|--------|----------|
-| **Quality** | `quality_scorer.py` | 383 | 5 dimensiones → grade A-F compuesto |
-| **Alignment** | `alignment_evaluator.py` | 383 | Alineación con persona del principal |
-| **Legal Risk** | `legal_risk.py` | 319 | Riesgo legal en 6 categorías |
-| **Decisions** | `decision_registry.py` | 358 | Detecta y registra decisiones de negocio |
-| **Rollback** | `memory_rollback.py` | 353 | Trackea operaciones de memoria |
+| **Quality** | `quality_scorer.py` | 456 | 5 dimensiones → grade A-F compuesto |
+| **Alignment** | `alignment_evaluator.py` | 506 | Alineación con persona del principal |
+| **Legal Risk** | `legal_risk.py` | 359 | Riesgo legal en 6 categorías |
+| **Decisions** | `decision_registry.py` | 407 | Detecta y registra decisiones de negocio |
+| **Rollback** | `memory_rollback.py` | 408 | Trackea operaciones de memoria |
 
 ---
 

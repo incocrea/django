@@ -45,7 +45,7 @@ Capa **100% determinística** — cero llamadas LLM, cero IO, cero acceso a repo
 
 ---
 
-## DecisionEngine — `decision_engine.py` (150 líneas)
+## DecisionEngine — `decision_engine.py` (181 líneas)
 
 **Inmutable**: `__slots__` + `__setattr__` override → completamente frozen después de `__init__`.
 
@@ -79,7 +79,7 @@ El DecisionEngine recibe opcionalmente un `IdentityProfile` en constructor. Es a
 
 ---
 
-## Planner — `planner.py` (118 líneas)
+## Planner — `planner.py` (144 líneas)
 
 **Stateless**: Constructor sin argumentos. `governance_enabled` se pasa como parámetro.
 

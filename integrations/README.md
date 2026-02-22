@@ -10,7 +10,7 @@ Este documento describe las **integraciones externas** de Django — las piezas 
 
 ### ¿Qué cubre este documento?
 
-Documenta: el **Model Router** (360 líneas) con su cadena de fallback Gemini → Groq → Ollama, conteo real de tokens, estimación de costos, hot-reload, 4 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (572 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
+Documenta: el **Model Router** (476 líneas) con su cadena de fallback Gemini → Groq → Ollama, conteo real de tokens, estimación de costos, hot-reload, 4 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (572 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -42,7 +42,7 @@ Las integraciones son los **puentes hacia afuera**:
 
 ## Model Router — `src/router/` (630 líneas)
 
-### model_router.py (360 ln)
+### model_router.py (476 ln)
 
 Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B → Ollama**
 
@@ -55,7 +55,7 @@ Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B → Ollama**
 | Perfiles | balanced, max_quality, privacy_mode, budget_mode |
 | Persistence | Callback de persistencia de tokens wired al [startup](../architecture/startup.md) |
 
-### circuit_breaker.py (270 ln)
+### circuit_breaker.py (153 ln)
 
 Circuit breaker **por proveedor**:
 
