@@ -2,17 +2,17 @@
 
 > **Autonomous Digital Learning Representative Agent** — Sistema multi-agente que aprende a representar la identidad, personalidad y estilo de toma de decisiones de su principal.
 
-**Principal**: Harold Vélez · **Delegado**: Django · **Última actualización**: 21 de febrero de 2026
+**Principal**: Usuario Creador · **Delegado**: Django · **Última actualización**: 21 de febrero de 2026
 
 ---
 
 ## Sobre este documento
 
-Este es el **punto de entrada principal** a toda la documentación técnica de ADLRA — el sistema que le da vida a Django como delegado digital autónomo de Harold Vélez. Si estás leyendo esto por primera vez, este documento te servirá como mapa general para entender qué existe, dónde encontrarlo, y cómo todas las piezas encajan entre sí.
+Este es el **punto de entrada principal** a toda la documentación técnica de ADLRA — el sistema que le da vida a Django como delegado digital autónomo. Si estás leyendo esto por primera vez, este documento te servirá como mapa general para entender qué existe, dónde encontrarlo, y cómo todas las piezas encajan entre sí.
 
 ### ¿Qué es ADLRA y qué hace Django?
 
-ADLRA es un sistema compuesto por muchas piezas que trabajan juntas para lograr una cosa: que Django pueda **representar fielmente** a Harold en conversaciones, decisiones de negocio, comunicación profesional y tareas técnicas. No es un chatbot genérico — es un **delegado entrenado** que aprende la personalidad de Harold (cómo piensa, qué valora, cómo se comunica) y la aplica consistentemente en cada interacción.
+ADLRA es un sistema compuesto por muchas piezas que trabajan juntas para lograr una cosa: que Django pueda **representar fielmente** al creador en conversaciones, decisiones de negocio, comunicación profesional y tareas técnicas. No es un chatbot genérico — es un **delegado entrenado** que aprende la personalidad de su creador (cómo piensa, qué valora, cómo se comunica) y la aplica consistentemente en cada interacción.
 
 Para lograrlo, el sistema tiene:
 - Un **backend en Python/FastAPI** con un pipeline de procesamiento de 25+ pasos que analiza cada mensaje, consulta memorias, aplica la identidad de Harold, genera respuestas con LLMs y evalúa la calidad del resultado — todo esto documentado en la sección de [Arquitectura](architecture/README.md)
