@@ -63,9 +63,9 @@ Fuente: `GET /persona/info`
 
 Muestra el estado del Model Router y su cadena de fallback:
 
-- **Cadena de fallback**: Gemini → Groq → Ollama con indicadores de disponibilidad
+- **Cadena de fallback**: Gemini → Groq con indicadores de disponibilidad (2-level)
 - **Estado de circuit breakers**: Contadores de fallos por provider
-- **Perfil activo**: El profile seleccionado (balanced, max_quality, privacy_mode, budget_mode)
+- **Perfil activo**: El profile seleccionado (balanced, max_quality)
 
 Fuente: `GET /router/status`
 

@@ -95,8 +95,8 @@ La capa de datos es **consumida por casi todo el sistema**:
 
 | Colección | Propósito | Embedding |
 |-----------|-----------|-----------|
-| `episodic_memory` | Logs de interacción, búsqueda semántica | all-MiniLM-L6-v2 (384-dim) |
-| `semantic_memory` | Base de conocimiento, writing samples, `learned_knowledge` | all-MiniLM-L6-v2 (384-dim) |
+| `episodic_memory` | Logs de interacción, búsqueda semántica | Qwen3-Embedding-8B (4096-dim via EmbeddingRouter) |
+| `semantic_memory` | Base de conocimiento, writing samples, `learned_knowledge` | Qwen3-Embedding-8B (4096-dim via EmbeddingRouter) |
 
 Persiste en disco (`chroma_data/`). Categorías de semantic memory: `learned_knowledge`, `personality_trait`, `writing_sample`, custom.
 

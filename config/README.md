@@ -10,7 +10,7 @@ Este documento describe los **6 archivos de configuración** que definen quién 
 
 ### ¿Qué cubre este documento?
 
-Documenta en detalle: **persona.yaml** (la identidad de Harold: Big Five, valores, estilo de comunicación, boundaries, expertise, autonomía), **models.json** (proveedores LLM, fallback chain, asignaciones por agente, 4 perfiles), **skills.json** (5 habilidades registradas con riesgo y dependencias), **governance.yaml** (niveles de autonomía 0-4, clasificación de riesgos, operaciones prohibidas, política de identidad, privacidad), **config.py** (variables de entorno via Pydantic BaseSettings), y **tasks.json** (VS Code tasks para gestión de servicios).
+Documenta en detalle: **persona.yaml** (la identidad de Harold: Big Five, valores, estilo de comunicación, boundaries, expertise, autonomía), **models.json** (proveedores LLM, fallback chain, asignaciones por agente, 2 perfiles), **skills.json** (5 habilidades registradas con riesgo y dependencias), **governance.yaml** (niveles de autonomía 0-4, clasificación de riesgos, operaciones prohibidas, política de identidad, privacidad), **config.py** (variables de entorno via Pydantic BaseSettings), y **tasks.json** (VS Code tasks para gestión de servicios).
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -20,14 +20,14 @@ La configuración es la **capa declarativa** — define *qué* sin definir *cóm
 
 **Todo empieza aquí**:
 - `persona.yaml` define literalmente *quién es Django*: su personalidad, valores, estilo. Si cambias `openness` de 0.81 a 0.30, Django se vuelve más conservador y menos creativo
-- `models.json` define *con qué cerebro piensa*: cambiar el perfil a `privacy_mode` hace que todo se procese con Ollama local (más lento pero privado)
+- `models.json` define *con qué cerebro piensa*: cambiar el perfil a `max_quality` hace que todo se procese con Gemini (máxima calidad, mayor costo)
 - `governance.yaml` define *qué puede y qué no puede hacer*: las operaciones prohibidas son límites duros que ningún agente puede cruzar
 - `skills.json` define *qué herramientas tiene*: deshabilitar `web-research` impide que Django busque en internet
-- `.env` define *las credenciales*: sin `GEMINI_API_KEY`, Django solo puede usar Ollama local
+- `.env` define *las credenciales*: sin `GEMINI_API_KEY`, Django solo puede usar Groq como fallback
 
 ### ¿Cómo interactúa con las demás piezas?
 
-- **[Identidad](../architecture/identity.md)**: el `IdentityManager` lee `persona.yaml`, construye un `IdentityProfile` con hash SHA-256 y embedding baseline de 384 dimensiones, lo versiona en Postgres, y lo inyecta en el `DecisionEngine`. `governance.yaml → identity_control` define el mapeo severity→action para la política de identidad
+- **[Identidad](../architecture/identity.md)**: el `IdentityManager` lee `persona.yaml`, construye un `IdentityProfile` con hash SHA-256 y embedding baseline de 4096 dimensiones (Qwen3-Embedding-8B via EmbeddingRouter), lo versiona en Postgres, y lo inyecta en el `DecisionEngine`. `governance.yaml → identity_control` define el mapeo severity→action para la política de identidad
 - **[Agentes](../architecture/agents.md)**: `persona.yaml` define el system prompt base de cada agente. `models.json` define qué modelo LLM usa cada uno y la cadena de fallback
 - **[Model Router](../integrations/README.md)**: `models.json` es su fuente de verdad. Se puede recargar en caliente via `POST /router/reload`
 - **[Pipeline](../architecture/pipeline.md)**: `persona.yaml` se recarga en caliente via `POST /persona/reload` → todos los agentes actualizan su prompt
@@ -78,11 +78,11 @@ Dashboard Identity Studio → PUT /persona/* → escribe YAML
 
 | Sección | Contenido |
 |---------|-----------|
-| `providers` | Gemini (1M ctx), Groq (128K ctx), Ollama (qwen2.5:32b, llama3.1:8b, mxbai-embed-large) |
-| `fallback_chain` | gemini → groq → ollama/llama3.1:8b |
+| `providers` | Gemini (1M ctx), Groq (128K ctx) |
+| `fallback_chain` | gemini → groq |
 | `agent_assignments` | identity_core→Gemini, business→Groq, communication→Gemini, technical→Groq, governance→Gemini |
-| `profiles` | balanced (default), max_quality (all Gemini), privacy_mode (all Ollama), budget_mode (all Ollama) |
-| `task_type_routing` | embeddings→mxbai, fast_classification→Groq, deep_reasoning→Gemini, code_generation→Groq |
+| `profiles` | balanced (default), max_quality (all Gemini) |
+| `embedding` | Qwen3-Embedding-8B via Ollama (4096-dim), managed by EmbeddingRouter |
 
 **Flujo**: [Model Manager](../dashboard/model-manager.md) → `PUT /models/assignment` o `PUT /models/profile` → escribe JSON → `model_router.reload_config()`.
 
@@ -126,6 +126,7 @@ Pydantic `BaseSettings`, carga desde `.env` via `@lru_cache`.
 | DB | `database_url`, `chroma_persist_directory` | None, "./chroma_data" |
 | Web Research | `tavily_api_key` | None |
 | Governance | `default_autonomy_level`, `principal_name` | 0, "Principal" |
+| Embedding | `embedding_model`, `embedding_dimensions` | "qwen3-embedding", 4096 |
 
 Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `has_r2`, `has_supabase`.
 

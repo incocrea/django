@@ -12,7 +12,7 @@ Este documento describe los **5 agentes LLM** que componen el equipo de Django �
 
 ### ¿Qué cubre este documento?
 
-Documenta cada uno de los 5 agentes (IdentityCore, Business, Communication, Technical, Governance), sus roles específicos, qué modelo LLM usa cada uno, cómo se inicializan via `AgentCrew`, cómo participan en distintos pasos del pipeline, y los 4 perfiles de modelo disponibles (balanced, max_quality, privacy_mode, budget_mode).
+Documenta cada uno de los 5 agentes (IdentityCore, Business, Communication, Technical, Governance), sus roles específicos, qué modelo LLM usa cada uno, cómo se inicializan via `AgentCrew`, cómo participan en distintos pasos del pipeline, y los 2 perfiles de modelo disponibles (balanced, max_quality).
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -22,13 +22,13 @@ Los agentes son los **ejecutores creativos** — la contraparte humana de la cog
 
 - **IdentityCoreAgent** es el agente principal — responde AS Harold (como si fuera Harold), cargado con su persona completa desde `persona.yaml`. La mayoría de conversaciones usan este agente
 - **GovernanceAgent** revisa en modo "juez" a temperatura baja (0.2) con output JSON estricto — decide si una respuesta cumple las reglas
-- El perfil de modelo activo cambia completamente el rendimiento: `max_quality` usa Gemini para todo (más lento, más caro), `privacy_mode` usa Ollama local (privado pero menos capaz)
+- El perfil de modelo activo cambia completamente el rendimiento: `max_quality` usa Gemini para todo (más lento, más caro), `balanced` (default) mezcla Gemini y Groq para equilibrar costo y calidad
 - **Detalle importante**: IdentityCoreAgent NO extiende BaseAgent — tiene su propia implementación con `respond()` y carga de persona YAML independiente
 
 ### ¿Cómo interactúa con las demás piezas?
 
 Los agentes son invocados por el [Pipeline](pipeline.md) en momentos específicos:
-- **Paso 7 (LLM Generate)**: El agente seleccionado por [Cognición](cognition.md) genera la respuesta principal → la llamada va al [Model Router](../integrations/README.md) → al proveedor LLM (Gemini/Groq/Ollama)
+- **Paso 7 (LLM Generate)**: El agente seleccionado por [Cognición](cognition.md) genera la respuesta principal → la llamada va al [Model Router](../integrations/README.md) → al proveedor LLM (Gemini/Groq)
 - **Paso 8 (Identity Review)**: Si el Plan lo requiere, `IdentityCoreAgent` revisa que la respuesta sea consistente con Harold
 - **Paso 9 (Governance Review)**: Si el Plan lo requiere, `GovernanceAgent` evalúa cumplimiento y riesgo
 - La [Config](../config/README.md) (`persona.yaml`) define el system prompt de cada agente, y `models.json` define qué modelo LLM usa cada uno
@@ -75,14 +75,12 @@ Ver: [Pipeline completo](pipeline.md)
 
 ## Configuración de Modelos por Agente
 
-Los 4 perfiles preconfigurados cambian las asignaciones:
+Los 2 perfiles preconfigurados cambian las asignaciones:
 
 | Perfil | Identity Core | Business | Communication | Technical | Governance |
 |--------|:---:|:---:|:---:|:---:|:---:|
 | **balanced** (default) | Gemini | Groq | Gemini | Groq | Gemini |
 | **max_quality** | Gemini | Gemini | Gemini | Gemini | Gemini |
-| **privacy_mode** | Ollama | Ollama | Ollama | Ollama | Ollama |
-| **budget_mode** | Ollama | Ollama | Ollama | Ollama | Ollama |
 
 Gestión: [Model Manager page](../dashboard/model-manager.md) · API: `PUT /models/assignment`, `PUT /models/profile` → ver [API](../api/README.md)
 

@@ -49,7 +49,7 @@ Campos para crear una nueva memoria semántica manualmente:
 ### 2. Almacenar Memoria Semántica
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /memory/semantic/store` con `{content, category?, source?}`
-- **Impacto en Django**: **Crea una nueva entrada** en ChromaDB `semantic_memory`. ChromaDB computa automáticamente el embedding del contenido (all-MiniLM-L6-v2, 384-dim). Esta memoria estará disponible en el recall del paso 4 del pipeline para todas las conversaciones futuras. Si la categoría es `learned_knowledge`, será visible en modos cognitivos 2 y 3. Si es otra categoría, solo será visible en modo 1 (Full).
+- **Impacto en Django**: **Crea una nueva entrada** en ChromaDB `semantic_memory`. ChromaDB computa automáticamente el embedding del contenido (Qwen3-Embedding-8B, 4096-dim via EmbeddingRouter). Esta memoria estará disponible en el recall del paso 4 del pipeline para todas las conversaciones futuras. Si la categoría es `learned_knowledge`, será visible en modos cognitivos 2 y 3. Si es otra categoría, solo será visible en modo 1 (Full).
 
 ### 3. Editar Memoria Semántica
 - **Tipo**: API Call

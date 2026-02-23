@@ -10,18 +10,18 @@ Este documento describe las **integraciones externas** de Django — las piezas 
 
 ### ¿Qué cubre este documento?
 
-Documenta: el **Model Router** (476 líneas) con su cadena de fallback Gemini → Groq → Ollama, conteo real de tokens, estimación de costos, hot-reload, 4 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (572 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
+Documenta: el **Model Router** (377 líneas) con su cadena de fallback Gemini → Groq (2-level), conteo real de tokens, estimación de costos, hot-reload, 2 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (572 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
 
 ### ¿Cuál es su función en la arquitectura?
 
 Las integraciones son los **puentes hacia afuera**:
-- El **Model Router** es el único punto de salida hacia LLMs — ningún componente llama directamente a Gemini, Groq u Ollama. Todo pasa por el router, que maneja fallback, retry, circuit breaking y conteo de tokens
+- El **Model Router** es el único punto de salida hacia LLMs — ningún componente llama directamente a Gemini o Groq. Todo pasa por el router, que maneja fallback, retry, circuit breaking y conteo de tokens
 - El **Bot de Discord** es el segundo canal de interacción (después del dashboard) — permite que Django converse naturalmente en un contexto grupal, con awareness de otros miembros y del historial del canal
 - El **Discord Webhook** es el canal de publicación — permite que el sistema (o Harold) publique actualizaciones formateadas en Discord
 
 ### ¿Cómo afecta al comportamiento de Django?
 
-- El **Model Router** determina la *calidad* de las respuestas: Gemini (1M contexto, más capaz) vs Groq (rápido pero menos contexto) vs Ollama (local, privado pero menos capaz). Si Gemini falla, Django automáticamente pasa a Groq, y si Groq falla, a Ollama — sin que el usuario note la transición
+- El **Model Router** determina la *calidad* de las respuestas: Gemini (1M contexto, más capaz) vs Groq (rápido pero menos contexto). Si Gemini falla, Django automáticamente pasa a Groq — sin que el usuario note la transición
 - El **circuit breaker** evita hammering a proveedores caídos — cuando detecta fallos consecutivos, salta el proveedor hasta que se recupere
 - El **Bot de Discord** opera con **cognitive_mode=2** (Memory+LLM) por defecto — Django en Discord está limitado a conocimiento aprendido, sin web search
 - En Discord, Django decide **cuándo hablar** usando el token `[SILENT]` — no responde a todo, participa naturalmente
@@ -40,19 +40,19 @@ Las integraciones son los **puentes hacia afuera**:
 
 ---
 
-## Model Router — `src/router/` (630 líneas)
+## Model Router — `src/router/` (~840 líneas)
 
-### model_router.py (476 ln)
+### model_router.py (377 ln)
 
-Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B → Ollama**
+Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B** (2-level)
 
 | Feature | Detalle |
 |---------|---------|
 | `generate()` | `(prompt, role, system_prompt, temperature, max_tokens)` → `ModelResponse` |
-| Token counting | Real por proveedor: Gemini `usage_metadata`, Groq `usage.total_tokens`, Ollama `eval_count` |
-| Costo | Gemini $0.15/1M, Groq $0.05/1M, Ollama $0 |
+| Token counting | Real por proveedor: Gemini `usage_metadata`, Groq `usage.total_tokens` |
+| Costo | Gemini $0.15/1M, Groq $0.05/1M |
 | Hot-reload | `reload_config()` — recarga [models.json](../config/README.md) sin restart |
-| Perfiles | balanced, max_quality, privacy_mode, budget_mode |
+| Perfiles | balanced, max_quality |
 | Persistence | Callback de persistencia de tokens wired al [startup](../architecture/startup.md) |
 
 ### circuit_breaker.py (153 ln)

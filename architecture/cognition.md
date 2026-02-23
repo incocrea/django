@@ -106,7 +106,7 @@ Categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DO
 
 ## Semantic Classifier — `src/flows/semantic_classifier.py` (565 líneas)
 
-Clasificación semántica por centroides — reemplaza las heurísticas de keywords. Usa embeddings locales (all-MiniLM-L6-v2, 384 dim).
+Clasificación semántica por centroides — reemplaza las heurísticas de keywords. Usa embeddings locales (Qwen3-Embedding-8B, 4096 dim via EmbeddingRouter).
 
 - **320 training phrases** (8 categorías × ~40 frases bilingües)
 - **Centroides**: promedio normalizado de embeddings por categoría, computados lazy al startup (~1-2s), cacheados como singleton

@@ -49,6 +49,10 @@ Cada columna muestra: **header** con barra de color + label + conteo de nodos + 
 
 **Nodos con LLM**: Badge violeta 🧠 (Brain icon) en el header del nodo cuando `uses_llm=true`. El backend detecta esto via `metadata.llm_details` o `metrics.provider`.
 
+**Nodos con Embedding**: Badge 📐 EMB en el header del nodo cuando `uses_embedding=true`. Indica uso de EmbeddingRouter (Qwen3-Embedding-8B).
+
+**Nodos de Skill**: Badge 🔧 SKILL en sub-nodos de skill execution. Indica pasos de ejecución de habilidades reportados via `SkillReport.to_trace_nodes()`.
+
 **Nota sobre `skill_execution`**: Aunque usa `node_type="llm_generate"`, un override por `node_id` lo asigna al grupo Planning & Skills (no Generation).
 
 #### Barra de Stats (Panel superior central)
@@ -58,12 +62,12 @@ Cada columna muestra: **header** con barra de color + label + conteo de nodos + 
 - Badge de categoría
 - Provider/modelo usado
 
-#### Nodos del Grafo (32 tipos registrados, 32 canónicos del backend)
+#### Nodos del Grafo (33 tipos registrados, 33 canónicos del backend)
 
 Cada nodo `PipelineNode` muestra:
 - **Header** (siempre visible): Barra de color izquierda (color de columna) + icono del tipo + label + status icon + badge de latencia + 🧠 LLM badge (si aplica) + chevron expandir/colapsar
 - **Summary** (colapsado): `processingSummary` texto, máximo 2 líneas
-- **LLM Details Panel** (expandido, si el nodo usa LLM): Sección violeta con badges de provider coloreados (Gemini=azul, Groq=naranja, Ollama=verde), tokens usados, latencia, estimación de costo ($0.15/1M Gemini, $0.05/1M Groq, $0 Ollama), indicador de fallback. Soporta arrays para nodos multi-agente.
+- **LLM Details Panel** (expandido, si el nodo usa LLM): Sección violeta con badges de provider coloreados (Gemini=azul, Groq=naranja), tokens usados, latencia, estimación de costo ($0.15/1M Gemini, $0.05/1M Groq), indicador de fallback. Soporta arrays para nodos multi-agente.
 - **Expandido**: Summary + LLM Details (si aplica) + Input (bloque `<pre>` cian) + Output (bloque `<pre>` esmeralda) + Metrics (badges ámbar para cada key/value) + Error (bloque rojo si aplica)
 - **Accordion**: Click en header toglea expand/collapse
 
@@ -74,7 +78,7 @@ Cada nodo `PipelineNode` muestra:
 - Skipped: SkipForward gris
 - Pending: Clock gris
 
-**Tabla completa de los 32 tipos de nodo registrados**:
+**Tabla completa de los 33 tipos de nodo registrados**:
 
 | # | Tipo | Icono | Color Borde | Paso del Pipeline |
 |---|------|-------|-------------|-------------------|
@@ -82,7 +86,8 @@ Cada nodo `PipelineNode` muestra:
 | 2 | `classify` | GitBranch | purple-500 | Paso 1 — Clasificación |
 | 3 | `decision_engine` | Scale | orange-500 | Paso 2 — Decision Engine |
 | 4 | `planner` | ListChecks | sky-500 | Paso 3 — Planner |
-| 5 | `memory_recall` | Database | cyan-500 | Paso 4 — Memory Recall |
+| 5 | `skill_execution` | Wrench | amber-500 | Paso 1d — Skill Execution |
+| 6 | `memory_recall` | Database | cyan-500 | Paso 4 — Memory Recall |
 | 6 | `correction` | FileText | amber-500 | Paso 5 — Correction Injection |
 | 7 | `prompt_build` | FileText | indigo-500 | Paso 6 — Prompt Build |
 | 8 | `llm_generate` | Brain | emerald-500 | Paso 7 — LLM Generate |
@@ -93,25 +98,26 @@ Cada nodo `PipelineNode` muestra:
 | 13 | `trace_output` | ArrowDown | green-500 | Output final |
 | 14 | `branch` | AlertTriangle | red-500 | Bifurcación |
 | 15 | `multi_agent` | Users | fuchsia-500 | Multi-agente |
-| 16 | `identity_decision_modulation` | Fingerprint | pink-500 | Paso 3c (Phase 6C) |
-| 17 | `identity_confidence` | Gauge | pink-400 | Paso 3d (Phase 6D) |
-| 18 | `identity_autonomy` | SlidersHorizontal | pink-300 | Paso 3e (Phase 7A) |
-| 19 | `identity_bias` | Palette | fuchsia-400 | Paso 3f (Phase 8A) |
-| 20 | `identity_memory_bridge` | Link | rose-400 | Paso 2b (Phase 6A) |
-| 21 | `identity_retrieval_weight` | ArrowUpDown | rose-300 | Paso 2c (Phase 7B) |
-| 22 | `identity_context_weight` | PenTool | pink-500/40 | Paso 3b (Phase 6B) |
-| 23 | `identity_prompt_inject` | Syringe | fuchsia-500/40 | Paso 3g (Phase 8B) |
-| 24 | `identity_consolidation` | Layers | pink-600 | Paso 6d (Phase 7C) |
-| 25 | `identity_drift` | ShieldAlert | red-400 | Paso 7c (Phase 5A) |
-| 26 | `identity_policy` | Shield | red-500/40 | Paso 7d (Phase 5B) |
-| 27 | `identity_feedback` | MessageCircle | orange-400 | Paso 7e (Phase 5C) |
-| 28 | `identity_health_monitor` | HeartPulse | lime-500 | Paso 9a (Phase 9A) |
-| 29 | `identity_health_regulation` | Activity | lime-400 | Paso 9b (Phase 9B) |
-| 30 | `identity_evolution` | TrendingUp | amber-400 | Paso 9c (Phase 10A) |
-| 31 | `identity_shadow` | FlaskConical | slate-400 | Paso 9d (Phase 10B) |
-| 32 | `identity_version_candidate` | GitCommit | emerald-400 | Paso 9e (Phase 10C) |
+| 16 | `compaction` | Minimize2 | slate-500 | Memory Compaction |
+| 17 | `identity_decision_modulation` | Fingerprint | pink-500 | Paso 3c (Phase 6C) |
+| 18 | `identity_confidence` | Gauge | pink-400 | Paso 3d (Phase 6D) |
+| 19 | `identity_autonomy` | SlidersHorizontal | pink-300 | Paso 3e (Phase 7A) |
+| 20 | `identity_bias` | Palette | fuchsia-400 | Paso 3f (Phase 8A) |
+| 21 | `identity_memory_bridge` | Link | rose-400 | Paso 2b (Phase 6A) |
+| 22 | `identity_retrieval_weight` | ArrowUpDown | rose-300 | Paso 2c (Phase 7B) |
+| 23 | `identity_context_weight` | PenTool | pink-500/40 | Paso 3b (Phase 6B) |
+| 24 | `identity_prompt_inject` | Syringe | fuchsia-500/40 | Paso 3g (Phase 8B) |
+| 25 | `identity_consolidation` | Layers | pink-600 | Paso 6d (Phase 7C) |
+| 26 | `identity_drift` | ShieldAlert | red-400 | Paso 7c (Phase 5A) |
+| 27 | `identity_policy` | Shield | red-500/40 | Paso 7d (Phase 5B) |
+| 28 | `identity_feedback` | MessageCircle | orange-400 | Paso 7e (Phase 5C) |
+| 29 | `identity_health_monitor` | HeartPulse | lime-500 | Paso 9a (Phase 9A) |
+| 30 | `identity_health_regulation` | Activity | lime-400 | Paso 9b (Phase 9B) |
+| 31 | `identity_evolution` | TrendingUp | amber-400 | Paso 9c (Phase 10A) |
+| 32 | `identity_shadow` | FlaskConical | slate-400 | Paso 9d (Phase 10B) |
+| 33 | `identity_version_candidate` | GitCommit | emerald-400 | Paso 9e (Phase 10C) |
 
-**Nota**: El backend emite 32 tipos canónicos de nodo. `PipelineView` agrupa los nodos por `parentId` en columnas y `PipelineNode` renderiza cada uno con su icono, color y secciones expandibles. Las constantes de tipos, iconos y colores están centralizadas en `trace-constants.ts`.
+**Nota**: El backend emite 33 tipos canónicos de nodo. `PipelineView` agrupa los nodos por `parentId` en columnas y `PipelineNode` renderiza cada uno con su icono, color y secciones expandibles. Las constantes de tipos, iconos y colores están centralizadas en `trace-constants.ts`.
 
 #### Flechas Inter-Columna
 - Flechas `→` entre columnas adyacentes que contienen nodos
@@ -187,10 +193,10 @@ Overlay con backdrop blur que muestra el prompt completo:
 | **APIs al cargar** | `GET /trace/list?limit=50`, `GET /trace/latest/graph` |
 | **APIs de escritura** | `POST /trace/replay`, `DELETE /trace/{id}`, `DELETE /trace` |
 | **Total endpoints** | 6 |
-| **Node types registrados** | 32 (15 core + 17 identity), organizados en 8 columnas funcionales |
+| **Node types registrados** | 33 (16 core + 17 identity), organizados en 8 columnas funcionales |
 | **Columnas** | 8 (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline) |
 | **Layout** | CSS Grid horizontal `repeat(8, minmax(180px, 1fr))` — columnas siempre visibles, vacías en gris |
-| **LLM Indicator** | Badge violeta 🧠 en header del nodo cuando `uses_llm=true` (detectado via `metadata.llm_details` o `metrics.provider`) |
+| **LLM Indicator** | Badge violeta 🧠 en header del nodo cuando `uses_llm=true` (detectado via `metadata.llm_details` o `metrics.provider`). Badge 📐 EMB para embedding. Badge 🔧 SKILL para sub-nodos de skill |
 | **Memoization** | `PipelineNode` wrapped en `React.memo` |
 | **LLM Details** | Panel dedicado con badges de provider coloreados, tokens, latencia, costo estimado |
 | **Estado** | React `useState` para graphData, traceList, selectedTraceId, replayInput |

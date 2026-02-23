@@ -126,7 +126,7 @@ docs/
 | Métrica | Valor |
 |---------|-------|
 | Backend Python | 23,834 líneas, 90 archivos |
-| Tests pytest | 16,895 líneas, 48 archivos |
+| Tests pytest | ~17,100 líneas, 50 archivos |
 | Dashboard Next.js | 12,490 líneas |
 | **Total** | **57,748 líneas** |
 | Endpoints API | 116 (55 GET, 35 POST, 10 PUT, 12 DELETE, 1 WS) |

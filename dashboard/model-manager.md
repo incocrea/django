@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Model Manager controla qué modelos de lenguaje (LLM) usa Django, cómo están asignados a cada agente, y qué perfil de configuración está activo. Permite ver el estado de los providers (Gemini, Groq, Ollama), probar la conexión a cada uno, cambiar de perfil con un clic, y reasignar qué modelo usa cada agente individualmente. Los cambios aquí afectan inmediatamente qué proveedor y modelo procesa las solicitudes de cada agente — modificando calidad, velocidad, costo, y privacidad de las respuestas.
+El Model Manager controla qué modelos de lenguaje (LLM) usa Django, cómo están asignados a cada agente, y qué perfil de configuración está activo. Permite ver el estado de los providers (Gemini, Groq), probar la conexión a cada uno, cambiar de perfil con un clic, y reasignar qué modelo usa cada agente individualmente. Los cambios aquí afectan inmediatamente qué proveedor y modelo procesa las solicitudes de cada agente — modificando calidad, velocidad, costo, y privacidad de las respuestas.
 
 ---
 
@@ -10,11 +10,11 @@ El Model Manager controla qué modelos de lenguaje (LLM) usa Django, cómo está
 
 ### Estado de Providers
 
-Tarjetas para cada provider configurado (Gemini, Groq, Ollama) que muestran:
+Tarjetas para cada provider configurado (Gemini, Groq) que muestran:
 
 | Dato | Descripción |
 |------|-------------|
-| **Nombre** | gemini, groq, ollama |
+| **Nombre** | gemini, groq |
 | **Estado** | LED verde (available) o gris (unavailable) basado en `GET /router/status` |
 | **Modelo activo** | Nombre del modelo configurado (ej: gemini-2.5-flash, llama-3.3-70b-versatile) |
 | **Circuit breaker** | Estado del circuit breaker: failures count, estado (closed/open/half-open) |
@@ -26,20 +26,18 @@ Fuente: `GET /router/status`
 
 Visualización de la cadena de fallback configurada:
 ```
-Gemini (1°) → Groq (2°) → Ollama (3°)
+Gemini (1°) → Groq (2°)
 ```
 Cuando un provider falla, el router automáticamente intenta el siguiente en la cadena.
 
 ### Perfiles de Configuración
 
-4 perfiles predefinidos con sus configuraciones:
+2 perfiles predefinidos con sus configuraciones:
 
 | Perfil | Asignación | Caso de uso |
 |--------|-----------|-------------|
 | **balanced** | Gemini para identity_core/communication/governance, Groq para business/technical | Balance costo-calidad (default) |
 | **max_quality** | Todo Gemini | Máxima calidad, mayor costo |
-| **privacy_mode** | Todo Ollama | 100% local, sin datos a la nube, menor calidad |
-| **budget_mode** | Todo Ollama llama3.1:8b | Mínimo costo ($0), modelo más pequeño |
 
 El perfil activo se muestra con un indicador visual.
 
@@ -76,13 +74,13 @@ Tabla decorativa que muestra cómo se rutean los diferentes tipos de tarea a los
 
 ### 1. Cambiar Perfil
 - **Tipo**: API Call
-- **Comportamiento**: Llama `PUT /models/profile` con `{profile: "balanced|max_quality|privacy_mode|budget_mode"}`
-- **Impacto en Django**: Reconfigura **instantáneamente** las asignaciones de TODOS los agentes al preset del perfil seleccionado. Escribe en `configs/models.json`. La PRÓXIMA llamada LLM de cualquier agente usará el nuevo provider/modelo. Si se cambia a `privacy_mode`, todo el tráfico LLM pasa a ser local (Ollama) — ningún dato sale de la máquina. Si se cambia a `max_quality`, todo va a Gemini — mayor gasto de tokens pero mejor calidad.
+- **Comportamiento**: Llama `PUT /models/profile` con `{profile: "balanced|max_quality"}`
+- **Impacto en Django**: Reconfigura **instantáneamente** las asignaciones de TODOS los agentes al preset del perfil seleccionado. Escribe en `configs/models.json`. La PRÓXIMA llamada LLM de cualquier agente usará el nuevo provider/modelo. Si se cambia a `max_quality`, todo va a Gemini — mayor gasto de tokens pero mejor calidad.
 
 ### 2. Cambiar Asignación Individual
 - **Tipo**: API Call
 - **Comportamiento**: Seleccionar un provider diferente en el dropdown de un agente específico. Llama `PUT /models/assignment` con `{agent_role, provider}`
-- **Impacto en Django**: Cambia el provider del agente especificado sin afectar los demás. Escribe en `configs/models.json`. Solo afecta al agente modificado — por ejemplo, poner Identity Core en Ollama y mantener el resto en Gemini para proteger la privacidad del core de identidad mientras se usa calidad cloud para lo demás.
+- **Impacto en Django**: Cambia el provider del agente especificado sin afectar los demás. Escribe en `configs/models.json`. Solo afecta al agente modificado.
 
 ### 3. Probar Modelo
 - **Tipo**: API Call

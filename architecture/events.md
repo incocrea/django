@@ -10,7 +10,7 @@ Este documento describe el **sistema nervioso** de Django — los dos mecanismos
 
 ### ¿Qué cubre este documento?
 
-Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (562 líneas) que genera grafos con 8 sub-flow groups, el `TraceStore` (100 trazas en memoria), y los 32 tipos de nodos de traza organizados en bloques funcionales.
+Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (562 líneas) que genera grafos con 8 sub-flow groups, el `TraceStore` (100 trazas en memoria), y los 33 tipos de nodos de traza organizados en bloques funcionales.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -99,8 +99,8 @@ Cada interacción genera un grafo dirigido con sub-flow groups:
 
 - **Per-interaction** — un TraceCollector nuevo por cada `orchestrator.process()` call
 - **Layout horizontal** — 8 sub-flow groups renderizados como columnas CSS Grid en el frontend
-- `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`
-- **Sub-flow groups**: `_NODE_TYPE_GROUP` (32 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order)
+- `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`, `uses_embedding`, `is_skill_step`, `parent_node_id`
+- **Sub-flow groups**: `_NODE_TYPE_GROUP` (33 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order)
 
 ### 8 Sub-Flow Groups
 
@@ -115,7 +115,7 @@ Cada interacción genera un grafo dirigido con sub-flow groups:
 | 6 | Persistence & Eval | #3b82f6 (blue) | identity_consolidation, memory_store, evaluation, identity_drift, identity_policy, identity_feedback, output |
 | 7 | Post-Pipeline | #ec4899 (pink) | identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate |
 
-### 32 Tipos de Nodo
+### 33 Tipos de Nodo
 
 | Tipo | Color | Paso del Pipeline |
 |------|-------|-------------------|
@@ -123,6 +123,7 @@ Cada interacción genera un grafo dirigido con sub-flow groups:
 | `classify` | purple | Paso 1 — clasificación |
 | `decision_engine` | orange | Paso 2 — DecisionEngine |
 | `planner` | sky | Paso 3 — Planner |
+| `skill_execution` | amber | Paso 1d — ejecución de skills (learn-topic, repo-explorer) |
 | `memory_recall` | cyan | Paso 4 — recall de memoria |
 | `correction` | amber | Paso 5 — injection de correcciones |
 | `prompt_build` | indigo | Paso 6 — construcción del prompt |
@@ -166,7 +167,7 @@ Página: [Cognitive Trace](../dashboard/cognitive-trace.md) (`/trace`)
 - Pipeline horizontal CSS Grid con 8 columnas (accordion nodes)
 - **🧠 LLM badge** — nodos que usan LLM marcados con badge violeta
 - Nodos expandibles: input/output/metrics/errors por paso
-- **LLM Details panel** — badges de provider (Gemini/Groq/Ollama), tokens, latencia, costo estimado
+- **LLM Details panel** — badges de provider (Gemini/Groq), tokens, latencia, costo estimado
 - Prompt viewer modal (user + system prompts)
 - Lista de trazas con click-to-load
 - Replay: re-procesa un mensaje por pipeline completo

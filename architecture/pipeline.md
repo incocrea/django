@@ -2,7 +2,7 @@
 
 > [← Arquitectura](README.md) · [Agentes →](agents.md)
 
-**Archivo**: `src/flows/orchestrator.py` (2,575 líneas)
+**Archivo**: `src/flows/orchestrator.py` (2,616 líneas)
 
 ---
 
@@ -62,7 +62,7 @@ Pipeline central de 25+ pasos que procesa CADA mensaje. Soporta 3 Modos Cognitiv
 |------|--------|--------|-------------|
 | 0 | Emergency Check | orchestrator | Bloquea si `_emergency_stopped` → ver [governance](../dashboard/governance-console.md) |
 | 0.3 | Goal Context Injector | [teleology middleware](teleology.md) | Inyecta metas activas (PRE_CLASSIFY hook) |
-| 1 | Semantic Classify | [semantic_classifier](cognition.md) | Clasificación semántica por centroides — embeddings all-MiniLM-L6-v2, 8 categorías, 320 training phrases. Fallback a CONVERSATION si confidence < 0.30 |
+| 1 | Semantic Classify | [semantic_classifier](cognition.md) | Clasificación semántica por centroides — embeddings Qwen3-Embedding-8B via EmbeddingRouter, 8 categorías, 320 training phrases. Fallback a CONVERSATION si confidence < 0.30 |
 | 1d | Skill Execution | [skills](../dashboard/skill-manager.md) | Si Planner incluye `skill_execution`: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
 | 2 | Decision Engine | [cognition](cognition.md) | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | [identity](identity.md) | Evalúa alignment decision-identity (observational) |

@@ -12,7 +12,7 @@ Este documento describe el **sistema más complejo de toda la arquitectura**: lo
 
 ### ¿Qué cubre este documento?
 
-Documenta los **22 archivos** del módulo de identidad, organizados en 17 fases que se fueron construyendo progresivamente. Cubre desde la representación formal (`IdentityProfile`, un modelo Pydantic con Big Five, valores, estilo de comunicación y embedding baseline de 384 dimensiones) hasta los módulos avanzados de evolución (que proponen cambios en la identidad basados en tendencias largas), simulación shadow (que evalúan qué pasaría si se aplicara un cambio), y control de versiones (que permite rollback seguro si algo sale mal).
+Documenta los **22 archivos** del módulo de identidad, organizados en 17 fases que se fueron construyendo progresivamente. Cubre desde la representación formal (`IdentityProfile`, un modelo Pydantic con Big Five, valores, estilo de comunicación y embedding baseline de 4096 dimensiones) hasta los módulos avanzados de evolución (que proponen cambios en la identidad basados en tendencias largas), simulación shadow (que evalúan qué pasaría si se aplicara un cambio), y control de versiones (que permite rollback seguro si algo sale mal).
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -61,8 +61,8 @@ Representación formal, versionada y embedding-backed de la identidad del princi
 
 | Archivo | Líneas | Fase | Clase | Función |
 |---------|--------|------|-------|---------|
-| `schema.py` | ~105 | 4 | `IdentityProfile` | Pydantic model — version, Big Five, values, comm_style, baseline_embedding 384-dim, drift_threshold, content_hash (SHA-256) |
-| `embedding.py` | ~215 | 4 | — | `build_identity_text()` + `compute_baseline_embedding()` (all-MiniLM-L6-v2) + `cosine_similarity()` |
+| `schema.py` | ~105 | 4 | `IdentityProfile` | Pydantic model — version, Big Five, values, comm_style, baseline_embedding 4096-dim (Qwen3-Embedding-8B via EmbeddingRouter), drift_threshold, content_hash (SHA-256) |
+| `embedding.py` | ~233 | 4 | — | `build_identity_text()` + `compute_baseline_embedding()` (Qwen3-Embedding-8B via EmbeddingRouter, fallback all-MiniLM-L6-v2) + `cosine_similarity()` |
 | `versioning.py` | ~215 | 4 | `IdentityVersionManager` | Semantic versioning, SHA-256 hashing, persistence via config_versions |
 | `manager.py` | ~416 | 4 | `IdentityManager` | Singleton — load/save/rebuild profile. DB first, fallback YAML. Short-circuit si hash unchanged |
 | `enforcement.py` | ~90 | 5A | `IdentityEnforcer` | Evalúa similarity vs drift_threshold → `{status, similarity, threshold, severity}` |
@@ -151,7 +151,7 @@ Modelo Pydantic central:
 | `writing_style` | dict | Estilo de escritura |
 | `expertise` | dict | Áreas de experiencia |
 | `decision_making` | dict | Patrones de decisión |
-| `baseline_embedding` | list[float] | Vector 384-dim (all-MiniLM-L6-v2) |
+| `baseline_embedding` | list[float] | Vector 4096-dim (Qwen3-Embedding-8B via EmbeddingRouter) |
 | `drift_threshold` | float | 0.78 default |
 | `content_hash` | str | SHA-256 del contenido |
 

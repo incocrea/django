@@ -10,7 +10,7 @@ Este documento es la **guía práctica para desarrolladores** (y para Copilot) �
 
 ### ¿Qué cubre este documento?
 
-Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (48 archivos, ~16,895 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
+Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (50 archivos, ~17,100 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -113,7 +113,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 - **No LLM calls** — todos los tests usan mocks
 - **Patrón**: `test_{module}.py` con clases `Test{Feature}`
 
-### Archivos de Test (48 archivos, ~16,895 líneas)
+### Archivos de Test (50 archivos, ~17,100 líneas)
 
 | Archivo | Líneas | Módulo Testeado |
 |---------|--------|-----------------|
@@ -156,6 +156,8 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_events.py | 200 | [EventBus](../architecture/events.md) |
 | test_trace.py | 195 | [TraceCollector](../architecture/events.md) |
 | test_trace_subflows.py | 548 | Trace sub-flow grouping + LLM metadata |
+| test_embedding_router.py | ~180 | [EmbeddingRouter](../integrations/README.md) singleton + Qwen3 embedding |
+| test_skill_report.py | ~160 | [SkillReport](../architecture/pipeline.md) + SkillStep + StepTimer |
 | test_cognition.py | 190 | [Cognición](../architecture/cognition.md) |
 | test_semantic_classifier.py | 186 | [Semantic Classifier](../architecture/cognition.md) |
 | test_governance.py | 185 | [Governance](../dashboard/governance-console.md) |
@@ -212,7 +214,7 @@ pytest --tb=short -q        # salida compacta
 | Skills | Autonomous Skill Acquisition | MEDIA |
 | Auth | Supabase Auth + JWT (API currently open) | ALTA |
 | RAG | Document Chunking Pipeline (proper overlap) | ALTA |
-| RAG | Local Embeddings (Ollama mxbai-embed-large) | BAJA |
+| RAG | ~~Local Embeddings (Ollama mxbai-embed-large)~~ | ~~BAJA~~ | ✅ DONE — Migrated to Qwen3-Embedding-8B (4096-dim) via EmbeddingRouter + Ollama |
 | Fine-tuning | QLoRA + Unsloth pipeline | BAJA |
 
 ### Integraciones Externas Planificadas
@@ -247,7 +249,7 @@ pytest --tb=short -q        # salida compacta
 | Término | Definición |
 |---------|-----------|
 | **ADLRA** | Autonomous Digital Delegate for Learning, Representing, and Acting — nombre completo del sistema |
-| **Baseline Embedding** | Vector 384-dim (all-MiniLM-L6-v2) del perfil de identidad, usado como referencia para medir drift |
+| **Baseline Embedding** | Vector 4096-dim (Qwen3-Embedding-8B via EmbeddingRouter) del perfil de identidad, usado como referencia para medir drift |
 | **Big Five** | Modelo OCEAN de personalidad: Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism |
 | **ChromaDB** | Base de datos vectorial local para [memoria](../architecture/memory.md) episódica y semántica |
 | **Circuit Breaker** | Patrón de resiliencia: CLOSED → OPEN → HALF_OPEN para proveedores LLM |
@@ -260,7 +262,7 @@ pytest --tb=short -q        # salida compacta
 | **Governance** | Marco de [control](../dashboard/governance-console.md): autonomía, reglas, aprobaciones, emergency stop |
 | **Identity Profile** | Modelo Pydantic con Big Five, valores, comunicación, límites, baseline embedding |
 | **LRU** | Least Recently Used — política de eviction de working memory |
-| **Model Router** | [Enrutador](../integrations/README.md) con fallback chain (Gemini → Groq → Ollama) |
+| **Model Router** | [Enrutador](../integrations/README.md) con fallback chain (Gemini → Groq, 2-level) |
 | **OLS** | Ordinary Least Squares — regresión lineal para trends en [evolución](../architecture/identity.md) |
 | **Orchestrator** | [Cerebro central](../architecture/pipeline.md): pipeline de 25+ pasos por cada mensaje |
 | **Planner** | Componente [stateless](../architecture/cognition.md) que construye Plan con steps y gates |

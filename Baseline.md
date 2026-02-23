@@ -39,7 +39,7 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 - **Backend**: FastAPI con pipeline de 25+ pasos, 5 agentes especializados, 22 módulos de identidad, 4 niveles de memoria, sistema teleológico de metas
 - **Frontend**: Dashboard Next.js 15 con 15 páginas de control, monitoreo y configuración
 - **Integraciones**: Bot de Discord para conversación natural, webhook para publicación
-- **LLMs**: Cadena Gemini → Groq → Ollama con circuit breaker y fallback automático
+- **LLMs**: Cadena Gemini → Groq (2-level fallback) con circuit breaker
 - **Costo operativo**: $0/mes (todos servicios en tier gratuito)
 
 El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el dashboard. Cada interacción pasa por clasificación, cognición determinística, memoria, generación LLM, revisión de identidad, gobernanza, evaluación y persistencia — todo trazable vía pipeline horizontal CSS Grid.
@@ -51,7 +51,7 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | Métrica | Valor |
 |---------|-------|
 | Backend Python (src/) | 23,834 líneas, 90 archivos |
-| Tests (pytest) | 16,895 líneas, 48 archivos |
+| Tests (pytest) | ~17,100 líneas, 50 archivos |
 | Dashboard (app/ + components/ + lib/) | 12,490 líneas |
 | **Total líneas de código** | **57,748** |
 | Endpoints REST + WebSocket | 116 |
@@ -59,7 +59,7 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | Módulos de identidad | 22 archivos, 6,080 líneas |
 | Tablas en Postgres | 15 |
 | Agentes LLM | 5 |
-| Proveedores LLM | 3 (Gemini, Groq, Ollama) |
+| Proveedores LLM | 2 (Gemini, Groq) |
 | Fases completadas | 17 (Phase 1 → Phase 17) |
 | i18n keys | 631 (EN + ES simétricos) |
 
@@ -73,8 +73,8 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | **Frontend** | Next.js 15 (App Router), React 19, TypeScript 5.7 | Puerto 3000, proxy `/api/*` → backend |
 | **UI** | shadcn/ui, Tailwind CSS 3.4, lucide-react, CVA | Tema oscuro laboratorio, variables CSS custom |
 | **Estado** | Zustand 5 | Persistencia localStorage para chat |
-| **LLM** | Gemini 2.5 Flash, Groq Llama 3.3 70B, Ollama (qwen2.5:32b, llama3.1:8b) | Cadena de fallback automática |
-| **Vector DB** | ChromaDB (local) | Embedding all-MiniLM-L6-v2 (384-dim) |
+| **LLM** | Gemini 2.5 Flash, Groq Llama 3.3 70B | Cadena de fallback 2-level |
+| **Vector DB** | ChromaDB (local) | Embedding Qwen3-Embedding-8B (4096-dim via EmbeddingRouter + Ollama) |
 | **SQL DB** | Neon Postgres (remoto) | psycopg2 sync, autocommit |
 | **Procedural DB** | SQLite | Correcciones, workflows |
 | **Charts** | recharts, SVG inline | Visualizaciones analytics |
@@ -91,25 +91,25 @@ iame.lol/
 ├── agent/                                    # Backend Python FastAPI
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
-│   │   ├── api/           (4,110 ln, 3 files) # main.py (403) + routes.py (3,707)
+│   │   ├── api/           (4,095 ln, 3 files) # main.py (388) + routes.py (3,707)
 │   │   ├── cognition/       (315 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,970 ln, 3 files) # database.py (408) + persistence.py (1,507)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (3,495 ln, 6 files) # orchestrator (2,575) + semantic_classifier (565) + middleware + parallel + categories
+│   │   ├── flows/         (3,536 ln, 6 files) # orchestrator (2,616) + semantic_classifier (565) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,636 ln, 4 files) # manager (956) + hybrid_search + compaction
-│   │   ├── router/          (629 ln, 3 files) # model_router (476) + circuit_breaker (153)
+│   │   ├── router/          (~840 ln, 4 files) # model_router (377) + circuit_breaker (153) + embedding_router (210)
 │   │   ├── security/        (429 ln, 4 files) # input_sanitizer + content_wrapper + middleware
-│   │   ├── skills/        (1,364 ln, 6 files) # registry + web_research + learn_topic + repo_explorer + tools
+│   │   ├── skills/        (1,608 ln, 7 files) # registry + web_research + learn_topic + repo_explorer + tools + skill_report
 │   │   ├── teleology/    (2,294 ln, 11 files) # goals + plans + priorities + rewards + conflicts
-│   │   ├── trace/           (~562 ln, 2 files) # TraceCollector + TraceStore
+│   │   ├── trace/           (~513 ln, 2 files) # TraceCollector + TraceStore
 │   │   ├── training/        (521 ln, 2 files) # 3 modos de entrenamiento
 │   │   ├── config.py                  (117 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # 16,895 líneas, 48 test files + conftest.py
+│   ├── tests/                                 # ~17,100 líneas, 50 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
@@ -161,11 +161,11 @@ Define proveedores, modelos, cadena de fallback y perfiles.
 
 | Sección | Contenido |
 |---------|-----------|
-| `providers` | Gemini (gemini-2.5-flash, 1M ctx), Groq (llama-3.3-70b, 128K ctx), Ollama (qwen2.5:32b, llama3.1:8b, mxbai-embed-large) |
-| `fallback_chain` | gemini → groq → ollama/llama3.1:8b |
+| `providers` | Gemini (gemini-2.5-flash, 1M ctx), Groq (llama-3.3-70b, 128K ctx) |
+| `fallback_chain` | gemini → groq |
 | `agent_assignments` | identity_core→Gemini, business→Groq, communication→Gemini, technical→Groq, governance→Gemini |
-| `profiles` | balanced (default), max_quality (all Gemini), privacy_mode (all Ollama), budget_mode (all Ollama) |
-| `task_type_routing` | embeddings→mxbai, fast_classification→Groq, deep_reasoning→Gemini, code_generation→Groq |
+| `profiles` | balanced (default), max_quality (all Gemini) |
+| `embedding` | Qwen3-Embedding-8B via Ollama (4096-dim), managed by EmbeddingRouter |
 
 **Flujo**: Dashboard Model Manager → `PUT /api/models/assignment` o `PUT /api/models/profile` → escribe JSON → `model_router.reload_config()`.
 
@@ -202,6 +202,7 @@ Carga desde `.env` vía `@lru_cache`. Agrupadas por función:
 | DB | `database_url`, `chroma_persist_directory` | None, "./chroma_data" |
 | Web Research | `tavily_api_key` | None |
 | Governance | `default_autonomy_level`, `principal_name` | 0, "Principal" |
+| Embedding | `embedding_model`, `embedding_dimensions` | "qwen3-embedding", 4096 |
 
 Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `has_r2`, `has_supabase`.
 
@@ -221,7 +222,7 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 ## 6. Arquitectura Backend
 
-### 6.1 Composición — main.py (403 líneas)
+### 6.1 Composición — main.py (388 líneas)
 
 `AppState` es el singleton global que contiene todos los componentes inicializados. La secuencia de `lifespan()`:
 
@@ -263,14 +264,14 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 `AgentCrew` inicializa los 5 agentes con `ModelRouter` + paths de persona/governance.
 
-### 6.3 Model Router — src/router/ (629 líneas)
+### 6.3 Model Router — src/router/ (~840 líneas)
 
-**model_router.py (476 ln)**: Cadena de fallback Gemini → Groq → Ollama.
+**model_router.py (377 ln)**: Cadena de fallback Gemini → Groq (2-level).
 - `generate(prompt, role, system_prompt, temperature, max_tokens)` → `ModelResponse`
-- Token counting real por proveedor (Gemini `usage_metadata`, Groq `usage.total_tokens`, Ollama `eval_count`)
-- Estimación de costo: Gemini $0.15/1M, Groq $0.05/1M, Ollama $0
+- Token counting real por proveedor (Gemini `usage_metadata`, Groq `usage.total_tokens`)
+- Estimación de costo: Gemini $0.15/1M, Groq $0.05/1M
 - Hot-reload via `reload_config()`
-- 4 perfiles switcheables
+- 2 perfiles switcheables (balanced, max_quality)
 - Callback de persistencia de tokens wired al startup
 
 **circuit_breaker.py (153 ln)**: Circuit breaker por proveedor.
@@ -278,6 +279,12 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 - Threshold configurable de fallos consecutivos
 - Timeout de recovery
 - Integrado en Health Bar del dashboard (LEDs verde/amber/rojo)
+
+**embedding_router.py (210 ln)**: Singleton embedding service.
+- Backed by Ollama serving Qwen3-Embedding-8B (4096-dim, Q4 quantized)
+- Provides `embed()`, `embed_batch()`, `ping()`, `status()`
+- `QwenEmbeddingFunction` ChromaDB-compatible wrapper
+- All memory collections and identity embeddings route through this
 
 ### 6.4 Cognición — src/cognition/ (315 líneas, 3 archivos)
 
@@ -325,11 +332,11 @@ Todos heurísticos, sin llamadas LLM extra. Singletons en memoria (max 200-1000 
 
 `EventBus` singleton — broadcast simultáneo a: (1) WebSocket connections, (2) Postgres `audit_log`, (3) suscriptores in-memory. Últimos 100 eventos en memoria. `IAmeEvent` dataclass con `event_type`, `data`, `risk_level`, `timestamp`.
 
-### 6.8 Trace Cognitivo — src/trace/ (~562 líneas)
+### 6.8 Trace Cognitivo — src/trace/ (~513 líneas)
 
-**collector.py (562 ln)**: `TraceCollector` — per-interaction, crea grafo con auto-layout agrupado en 8 sub-flow groups. `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`. Nodos organizados en bloques funcionales via `_NODE_TYPE_GROUP` (32 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order). Frontend renderiza como pipeline horizontal CSS Grid de 8 columnas.
+**collector.py (513 ln)**: `TraceCollector` — per-interaction, crea grafo con auto-layout agrupado en 8 sub-flow groups. `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`, `uses_embedding`, `is_skill_step`, `parent_node_id`. Nodos organizados en bloques funcionales via `_NODE_TYPE_GROUP` (33 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order). Frontend renderiza como pipeline horizontal CSS Grid de 8 columnas con 🧠 LLM badge, 📐 EMB badge, y 🔧 SKILL badge.
 
-**32 tipos de nodo** (organizados en 8 grupos): input, classify, decision_engine, planner, memory_recall, correction, context_weighting, prompt_build, llm_generate, identity_review, governance_review, memory_store, evaluation, output, branch, multi_agent, identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias, identity_memory_bridge, identity_retrieval_weight, identity_context_weight, identity_prompt_inject, identity_consolidation, identity_drift, identity_policy, identity_feedback, identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate.
+**33 tipos de nodo** (organizados en 8 grupos): input, classify, decision_engine, planner, skill_execution, memory_recall, correction, context_weighting, prompt_build, llm_generate, identity_review, governance_review, memory_store, evaluation, output, branch, multi_agent, compaction, identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias, identity_memory_bridge, identity_retrieval_weight, identity_context_weight, identity_prompt_inject, identity_consolidation, identity_drift, identity_policy, identity_feedback, identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate.
 
 `TraceStore` — singleton, últimas 100 trazas en memoria.
 
@@ -341,15 +348,16 @@ Todos heurísticos, sin llamadas LLM extra. Singletons en memoria (max 200-1000 
 | `content_wrapper.py` | Marca contenido externo con boundary markers de seguridad |
 | `middleware.py` (58 ln) | `SecurityMiddleware` en posición PRE_CLASSIFY (priority 10) del pipeline de middleware |
 
-### 6.10 Skills — src/skills/ (1,364 líneas, 6 archivos)
+### 6.10 Skills — src/skills/ (1,608 líneas, 7 archivos)
 
 | Archivo | Función |
 |---------|---------|
 | `registry.py` | Carga skills.json, toggle enable/disable, tracking de uso |
 | `web_research.py` | Wrapper Tavily API (search + deep research con sub-queries) |
-| `learn_topic.py` (314 ln) | Web search → LLM summarize → chunk → ChromaDB semantic memory. Depth selector (1-3) |
-| `repo_explorer.py` (1,000 ln) | Lee archivos locales, explora directorios, fetch repos GitHub, accede docs/ propios. Chat-trigger + API + optional memory storage |
+| `learn_topic.py` (371 ln) | Web search → LLM summarize → chunk → ChromaDB semantic memory. Depth selector (1-3) |
+| `repo_explorer.py` (968 ln) | Lee archivos locales, explora directorios, fetch repos GitHub, accede docs/ propios. Chat-trigger + API + optional memory storage |
 | `tools.py` | `EmailDraftTool` + `DocumentGenTool` (ambos usan CommunicationAgent) |
+| `skill_report.py` (172 ln) | Unified skill execution reporting. `SkillStep` dataclass, `SkillReport` with `to_trace_nodes()`, `StepTimer` context manager |
 
 ### 6.11 Training — src/training/manager.py (521 líneas)
 
@@ -378,8 +386,8 @@ Representación formal, versionada y embedding-backed de la identidad del princi
 
 | Archivo | Líneas | Fase | Función |
 |---------|--------|------|---------|
-| `schema.py` | ~105 | 4 | `IdentityProfile` Pydantic model — version, Big Five, values, comm_style, baseline_embedding 384-dim, drift_threshold |
-| `embedding.py` | ~215 | 4 | `build_identity_text()` + `compute_baseline_embedding()` (all-MiniLM-L6-v2) + `cosine_similarity()` |
+| `schema.py` | ~105 | 4 | `IdentityProfile` Pydantic model — version, Big Five, values, comm_style, baseline_embedding 4096-dim (Qwen3-Embedding-8B via EmbeddingRouter), drift_threshold |
+| `embedding.py` | ~215 | 4 | `build_identity_text()` + `compute_baseline_embedding()` (Qwen3-Embedding-8B via EmbeddingRouter, fallback all-MiniLM-L6-v2) + `cosine_similarity()` |
 | `versioning.py` | ~215 | 4 | `IdentityVersionManager` — semantic versioning, SHA-256 hashing, persistence via config_versions |
 | `manager.py` | ~416 | 4 | `IdentityManager` singleton — load/save/rebuild profile. DB first, fallback YAML. Short-circuit si hash unchanged |
 | `enforcement.py` | ~90 | 5A | `IdentityEnforcer` — evalúa similarity vs drift_threshold. Observational only |
@@ -504,7 +512,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,575 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,616 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
@@ -512,7 +520,7 @@ Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), 
 |------|--------|-------------|
 | 0 | Emergency Check | Bloquea si `_emergency_stopped` |
 | 0.3 | Goal Context Injector | Inyecta metas activas (teleología middleware) |
-| 1 | Semantic Classify | Clasificación semántica por centroides (embeddings all-MiniLM-L6-v2, 8 categorías, 320 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
+| 1 | Semantic Classify | Clasificación semántica por centroides (embeddings Qwen3-Embedding-8B via EmbeddingRouter, 8 categorías, 320 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
 | 1d | Skill Execution | Si el Planner incluye `skill_execution` step: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
 | 2 | Decision Engine | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | Evalúa alignment decision-identity (observational) |
@@ -911,7 +919,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 |---------|---------------|
 | **Refresh** | Re-fetch config + status |
 | **Test model** (per provider) | `api.testModel(modelId)` → `POST /models/test` → envía "Respond with only 'OK'" → muestra latency + resultado |
-| **Profile selector** (4 botones) | `api.switchProfile(profile)` → `PUT /models/profile` → escribe models.json → `model_router.reload_config()` → muestra effective assignments. balanced: asignaciones default. max_quality: todo Gemini. privacy_mode: todo Ollama. budget_mode: todo Ollama ligero |
+| **Profile selector** (2 botones) | `api.switchProfile(profile)` → `PUT /models/profile` → escribe models.json → `model_router.reload_config()` → muestra effective assignments. balanced: asignaciones default. max_quality: todo Gemini |
 | **Agent assignment dropdowns** | `api.updateModelAssignment(role, modelId)` → `PUT /models/assignment` → escribe models.json → reload_config |
 | **Reload from file** | `api.reloadRouter()` → `POST /router/reload` |
 
@@ -1009,7 +1017,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Prompt viewer modal** | Muestra user prompt y system prompt de la traza. Tabs user/system. Copy to clipboard |
 | **Pipeline view** | 8 columnas horizontales con accordion. Nodos expandibles con input/output/metrics/errors. 🧠 LLM badge en nodos que usan LLM |
 
-**32 tipos de nodo** (en 8 sub-flow groups): Cada paso del pipeline se visualiza como un nodo coloreado dentro de bloques funcionales agrupados (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline). Nodos expandibles muestran processing summary, LLM Details panel (provider badge, tokens, latencia, costo estimado), input, output, metrics, errors.
+**33 tipos de nodo** (en 8 sub-flow groups): Cada paso del pipeline se visualiza como un nodo coloreado dentro de bloques funcionales agrupados (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline). Nodos expandibles muestran processing summary, LLM Details panel (provider badge, tokens, latencia, costo estimado), input, output, metrics, errors.
 
 ### 11.12 Evaluation Dashboard — `/evaluation`
 
@@ -1114,7 +1122,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 | Componente | Archivo | Función |
 |-----------|---------|---------|
-| `TraceNodeComponent` | `trace-node.tsx` (512 ln) | Nodo React Flow custom: 32 tipos con color/icon mapping, expandible con input/output/metrics, LLM Details panel con badges de provider |
+| `TraceNodeComponent` | `trace-node.tsx` (512 ln) | Nodo React Flow custom: 33 tipos con color/icon mapping, expandible con input/output/metrics, LLM Details panel con badges de provider |
 | `GroupNodeComponent` | `group-node.tsx` (57 ln) | Contenedor visual de sub-flow group: borde coloreado, label, badge de nodos, badge de latencia |
 
 ### 12.5 Identity Governance (5 componentes)
@@ -1229,7 +1237,7 @@ Publisher a canal `#updates-django` via webhook URL en `.env`.
 | `episodic_memory` | Logs de interacción, búsqueda semántica |
 | `semantic_memory` | Base de conocimiento, writing samples, learned_knowledge |
 
-Embedding: all-MiniLM-L6-v2 (384 dimensiones). Persiste en disco (`chroma_data/`).
+Embedding: Qwen3-Embedding-8B (4096 dimensiones via EmbeddingRouter + Ollama). Persiste en disco (`chroma_data/`).
 
 ### 14.3 SQLite
 
@@ -1245,7 +1253,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 15. Sistema de Tests — 16,895 líneas, 48 archivos
+## 15. Sistema de Tests — ~17,100 líneas, 50 archivos
 
 | Archivo | Líneas | Módulo testeado |
 |---------|--------|----------------|
@@ -1297,6 +1305,8 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | `test_teleology_governance.py` | 147 | Teleology governance checks |
 | `test_teleology_middleware.py` | 144 | Teleology middleware integration |
 | `test_trace_subflows.py` | 548 | Trace sub-flow grouping + LLM metadata |
+| `test_embedding_router.py` | ~180 | EmbeddingRouter singleton + Qwen3 embedding |
+| `test_skill_report.py` | ~160 | SkillReport + SkillStep + StepTimer |
 
 **Framework**: pytest. **conftest.py** (100 ln): fixtures compartidos.
 
@@ -1311,7 +1321,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | 1-2 | 5-agent crew, 4-tier memory, Model Router, 14 pages dashboard, WebSocket, Event Bus | ~300 |
 | 3 | Architectural Hardening — cognición obligatoria, inmutable, sin legacy | 49 |
 | 3.5 | Learn-topic skill, 3 cognitive modes | ~30 |
-| 4 | Identity Core — IdentityProfile, embedding 384-dim, versioning, SHA-256 | 47 |
+| 4 | Identity Core — IdentityProfile, embedding 4096-dim (Qwen3-Embedding-8B), versioning, SHA-256 | 47 |
 | 5A-C | Enforcement, Policy, Feedback | 126 |
 | 6A-D | Memory Bridge, Context Weighting, Decision Modulation, Confidence | 246 |
 | 7A-C | Autonomy Modulation, Retrieval Weighting, Consolidation Weighting | 201 |
@@ -1435,7 +1445,7 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 | Término | Significado |
 |---------|-------------|
 | **ADLRA** | Autonomous Digital Learning Representative Agent |
-| **Baseline Embedding** | Vector 384-dim que representa la identidad del principal |
+| **Baseline Embedding** | Vector 4096-dim (Qwen3-Embedding-8B via EmbeddingRouter) que representa la identidad del principal |
 | **Big Five** | Modelo psicológico OCEAN: Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism |
 | **ChromaDB** | Base de datos vectorial local para búsqueda semántica |
 | **Circuit Breaker** | Patrón que protege contra fallos cascada en proveedores LLM |
@@ -1460,5 +1470,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 48 test files, 4 configs, 2 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 50 test files, 4 configs, 3 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026
