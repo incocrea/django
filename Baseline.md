@@ -93,10 +93,10 @@ iame.lol/
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
 │   │   ├── api/           (4,095 ln, 3 files) # main.py (388) + routes.py (3,707)
 │   │   ├── cognition/       (315 ln, 3 files) # DecisionEngine + Planner + categories
-│   │   ├── db/            (1,970 ln, 3 files) # database.py (408) + persistence.py (1,507)
+│   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (3,536 ln, 6 files) # orchestrator (2,616) + semantic_classifier (565) + middleware + parallel + categories
+│   │   ├── flows/         (4,037 ln, 6 files) # orchestrator (2,866) + semantic_classifier (745) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,636 ln, 4 files) # manager (956) + hybrid_search + compaction
@@ -1345,7 +1345,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
 | **Memory Consolidation Background** | ALTA | Job periódico episodic → semantic summarization |
 | **Real Identity Fidelity** | MEDIA | Ponderar identity_similarity en overall_score + dashboard gauge |
-| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (565 ln). No usa LLM sino embeddings locales. |
+| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (745 ln). No usa LLM sino embeddings locales. Centroides cacheados en disco para arranque rápido. |
 | **External Integrations** | MEDIA | Email send/receive, calendar, Slack, CRM |
 | **Tool Policy Cascade** | MEDIA | Políticas por skill integradas con gobernanza |
 | **Sandboxed Code Execution** | MEDIA | Ejecución de código en sandbox aislado |

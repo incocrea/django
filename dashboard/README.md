@@ -77,9 +77,9 @@
 
 | Componente | Líneas | Función |
 |-----------|--------|--------|
-| `PipelineView` | 173 | CSS Grid 8-columnas horizontal: headers coloreados, flechas inter-columna, columnas vacías en gris |
-| `PipelineNode` | 238 | Nodo accordion: icono, status, latencia, 🧠 LLM badge, secciones expandibles (LLM details, input, output, metrics) |
-| `trace-constants` | 227 | Constantes compartidas: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), estimateCost(), getNodeGroup() |
+| `PipelineView` | 189 | CSS Grid 8-columnas horizontal: headers coloreados, flechas inter-columna, columnas vacías en gris |
+| `PipelineNode` | 366 | Nodo accordion: icono, status, latencia, 🧠 LLM badge, 📐 EMB badge, secciones expandibles (LLM details, Embedding details, input, output, metrics) |
+| `trace-constants` | 275 | Constantes compartidas: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), estimateCost(), getNodeGroup(), EmbeddingDetail interface |
 | `TraceNodeComponent` | 512 | Legacy — nodo React Flow custom (dead code, kept for reference) |
 | `GroupNodeComponent` | 57 | Legacy — contenedor visual de sub-flow group (dead code, kept for reference) |
 

@@ -186,9 +186,9 @@ Overlay con backdrop blur que muestra el prompt completo:
 | Aspecto | Detalle |
 |---------|---------|
 | **Ruta** | `/trace` |
-| **Archivos** | `dashboard/app/trace/page.tsx` (~542 ln), `dashboard/components/trace/pipeline-view.tsx` (~173 ln), `dashboard/components/trace/pipeline-node.tsx` (~238 ln), `dashboard/components/trace/trace-constants.ts` (~227 ln) |
+| **Archivos** | `dashboard/app/trace/page.tsx` (~567 ln), `dashboard/components/trace/pipeline-view.tsx` (~189 ln), `dashboard/components/trace/pipeline-node.tsx` (~366 ln), `dashboard/components/trace/trace-constants.ts` (~275 ln) |
 | **Archivos legacy** | `trace-node.tsx` (512 ln), `group-node.tsx` (57 ln) — dead code, kept for reference |
-| **Líneas totales** | ~1,180 líneas (page + pipeline-view + pipeline-node + trace-constants) |
+| **Líneas totales** | ~1,397 líneas (page + pipeline-view + pipeline-node + trace-constants) |
 | **Librería** | CSS Grid nativo (no @xyflow/react) |
 | **APIs al cargar** | `GET /trace/list?limit=50`, `GET /trace/latest/graph` |
 | **APIs de escritura** | `POST /trace/replay`, `DELETE /trace/{id}`, `DELETE /trace` |
@@ -196,10 +196,11 @@ Overlay con backdrop blur que muestra el prompt completo:
 | **Node types registrados** | 33 (16 core + 17 identity), organizados en 8 columnas funcionales |
 | **Columnas** | 8 (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline) |
 | **Layout** | CSS Grid horizontal `repeat(8, minmax(180px, 1fr))` — columnas siempre visibles, vacías en gris |
-| **LLM Indicator** | Badge violeta 🧠 en header del nodo cuando `uses_llm=true` (detectado via `metadata.llm_details` o `metrics.provider`). Badge 📐 EMB para embedding. Badge 🔧 SKILL para sub-nodos de skill |
+| **LLM Indicator** | Badge violeta 🧠 en header del nodo cuando `uses_llm=true` (detectado via `metadata.llm_details` o `metrics.provider`). Badge 📐 EMB para embedding (detectado via `metadata.embedding_details` o `uses_embedding`). Badge 🔧 SKILL para sub-nodos de skill |
 | **Memoization** | `PipelineNode` wrapped en `React.memo` |
 | **LLM Details** | Panel dedicado con badges de provider coloreados, tokens, latencia, costo estimado |
+| **EMB Details** | Panel dedicado (cyan) con provider, modelo, dimensiones, items embebidos, latencia — visible al expandir nodo con badge 📐 EMB |
 | **Estado** | React `useState` para graphData, traceList, selectedTraceId, replayInput |
-| **Constantes** | `trace-constants.ts`: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), GROUP_ORDER, NODE_TYPE_GROUP, estimateCost() |
+| **Constantes** | `trace-constants.ts`: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), GROUP_ORDER, NODE_TYPE_GROUP, EmbeddingDetail interface, estimateCost() |
 
-**Última actualización**: 2025-06-23
+**Última actualización**: 2025-06-24
