@@ -149,7 +149,7 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 2,866 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 2,905 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
 | Cognition | [cognition.md](cognition.md) | 315 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,636 | 4-tier memory system |

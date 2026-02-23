@@ -186,9 +186,9 @@ Overlay con backdrop blur que muestra el prompt completo:
 | Aspecto | Detalle |
 |---------|---------|
 | **Ruta** | `/trace` |
-| **Archivos** | `dashboard/app/trace/page.tsx` (~567 ln), `dashboard/components/trace/pipeline-view.tsx` (~189 ln), `dashboard/components/trace/pipeline-node.tsx` (~366 ln), `dashboard/components/trace/trace-constants.ts` (~275 ln) |
+| **Archivos** | `dashboard/app/trace/page.tsx` (~567 ln), `dashboard/components/trace/pipeline-view.tsx` (~189 ln), `dashboard/components/trace/pipeline-node.tsx` (~381 ln), `dashboard/components/trace/trace-constants.ts` (~285 ln) |
 | **Archivos legacy** | `trace-node.tsx` (512 ln), `group-node.tsx` (57 ln) — dead code, kept for reference |
-| **Líneas totales** | ~1,397 líneas (page + pipeline-view + pipeline-node + trace-constants) |
+| **Líneas totales** | ~1,422 líneas (page + pipeline-view + pipeline-node + trace-constants) |
 | **Librería** | CSS Grid nativo (no @xyflow/react) |
 | **APIs al cargar** | `GET /trace/list?limit=50`, `GET /trace/latest/graph` |
 | **APIs de escritura** | `POST /trace/replay`, `DELETE /trace/{id}`, `DELETE /trace` |

@@ -96,7 +96,7 @@ iame.lol/
 │   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (4,037 ln, 6 files) # orchestrator (2,866) + semantic_classifier (745) + middleware + parallel + categories
+│   │   ├── flows/         (4,076 ln, 6 files) # orchestrator (2,905) + semantic_classifier (745) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,636 ln, 4 files) # manager (956) + hybrid_search + compaction
@@ -512,7 +512,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,616 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,905 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
