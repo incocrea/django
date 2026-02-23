@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Cognitive Trace viewer visualiza el pipeline de procesamiento interno del orquestador como un grafo dirigido interactivo usando React Flow. Cada vez que Django procesa un mensaje, el `TraceCollector` registra cada paso del pipeline como un nodo con inputs, outputs, métricas, y latencia. Esta página permite inspeccionar esos grafos, entender exactamente qué pasos ejecutó Django para generar una respuesta, ver los prompts exactos enviados al LLM, y ejecutar replays que generan nuevos traces. Es la herramienta principal de observabilidad y debugging del sistema.
+El Cognitive Trace viewer visualiza el pipeline de procesamiento interno del orquestador como un pipeline horizontal de 8 columnas usando CSS Grid. Cada vez que Django procesa un mensaje, el `TraceCollector` registra cada paso del pipeline como un nodo con inputs, outputs, métricas, y latencia. Esta página permite inspeccionar esos pipelines, entender exactamente qué pasos ejecutó Django para generar una respuesta, ver los prompts exactos enviados al LLM, y ejecutar replays que generan nuevos traces. Es la herramienta principal de observabilidad y debugging del sistema.
 
 ---
 
@@ -26,9 +26,30 @@ Lista scrollable de los últimos 50 traces generados. Cada item muestra:
 
 El trace seleccionado se resalta con borde de acento.
 
-### Canvas Principal (React Flow)
+### Pipeline View (CSS Grid 8 columnas)
 
-Grafo dirigido interactivo que muestra el pipeline de procesamiento:
+Visualizacón horizontal del pipeline de procesamiento organizado en **8 columnas funcionales** — cada columna representa un grupo con nodos apilados verticalmente y accordion expand/collapse:
+
+#### Columnas (8 bloques funcionales)
+
+Los nodos se organizan en columnas mediante CSS Grid `repeat(8, minmax(180px, 1fr))`. Cada columna corresponde a un `parentId` del backend:
+
+| # | Grupo | Color | Nodos que contiene |
+|---|-------|-------|-------------------|
+| 0 | Pre-Pipeline | Indigo (#6366f1) | input, branch |
+| 1 | Classification | Cyan (#06b6d4) | classify, decision_engine |
+| 2 | Identity Pre-Gen | Purple (#a855f7) | identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias |
+| 3 | Planning & Skills | Amber (#f59e0b) | planner, skill_execution |
+| 4 | Context Assembly | Emerald (#10b981) | memory_recall, identity_memory_bridge, identity_retrieval_weight, correction, identity_context_weight, identity_prompt_inject, prompt_build, compaction |
+| 5 | LLM Generation | Red (#ef4444) | llm_generate, multi_agent, identity_review, governance_review |
+| 6 | Persistence & Eval | Blue (#3b82f6) | identity_consolidation, memory_store, evaluation, identity_drift, identity_policy, identity_feedback, output |
+| 7 | Post-Pipeline | Pink (#ec4899) | identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate |
+
+Cada columna muestra: **header** con barra de color + label + conteo de nodos + latencia agregada. Columnas sin nodos se muestran en gris con texto "empty". **Flechas inter-columna** (→) separan las columnas visualmente.
+
+**Nodos con LLM**: Badge violeta 🧠 (Brain icon) en el header del nodo cuando `uses_llm=true`. El backend detecta esto via `metadata.llm_details` o `metrics.provider`.
+
+**Nota sobre `skill_execution`**: Aunque usa `node_type="llm_generate"`, un override por `node_id` lo asigna al grupo Planning & Skills (no Generation).
 
 #### Barra de Stats (Panel superior central)
 - Total de nodos
@@ -39,10 +60,12 @@ Grafo dirigido interactivo que muestra el pipeline de procesamiento:
 
 #### Nodos del Grafo (32 tipos registrados, 32 canónicos del backend)
 
-Cada nodo `TraceNodeComponent` muestra:
-- **Header** (siempre visible): Icono del tipo + label + status icon + badge de latencia + chevron expandir/colapsar
+Cada nodo `PipelineNode` muestra:
+- **Header** (siempre visible): Barra de color izquierda (color de columna) + icono del tipo + label + status icon + badge de latencia + 🧠 LLM badge (si aplica) + chevron expandir/colapsar
 - **Summary** (colapsado): `processingSummary` texto, máximo 2 líneas
-- **Expandido**: Summary + Input (bloque `<pre>` cian) + Output (bloque `<pre>` esmeralda) + Metrics (badges ámbar para cada key/value) + Error (bloque rojo si aplica)
+- **LLM Details Panel** (expandido, si el nodo usa LLM): Sección violeta con badges de provider coloreados (Gemini=azul, Groq=naranja, Ollama=verde), tokens usados, latencia, estimación de costo ($0.15/1M Gemini, $0.05/1M Groq, $0 Ollama), indicador de fallback. Soporta arrays para nodos multi-agente.
+- **Expandido**: Summary + LLM Details (si aplica) + Input (bloque `<pre>` cian) + Output (bloque `<pre>` esmeralda) + Metrics (badges ámbar para cada key/value) + Error (bloque rojo si aplica)
+- **Accordion**: Click en header toglea expand/collapse
 
 **Status icons de nodos**:
 - Completed: CheckCircle2 verde
@@ -88,18 +111,17 @@ Cada nodo `TraceNodeComponent` muestra:
 | 31 | `identity_shadow` | FlaskConical | slate-400 | Paso 9d (Phase 10B) |
 | 32 | `identity_version_candidate` | GitCommit | emerald-400 | Paso 9e (Phase 10C) |
 
-**Nota**: El backend emite 32 tipos canónicos de nodo. La page remapea `input` → `trace_input` y `output` → `trace_output` para evitar estilos built-in de React Flow, resultando en 32 keys en el registro de `nodeTypes`.
+**Nota**: El backend emite 32 tipos canónicos de nodo. `PipelineView` agrupa los nodos por `parentId` en columnas y `PipelineNode` renderiza cada uno con su icono, color y secciones expandibles. Las constantes de tipos, iconos y colores están centralizadas en `trace-constants.ts`.
 
-#### Edges
-- **Tipo**: `smoothstep` para todos
-- **Color por tipo**: `conditional` → ámbar, `fallback` → rojo, default → cian
-- **Estilo**: Stroke cian rgba(34,211,238,0.4), width 2, ArrowClosed marker
+#### Flechas Inter-Columna
+- Flechas `→` entre columnas adyacentes que contienen nodos
+- Centradas verticalmente en el espacio entre columnas
+- Color: slate-600
 
-#### Background y Controles
-- **Background**: Grid de puntos cian al 5% opacidad
-- **Zoom**: Min 0.3, max 1.5
-- **MiniMap**: Nodos coloreados por tipo (13 colores explícitos + slate fallback)
-- **Controles**: Zoom/fit (bottom-left) con estilo lab theme
+#### Columnas Vacías
+- Columnas sin nodos se muestran con opacidad reducida (40%)
+- Header en gris con texto "empty" en itálica
+- No se ocultan — las 8 columnas siempre son visibles para mantener contexto del pipeline completo
 
 ### Botón View Prompt (Panel superior derecho)
 
@@ -158,18 +180,20 @@ Overlay con backdrop blur que muestra el prompt completo:
 | Aspecto | Detalle |
 |---------|---------|
 | **Ruta** | `/trace` |
-| **Archivos** | `dashboard/app/trace/page.tsx` (735 líneas), `dashboard/components/trace/trace-node.tsx` (427 líneas) |
-| **Líneas totales** | ~1,162 líneas (page + node component) |
-| **Librería** | `@xyflow/react` (React Flow v12) |
+| **Archivos** | `dashboard/app/trace/page.tsx` (~542 ln), `dashboard/components/trace/pipeline-view.tsx` (~173 ln), `dashboard/components/trace/pipeline-node.tsx` (~238 ln), `dashboard/components/trace/trace-constants.ts` (~227 ln) |
+| **Archivos legacy** | `trace-node.tsx` (512 ln), `group-node.tsx` (57 ln) — dead code, kept for reference |
+| **Líneas totales** | ~1,180 líneas (page + pipeline-view + pipeline-node + trace-constants) |
+| **Librería** | CSS Grid nativo (no @xyflow/react) |
 | **APIs al cargar** | `GET /trace/list?limit=50`, `GET /trace/latest/graph` |
 | **APIs de escritura** | `POST /trace/replay`, `DELETE /trace/{id}`, `DELETE /trace` |
 | **Total endpoints** | 6 |
-| **Node types registrados** | 32 (15 core + 17 identity) |
-| **Edge type** | smoothstep para todos |
-| **Layout** | Pre-computado server-side — posiciones vienen de la API |
-| **Memoization** | `TraceNodeComponent` wrapped en `React.memo` |
-| **Estado** | React `useState` para graphMeta, nodes, edges, traceList, selectedTraceId, replayInput |
-| **Iconos page** | lucide-react: Activity, Play, RefreshCw, Clock, Loader2, Zap, Box, ArrowRight, Send, Layers, ChevronRight, Eye, X, Copy, Check, Trash2 |
-| **Iconos node** | lucide-react: MessageSquare, GitBranch, Scale, ListChecks, Database, FileText, Brain, User, Shield, Zap, ArrowDown, AlertTriangle, Users, Fingerprint, Gauge, SlidersHorizontal, Palette, Link, ArrowUpDown, PenTool, Syringe, Layers, ShieldAlert, MessageCircle, HeartPulse, Activity, TrendingUp, FlaskConical, GitCommit, CheckCircle2, XCircle, Clock, SkipForward, ChevronDown, ChevronUp |
+| **Node types registrados** | 32 (15 core + 17 identity), organizados en 8 columnas funcionales |
+| **Columnas** | 8 (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline) |
+| **Layout** | CSS Grid horizontal `repeat(8, minmax(180px, 1fr))` — columnas siempre visibles, vacías en gris |
+| **LLM Indicator** | Badge violeta 🧠 en header del nodo cuando `uses_llm=true` (detectado via `metadata.llm_details` o `metrics.provider`) |
+| **Memoization** | `PipelineNode` wrapped en `React.memo` |
+| **LLM Details** | Panel dedicado con badges de provider coloreados, tokens, latencia, costo estimado |
+| **Estado** | React `useState` para graphData, traceList, selectedTraceId, replayInput |
+| **Constantes** | `trace-constants.ts`: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), GROUP_ORDER, NODE_TYPE_GROUP, estimateCost() |
 
 **Última actualización**: 2025-06-23

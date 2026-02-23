@@ -10,14 +10,14 @@ Este documento describe el **sistema nervioso** de Django — los dos mecanismos
 
 ### ¿Qué cubre este documento?
 
-Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (407 líneas) que genera grafos compatibles con React Flow, el `TraceStore` (100 trazas en memoria), y los 32 tipos de nodos de traza que representan cada paso del pipeline.
+Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3 destinos, el esquema `IAmeEvent` con sus 7 campos, los 16+ tipos de eventos, el `TraceCollector` (562 líneas) que genera grafos con 8 sub-flow groups, el `TraceStore` (100 trazas en memoria), y los 32 tipos de nodos de traza organizados en bloques funcionales.
 
 ### ¿Cuál es su función en la arquitectura?
 
 Los eventos y trazas son el **sistema de observabilidad**. Sin ellos, lo que hace Django internamente sería una caja negra. Gracias a events y trace, Harold puede:
 - **Ver en tiempo real** qué está haciendo Django (via WebSocket al Dashboard)
 - **Auditar** qué hizo en el pasado (via audit_log en Postgres)
-- **Visualizar** exactamente cómo pensó Django cada respuesta (via el grafo de traza cognitiva en React Flow)
+- **Visualizar** exactamente cómo pensó Django cada respuesta (via el pipeline horizontal CSS Grid en la página `/trace`)
 
 ### ¿Cómo afecta al comportamiento de Django?
 
@@ -91,36 +91,67 @@ Cada `IAmeEvent` se emite a 3 destinos en paralelo:
 
 ---
 
-## Trace Cognitivo — `src/trace/` (401 líneas)
+## Trace Cognitivo — `src/trace/` (~562 líneas)
 
-### TraceCollector — `collector.py` (342 líneas)
+### TraceCollector — `collector.py` (562 líneas)
 
-Cada interacción genera un grafo [React Flow](https://reactflow.dev/) compatible:
+Cada interacción genera un grafo dirigido con sub-flow groups:
 
 - **Per-interaction** — un TraceCollector nuevo por cada `orchestrator.process()` call
-- **Auto-layout** — posiciona nodos automáticamente
-- `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`
+- **Layout horizontal** — 8 sub-flow groups renderizados como columnas CSS Grid en el frontend
+- `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`
+- **Sub-flow groups**: `_NODE_TYPE_GROUP` (32 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order)
 
-### 16 Tipos de Nodo
+### 8 Sub-Flow Groups
+
+| # | Grupo | Color | Nodos |
+|---|-------|-------|-------|
+| 0 | Pre-Pipeline | #6366f1 (indigo) | input, branch |
+| 1 | Classification | #06b6d4 (cyan) | classify, decision_engine |
+| 2 | Identity Pre-Gen | #a855f7 (purple) | identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias |
+| 3 | Planning & Skills | #f59e0b (amber) | planner, skill_execution |
+| 4 | Context Assembly | #10b981 (emerald) | memory_recall, identity_memory_bridge, identity_retrieval_weight, correction, identity_context_weight, identity_prompt_inject, prompt_build, compaction |
+| 5 | LLM Generation | #ef4444 (red) | llm_generate, multi_agent, identity_review, governance_review |
+| 6 | Persistence & Eval | #3b82f6 (blue) | identity_consolidation, memory_store, evaluation, identity_drift, identity_policy, identity_feedback, output |
+| 7 | Post-Pipeline | #ec4899 (pink) | identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate |
+
+### 32 Tipos de Nodo
 
 | Tipo | Color | Paso del Pipeline |
 |------|-------|-------------------|
 | `input` | blue | Mensaje del usuario |
 | `classify` | purple | Paso 1 — clasificación |
-| `decision_engine` | indigo | Paso 2 — DecisionEngine |
-| `planner` | cyan | Paso 3 — Planner |
-| `memory_recall` | teal | Paso 4 — recall de memoria |
-| `correction` | yellow | Paso 5 — injection de correcciones |
-| `context_weighting` | — | Paso 3b — identity context tags |
-| `prompt_build` | orange | Paso 6 — construcción del prompt |
-| `llm_generate` | green | Paso 7 — generación LLM |
-| `identity_review` | pink | Paso 8 — revisión de identidad |
-| `governance_review` | amber | Paso 9 — revisión de gobernanza |
-| `memory_store` | emerald | Paso 10 — almacenamiento |
+| `decision_engine` | orange | Paso 2 — DecisionEngine |
+| `planner` | sky | Paso 3 — Planner |
+| `memory_recall` | cyan | Paso 4 — recall de memoria |
+| `correction` | amber | Paso 5 — injection de correcciones |
+| `prompt_build` | indigo | Paso 6 — construcción del prompt |
+| `llm_generate` | emerald | Paso 7 — generación LLM |
+| `identity_review` | rose | Paso 8 — revisión de identidad |
+| `governance_review` | yellow | Paso 9 — revisión de gobernanza |
+| `memory_store` | teal | Paso 10 — almacenamiento |
 | `evaluation` | violet | Paso 10 — evaluaciones |
-| `output` | sky | Respuesta final |
-| `branch` | — | Bifurcación en pipeline |
-| `multi_agent` | rose | Ejecución multi-agente |
+| `output` | green | Respuesta final |
+| `branch` | red | Bifurcación en pipeline |
+| `multi_agent` | fuchsia | Ejecución multi-agente |
+| `compaction` | slate | Compactación de working memory |
+| `identity_decision_modulation` | pink | Paso 3c (Phase 6C) |
+| `identity_confidence` | pink | Paso 3d (Phase 6D) |
+| `identity_autonomy` | pink | Paso 3e (Phase 7A) |
+| `identity_bias` | fuchsia | Paso 3f (Phase 8A) |
+| `identity_memory_bridge` | rose | Paso 2b (Phase 6A) |
+| `identity_retrieval_weight` | rose | Paso 2c (Phase 7B) |
+| `identity_context_weight` | pink | Paso 3b (Phase 6B) |
+| `identity_prompt_inject` | fuchsia | Paso 3g (Phase 8B) |
+| `identity_consolidation` | pink | Paso 6d (Phase 7C) |
+| `identity_drift` | red | Paso 7c (Phase 5A) |
+| `identity_policy` | red | Paso 7d (Phase 5B) |
+| `identity_feedback` | orange | Paso 7e (Phase 5C) |
+| `identity_health_monitor` | lime | Paso 9a (Phase 9A) |
+| `identity_health_regulation` | lime | Paso 9b (Phase 9B) |
+| `identity_evolution` | amber | Paso 9c (Phase 10A) |
+| `identity_shadow` | slate | Paso 9d (Phase 10B) |
+| `identity_version_candidate` | emerald | Paso 9e (Phase 10C) |
 
 ### TraceStore
 
@@ -132,8 +163,10 @@ Singleton — últimas **100 trazas** en memoria. Respaldado en [Postgres](datab
 
 Página: [Cognitive Trace](../dashboard/cognitive-trace.md) (`/trace`)
 
-- Canvas React Flow con zoom, pan, minimap
+- Pipeline horizontal CSS Grid con 8 columnas (accordion nodes)
+- **🧠 LLM badge** — nodos que usan LLM marcados con badge violeta
 - Nodos expandibles: input/output/metrics/errors por paso
+- **LLM Details panel** — badges de provider (Gemini/Groq/Ollama), tokens, latencia, costo estimado
 - Prompt viewer modal (user + system prompts)
 - Lista de trazas con click-to-load
 - Replay: re-procesa un mensaje por pipeline completo
@@ -162,7 +195,7 @@ El Dashboard se conecta via `useWebSocket()` hook → `ws://localhost:8000/api/w
 
 - [Pipeline](pipeline.md) — Cada paso emite eventos y crea trace nodes
 - [Base de Datos](database.md) — audit_log, trace_nodes, interactions
-- [Cognitive Trace](../dashboard/cognitive-trace.md) — Visualización React Flow
+- [Cognitive Trace](../dashboard/cognitive-trace.md) — Pipeline horizontal CSS Grid
 - [Command Center](../dashboard/command-center.md) — ActivityFeed, AgentStatusRing, HealthBar
 - [Gobernanza](../dashboard/governance-console.md) — Audit log viewer
 - [Analytics](../dashboard/analytics.md) — Events by type/agent/risk

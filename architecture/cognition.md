@@ -2,7 +2,7 @@
 
 > [← Agentes](agents.md) · [Memoria →](memory.md)
 
-**Directorio**: `src/cognition/` (349 líneas, 3 archivos)
+**Directorio**: `src/cognition/` (315 líneas, 3 archivos)
 
 ---
 
@@ -45,7 +45,7 @@ Capa **100% determinística** — cero llamadas LLM, cero IO, cero acceso a repo
 
 ---
 
-## DecisionEngine — `decision_engine.py` (181 líneas)
+## DecisionEngine — `decision_engine.py` (163 líneas)
 
 **Inmutable**: `__slots__` + `__setattr__` override → completamente frozen después de `__init__`.
 
@@ -79,7 +79,7 @@ El DecisionEngine recibe opcionalmente un `IdentityProfile` en constructor. Es a
 
 ---
 
-## Planner — `planner.py` (144 líneas)
+## Planner — `planner.py` (132 líneas)
 
 **Stateless**: Constructor sin argumentos. `governance_enabled` se pasa como parámetro.
 
@@ -96,11 +96,24 @@ El Plan incluye steps condicionales de gate:
 
 ---
 
-## Categories — `categories.py` (81 líneas)
+## Categories — `categories.py` (20 líneas)
 
-`TaskCategory` enum compartido entre orchestrator y cognition. Extraído para evitar dependencia circular.
+`TaskCategory` enum compartido entre orchestrator, cognition y semantic classifier. Extraído para evitar dependencia circular.
 
-Categorías: CONVERSATION, BUSINESS, TECHNICAL, CREATIVE, RESEARCH, ANALYSIS, COMMUNICATION, GOVERNANCE, TRAINING, META (y más).
+Categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DOCS, LEARN_REQUEST, MULTI_AGENT.
+
+---
+
+## Semantic Classifier — `src/flows/semantic_classifier.py` (565 líneas)
+
+Clasificación semántica por centroides — reemplaza las heurísticas de keywords. Usa embeddings locales (all-MiniLM-L6-v2, 384 dim).
+
+- **320 training phrases** (8 categorías × ~40 frases bilingües)
+- **Centroides**: promedio normalizado de embeddings por categoría, computados lazy al startup (~1-2s), cacheados como singleton
+- **Clasificación**: cosine similarity mensaje vs 8 centroides
+- **MULTI_AGENT**: si top-2 domain categories > 0.45 y gap < 0.08
+- **Fallback**: confidence < 0.30 → CONVERSATION
+- **`SemanticClassification`**: frozen dataclass con category, confidence, scores, runner_up, method
 
 ---
 
@@ -121,7 +134,7 @@ No hay dependencia inversa cognition → orchestrator.
 
 | Paso | Módulo | Función |
 |------|--------|---------|
-| 1 | Orchestrator | `classify()` → `TaskCategory` (heurísticas de keywords) |
+| 1 | Orchestrator | `semantic_classify()` → `TaskCategory` (centroides semánticos) |
 | 2 | **DecisionEngine** | `evaluate()` → `DecisionResult` |
 | 3 | **Planner** | `build()` → `Plan` con gate steps |
 

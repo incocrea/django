@@ -64,7 +64,7 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 | **SQL DB** | Neon Postgres (remoto) | [Ver database.md](database.md) |
 | **Procedural DB** | SQLite | Correcciones, workflows |
 | **Charts** | recharts, SVG inline | Visualizaciones [analytics](../dashboard/analytics.md) |
-| **Flow Viz** | @xyflow/react v12 | [Trazas cognitivas](../dashboard/cognitive-trace.md) |
+| **Flow Viz** | CSS Grid nativo | [Pipeline horizontal 8 columnas](../dashboard/cognitive-trace.md) (legacy: @xyflow/react v12) |
 | **Discord** | discord.py, httpx | [Bot + webhook](../integrations/README.md) |
 
 ---
@@ -74,14 +74,14 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 ```
 iame.lol/
 ├── agent/                                    # Backend Python FastAPI
-│   ├── src/                                  # 25,217 líneas, 89 archivos
+│   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # → agents.md
 │   │   ├── api/           (4,110 ln, 3 files) # → ../api/README.md
-│   │   ├── cognition/       (349 ln, 3 files) # → cognition.md
+│   │   ├── cognition/       (315 ln, 3 files) # → cognition.md
 │   │   ├── db/            (1,916 ln, 3 files) # → database.md
 │   │   ├── evaluation/    (2,151 ln, 6 files) # → evaluation.md
 │   │   ├── events/          (151 ln, 2 files) # → events.md
-│   │   ├── flows/         (3,116 ln, 5 files) # → pipeline.md
+│   │   ├── flows/         (3,432 ln, 6 files) # → pipeline.md
 │   │   ├── governance/         (1 file)       # Stub
 │   │   ├── identity/      (6,080 ln, 22 files)# → identity.md
 │   │   ├── memory/        (1,636 ln, 4 files) # → memory.md
@@ -89,7 +89,7 @@ iame.lol/
 │   │   ├── security/        (429 ln, 4 files) # → security.md
 │   │   ├── skills/        (1,364 ln, 6 files) # → ../dashboard/skill-manager.md
 │   │   ├── teleology/    (2,294 ln, 11 files) # → teleology.md
-│   │   ├── trace/           (~408 ln, 2 files) # → events.md
+│   │   ├── trace/           (~562 ln, 2 files) # → events.md
 │   │   ├── training/        (521 ln, 2 files) # → ../dashboard/training-center.md
 │   │   ├── config.py                  (117 ln)# → ../config/README.md
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
@@ -149,9 +149,9 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 2,716 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 2,575 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
-| Cognition | [cognition.md](cognition.md) | 349 | DecisionEngine + Planner (determinístico) |
+| Cognition | [cognition.md](cognition.md) | 315 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,636 | 4-tier memory system |
 | Identity | [identity.md](identity.md) | 6,080 | 22 módulos de identidad |
 | Teleology | [teleology.md](teleology.md) | 2,294 | Metas, planes, prioridades |

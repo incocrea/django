@@ -104,7 +104,7 @@ docs/
 │   ├── memory-lab.md                  #   /memory — CRUD de memorias
 │   ├── governance-console.md          #   /governance — Reglas y emergency stop
 │   ├── analytics.md                   #   /analytics — Métricas y uso
-│   ├── cognitive-trace.md             #   /trace — Visualización React Flow
+│   ├── cognitive-trace.md             #   /trace — Pipeline horizontal CSS Grid
 │   ├── evaluation-dashboard.md        #   /evaluation — 5 sistemas de evaluación
 │   ├── identity-governance.md         #   /identity-governance — Versiones + evolución
 │   └── goals.md                       #   /goals — Sistema de metas
@@ -125,8 +125,8 @@ docs/
 
 | Métrica | Valor |
 |---------|-------|
-| Backend Python | 25,217 líneas, 89 archivos |
-| Tests pytest | 20,041 líneas, 47 archivos |
+| Backend Python | 23,834 líneas, 90 archivos |
+| Tests pytest | 16,895 líneas, 48 archivos |
 | Dashboard Next.js | 12,490 líneas |
 | **Total** | **57,748 líneas** |
 | Endpoints API | 116 (55 GET, 35 POST, 10 PUT, 12 DELETE, 1 WS) |

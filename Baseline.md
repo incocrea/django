@@ -42,7 +42,7 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 - **LLMs**: Cadena Gemini → Groq → Ollama con circuit breaker y fallback automático
 - **Costo operativo**: $0/mes (todos servicios en tier gratuito)
 
-El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el dashboard. Cada interacción pasa por clasificación, cognición determinística, memoria, generación LLM, revisión de identidad, gobernanza, evaluación y persistencia — todo trazable vía grafos React Flow.
+El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el dashboard. Cada interacción pasa por clasificación, cognición determinística, memoria, generación LLM, revisión de identidad, gobernanza, evaluación y persistencia — todo trazable vía pipeline horizontal CSS Grid.
 
 ---
 
@@ -50,8 +50,8 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 
 | Métrica | Valor |
 |---------|-------|
-| Backend Python (src/) | 25,217 líneas, 89 archivos |
-| Tests (pytest) | 20,041 líneas, 47 archivos |
+| Backend Python (src/) | 23,834 líneas, 90 archivos |
+| Tests (pytest) | 16,895 líneas, 48 archivos |
 | Dashboard (app/ + components/ + lib/) | 12,490 líneas |
 | **Total líneas de código** | **57,748** |
 | Endpoints REST + WebSocket | 116 |
@@ -78,7 +78,7 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | **SQL DB** | Neon Postgres (remoto) | psycopg2 sync, autocommit |
 | **Procedural DB** | SQLite | Correcciones, workflows |
 | **Charts** | recharts, SVG inline | Visualizaciones analytics |
-| **Flow Viz** | @xyflow/react v12 | Trazas cognitivas |
+| **Flow Viz** | CSS Grid nativo | Pipeline horizontal 8 columnas (legacy: @xyflow/react v12) |
 | **Discord** | discord.py, httpx | Bot + webhook publisher |
 | **Auth** | Supabase (planificado) | API abierta actualmente |
 
@@ -89,14 +89,14 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 ```
 iame.lol/
 ├── agent/                                    # Backend Python FastAPI
-│   ├── src/                                  # 25,217 líneas, 89 archivos
+│   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
 │   │   ├── api/           (4,110 ln, 3 files) # main.py (403) + routes.py (3,707)
-│   │   ├── cognition/       (349 ln, 3 files) # DecisionEngine + Planner + categories
+│   │   ├── cognition/       (315 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,970 ln, 3 files) # database.py (408) + persistence.py (1,507)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (3,069 ln, 5 files) # orchestrator (2,716) + middleware + parallel + categories
+│   │   ├── flows/         (3,495 ln, 6 files) # orchestrator (2,575) + semantic_classifier (565) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,636 ln, 4 files) # manager (956) + hybrid_search + compaction
@@ -104,12 +104,12 @@ iame.lol/
 │   │   ├── security/        (429 ln, 4 files) # input_sanitizer + content_wrapper + middleware
 │   │   ├── skills/        (1,364 ln, 6 files) # registry + web_research + learn_topic + repo_explorer + tools
 │   │   ├── teleology/    (2,294 ln, 11 files) # goals + plans + priorities + rewards + conflicts
-│   │   ├── trace/           (~408 ln, 2 files) # TraceCollector + TraceStore
+│   │   ├── trace/           (~562 ln, 2 files) # TraceCollector + TraceStore
 │   │   ├── training/        (521 ln, 2 files) # 3 modos de entrenamiento
 │   │   ├── config.py                  (117 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # 20,041 líneas, 47 test files + conftest.py
+│   ├── tests/                                 # 16,895 líneas, 48 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
@@ -279,20 +279,20 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 - Timeout de recovery
 - Integrado en Health Bar del dashboard (LEDs verde/amber/rojo)
 
-### 6.4 Cognición — src/cognition/ (349 líneas, 3 archivos)
+### 6.4 Cognición — src/cognition/ (315 líneas, 3 archivos)
 
 Capa 100% determinística — cero llamadas LLM, cero IO. El Orchestrator no puede iniciar sin ella (isinstance guards).
 
-**DecisionEngine** (181 ln) — **Inmutable** (`__slots__` + `__setattr__` override):
+**DecisionEngine** (163 ln) — **Inmutable** (`__slots__` + `__setattr__` override):
 - `Strategy` enum: DIRECT_RESPONSE, STRUCTURED_ANALYSIS, RESEARCH_REQUIRED, MULTI_AGENT
 - `evaluate(category, message, governance_enabled)` → `DecisionResult` (frozen dataclass)
 - Determina categoría, estrategia, agente, nivel de riesgo, si requiere revisión de identidad/gobernanza
 
-**Planner** (144 ln) — **Stateless**:
+**Planner** (132 ln) — **Stateless**:
 - `build(decision, governance_enabled)` → `Plan` (frozen dataclass)
-- Plan contiene PlanSteps con gate flags para identity_review y governance_review
+- Plan contiene PlanSteps con gate flags para identity_review, governance_review y skill_execution
 
-**categories.py** (81 ln) — `TaskCategory` enum compartido (evita dependencia circular orchestrator↔cognition).
+**categories.py** (20 ln) — `TaskCategory` enum compartido (evita dependencia circular orchestrator↔cognition). 8 categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DOCS, LEARN_REQUEST, MULTI_AGENT.
 
 ### 6.5 Memoria — src/memory/ (1,636 líneas, 4 archivos)
 
@@ -325,11 +325,11 @@ Todos heurísticos, sin llamadas LLM extra. Singletons en memoria (max 200-1000 
 
 `EventBus` singleton — broadcast simultáneo a: (1) WebSocket connections, (2) Postgres `audit_log`, (3) suscriptores in-memory. Últimos 100 eventos en memoria. `IAmeEvent` dataclass con `event_type`, `data`, `risk_level`, `timestamp`.
 
-### 6.8 Trace Cognitivo — src/trace/ (~408 líneas)
+### 6.8 Trace Cognitivo — src/trace/ (~562 líneas)
 
-**collector.py (407 ln)**: `TraceCollector` — per-interaction, crea grafo React Flow con auto-layout. `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`.
+**collector.py (562 ln)**: `TraceCollector` — per-interaction, crea grafo con auto-layout agrupado en 8 sub-flow groups. `TraceNode` dataclass incluye `persist_id`, `model_used`, `risk_score`, `uses_llm`. Nodos organizados en bloques funcionales via `_NODE_TYPE_GROUP` (32 mappings) + `_NODE_ID_GROUP` (overrides) + `_GROUP_META` (8 grupos con label/color/order). Frontend renderiza como pipeline horizontal CSS Grid de 8 columnas.
 
-**32 tipos de nodo**: input, classify, decision_engine, planner, memory_recall, correction, context_weighting, prompt_build, llm_generate, identity_review, governance_review, memory_store, evaluation, output, branch, multi_agent, identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias, identity_memory_bridge, identity_retrieval_weight, identity_context_weight, identity_prompt_inject, identity_consolidation, identity_drift, identity_policy, identity_feedback, identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate.
+**32 tipos de nodo** (organizados en 8 grupos): input, classify, decision_engine, planner, memory_recall, correction, context_weighting, prompt_build, llm_generate, identity_review, governance_review, memory_store, evaluation, output, branch, multi_agent, identity_decision_modulation, identity_confidence, identity_autonomy, identity_bias, identity_memory_bridge, identity_retrieval_weight, identity_context_weight, identity_prompt_inject, identity_consolidation, identity_drift, identity_policy, identity_feedback, identity_health_monitor, identity_health_regulation, identity_evolution, identity_shadow, identity_version_candidate.
 
 `TraceStore` — singleton, últimas 100 trazas en memoria.
 
@@ -504,7 +504,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,716 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,575 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
@@ -512,9 +512,8 @@ Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), 
 |------|--------|-------------|
 | 0 | Emergency Check | Bloquea si `_emergency_stopped` |
 | 0.3 | Goal Context Injector | Inyecta metas activas (teleología middleware) |
-| 0.5 | Learn-topic Auto-detect | Regex "aprende sobre X" → web → LLM → ChromaDB (bypass steps 2-10) |
-| 0.7 | Repo Explorer Auto-detect | Regex "lee/explora repo X" → local/GitHub/docs read → context injection (bypass steps 2-10). Modes 1-2 |
-| 1 | Classify | Keyword heuristics → TaskCategory enum |
+| 1 | Semantic Classify | Clasificación semántica por centroides (embeddings all-MiniLM-L6-v2, 8 categorías, 320 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
+| 1d | Skill Execution | Si el Planner incluye `skill_execution` step: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
 | 2 | Decision Engine | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | Evalúa alignment decision-identity (observational) |
 | 3d | Identity Confidence | Agrega señales → confidence 0-1 + autonomy_modifier |
@@ -993,8 +992,8 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ### 11.11 Cognitive Trace — `/trace`
 
-**Archivo**: `app/trace/page.tsx` (703 ln)
-**Propósito**: Visualizar el pipeline de procesamiento como grafos React Flow.
+**Archivo**: `app/trace/page.tsx` (~542 ln)
+**Propósito**: Visualizar el pipeline de procesamiento como pipeline horizontal CSS Grid de 8 columnas.
 
 **Carga inicial**: `api.traceList(50)` + `api.traceLatest()`.
 
@@ -1003,14 +1002,14 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | Control | Acción Interna |
 |---------|---------------|
 | **Replay** (input + Send) | `api.traceReplay(message)` → `POST /trace/replay` → ejecuta pipeline completo → retorna grafo con nodos y edges |
-| **Trace list item click** | `api.traceDetail(id)` → `GET /trace/{id}` → carga grafo de traza específico en canvas React Flow |
+| **Trace list item click** | `api.traceDetail(id)` → `GET /trace/{id}` → carga grafo de traza específico en pipeline view |
 | **Delete trace** | `api.traceDelete(id)` → `DELETE /trace/{id}` → elimina de Postgres + in-memory store |
 | **Delete all** (confirm) | `api.traceDeleteAll()` → `DELETE /trace` → elimina TODO de Postgres |
 | **Load latest** | `api.traceLatest()` → `GET /trace/latest/graph` |
 | **Prompt viewer modal** | Muestra user prompt y system prompt de la traza. Tabs user/system. Copy to clipboard |
-| **React Flow canvas** | Zoom, pan, minimap, controles. Nodos expandibles con input/output/metrics/errors |
+| **Pipeline view** | 8 columnas horizontales con accordion. Nodos expandibles con input/output/metrics/errors. 🧠 LLM badge en nodos que usan LLM |
 
-**32 tipos de nodo**: Cada paso del pipeline se visualiza como un nodo coloreado (input=blue, classify=purple, decision_engine=orange, planner=sky, memory_recall=cyan, correction=amber, prompt_build=indigo, llm_generate=emerald, identity_review=rose, governance_review=yellow, memory_store=teal, evaluation=violet, output=green, branch=red, multi_agent=fuchsia, identity_decision_modulation=pink, identity_confidence=pink, identity_autonomy=pink, identity_bias=fuchsia, identity_memory_bridge=rose, identity_retrieval_weight=rose, identity_context_weight=pink, identity_prompt_inject=fuchsia, identity_consolidation=pink, identity_drift=red, identity_policy=red, identity_feedback=orange, identity_health_monitor=lime, identity_health_regulation=lime, identity_evolution=amber, identity_shadow=slate, identity_version_candidate=emerald). Nodos expandibles muestran processing summary, input, output, metrics, errors.
+**32 tipos de nodo** (en 8 sub-flow groups): Cada paso del pipeline se visualiza como un nodo coloreado dentro de bloques funcionales agrupados (pre_pipeline, classification, identity_pre, planning, context, generation, persistence, post_pipeline). Nodos expandibles muestran processing summary, LLM Details panel (provider badge, tokens, latencia, costo estimado), input, output, metrics, errors.
 
 ### 11.12 Evaluation Dashboard — `/evaluation`
 
@@ -1111,11 +1110,12 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | `ChatPanel` | `chat-panel.tsx` (199 ln) | Chat completo: input, send, mode toggle, clear, auto-scroll |
 | `MessageBubble` | `message-bubble.tsx` (100 ln) | Bubble con avatar, content, footer (model, mode, sources) |
 
-### 12.4 Trace (1 componente)
+### 12.4 Trace (2 componentes)
 
 | Componente | Archivo | Función |
 |-----------|---------|---------|
-| `TraceNodeComponent` | `trace-node.tsx` (408 ln) | Nodo React Flow custom: 32 tipos con color/icon mapping, expandible con input/output/metrics |
+| `TraceNodeComponent` | `trace-node.tsx` (512 ln) | Nodo React Flow custom: 32 tipos con color/icon mapping, expandible con input/output/metrics, LLM Details panel con badges de provider |
+| `GroupNodeComponent` | `group-node.tsx` (57 ln) | Contenedor visual de sub-flow group: borde coloreado, label, badge de nodos, badge de latencia |
 
 ### 12.5 Identity Governance (5 componentes)
 
@@ -1245,7 +1245,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 15. Sistema de Tests — 20,041 líneas, 47 archivos
+## 15. Sistema de Tests — 16,895 líneas, 48 archivos
 
 | Archivo | Líneas | Módulo testeado |
 |---------|--------|----------------|
@@ -1255,6 +1255,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | `test_crew.py` | 104 | AgentCrew |
 | `test_event_bus.py` | 115 | EventBus pub/sub |
 | `test_cognition.py` | 235 | DecisionEngine + Planner |
+| `test_semantic_classifier.py` | 186 | Semantic Classifier (centroides) |
 | `test_orchestrator.py` | 161 | Pipeline orchestrator |
 | `test_model_router.py` | 112 | ModelRouter fallback |
 | `test_memory.py` | 279 | MemoryManager 4-tier |
@@ -1295,6 +1296,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | `test_teleology_api.py` | 320 | Goals API endpoints |
 | `test_teleology_governance.py` | 147 | Teleology governance checks |
 | `test_teleology_middleware.py` | 144 | Teleology middleware integration |
+| `test_trace_subflows.py` | 548 | Trace sub-flow grouping + LLM metadata |
 
 **Framework**: pytest. **conftest.py** (100 ln): fixtures compartidos.
 
@@ -1333,7 +1335,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
 | **Memory Consolidation Background** | ALTA | Job periódico episodic → semantic summarization |
 | **Real Identity Fidelity** | MEDIA | Ponderar identity_similarity en overall_score + dashboard gauge |
-| **LLM-Based Classification** | MEDIA | Reemplazar keyword matching con clasificación semántica |
+| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (565 ln). No usa LLM sino embeddings locales. |
 | **External Integrations** | MEDIA | Email send/receive, calendar, Slack, CRM |
 | **Tool Policy Cascade** | MEDIA | Políticas por skill integradas con gobernanza |
 | **Sandboxed Code Execution** | MEDIA | Ejecución de código en sandbox aislado |
@@ -1438,7 +1440,7 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 | **ChromaDB** | Base de datos vectorial local para búsqueda semántica |
 | **Circuit Breaker** | Patrón que protege contra fallos cascada en proveedores LLM |
 | **Cognitive Mode** | Nivel de inteligencia: Full (1), Memory+LLM (2), Memory Only (3) |
-| **Cognitive Trace** | Grafo React Flow que registra cada paso del procesamiento |
+| **Cognitive Trace** | Pipeline horizontal CSS Grid que registra cada paso del procesamiento |
 | **Cosine Similarity** | Medida de similitud entre vectores (0=nada, 1=idénticos) |
 | **Drift** | Desviación de personalidad respecto al baseline |
 | **EventBus** | Sistema pub/sub para broadcast de eventos a WebSocket, DB y suscriptores |
@@ -1458,5 +1460,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 31 componentes, 47 test files, 4 configs, 2 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 48 test files, 4 configs, 2 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026

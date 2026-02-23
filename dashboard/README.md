@@ -17,7 +17,7 @@
 | shadcn/ui | — | Primitivos UI |
 | Zustand | 5 | Estado global |
 | recharts | — | Gráficas |
-| @xyflow/react | v12 | React Flow (trazas) |
+| @xyflow/react | v12 | Legacy (no longer used in trace page) |
 | lucide-react | — | Iconos |
 
 ---
@@ -37,7 +37,7 @@
 | `/memory` | Memory Lab | Explorar/editar memorias | [→](memory-lab.md) |
 | `/governance` | Governance Console | Reglas, audit, emergency stop | [→](governance-console.md) |
 | `/analytics` | Analytics | Métricas de rendimiento | [→](analytics.md) |
-| `/trace` | Cognitive Trace | Grafos React Flow del pipeline | [→](cognitive-trace.md) |
+| `/trace` | Cognitive Trace | Pipeline horizontal CSS Grid 8 columnas | [→](cognitive-trace.md) |
 | `/evaluation` | Evaluation Dashboard | 5 módulos de evaluación | [→](evaluation-dashboard.md) |
 | `/identity-governance` | Identity Governance | Versiones, evolución, shadow, health | [→](identity-governance.md) |
 | `/goals` | Goals | Sistema teleológico | [→](goals.md) |
@@ -73,11 +73,15 @@
 | `ChatPanel` | 199 | Input, send, mode toggle, clear |
 | `MessageBubble` | 100 | Avatar, content, footer (model, mode, sources) |
 
-### Trace (1)
+### Trace (5)
 
 | Componente | Líneas | Función |
-|-----------|--------|---------|
-| `TraceNodeComponent` | 426 | Nodo React Flow custom: 32 tipos, expandible |
+|-----------|--------|--------|
+| `PipelineView` | 173 | CSS Grid 8-columnas horizontal: headers coloreados, flechas inter-columna, columnas vacías en gris |
+| `PipelineNode` | 238 | Nodo accordion: icono, status, latencia, 🧠 LLM badge, secciones expandibles (LLM details, input, output, metrics) |
+| `trace-constants` | 227 | Constantes compartidas: NODE_ICONS (37), NODE_COLORS (37), GROUP_META (8), estimateCost(), getNodeGroup() |
+| `TraceNodeComponent` | 512 | Legacy — nodo React Flow custom (dead code, kept for reference) |
+| `GroupNodeComponent` | 57 | Legacy — contenedor visual de sub-flow group (dead code, kept for reference) |
 
 ### Identity Governance (5)
 

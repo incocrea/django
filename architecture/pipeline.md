@@ -2,7 +2,7 @@
 
 > [← Arquitectura](README.md) · [Agentes →](agents.md)
 
-**Archivo**: `src/flows/orchestrator.py` (2,716 líneas)
+**Archivo**: `src/flows/orchestrator.py` (2,575 líneas)
 
 ---
 
@@ -62,9 +62,8 @@ Pipeline central de 25+ pasos que procesa CADA mensaje. Soporta 3 Modos Cognitiv
 |------|--------|--------|-------------|
 | 0 | Emergency Check | orchestrator | Bloquea si `_emergency_stopped` → ver [governance](../dashboard/governance-console.md) |
 | 0.3 | Goal Context Injector | [teleology middleware](teleology.md) | Inyecta metas activas (PRE_CLASSIFY hook) |
-| 0.5 | Learn-topic Auto-detect | [skills](../dashboard/skill-manager.md) | Regex "aprende sobre X" → web → LLM → ChromaDB (bypass steps 2-10) |
-| 0.7 | Repo Explorer Auto-detect | [skills](../dashboard/skill-manager.md) | Regex "lee/explora repo X" → local/GitHub/docs read → context injection (bypass steps 2-10). Modes 1-2. |
-| 1 | Classify | orchestrator | Keyword heuristics → `TaskCategory` enum → ver [cognition](cognition.md) |
+| 1 | Semantic Classify | [semantic_classifier](cognition.md) | Clasificación semántica por centroides — embeddings all-MiniLM-L6-v2, 8 categorías, 320 training phrases. Fallback a CONVERSATION si confidence < 0.30 |
+| 1d | Skill Execution | [skills](../dashboard/skill-manager.md) | Si Planner incluye `skill_execution`: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
 | 2 | Decision Engine | [cognition](cognition.md) | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | [identity](identity.md) | Evalúa alignment decision-identity (observational) |
 | 3d | Identity Confidence | [identity](identity.md) | Agrega señales → confidence 0-1 + autonomy_modifier |
