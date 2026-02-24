@@ -2,7 +2,7 @@
 
 > [← Arquitectura](README.md) · [Agentes →](agents.md)
 
-**Archivo**: `src/flows/orchestrator.py` (2,616 líneas)
+**Archivo**: `src/flows/orchestrator.py` (3,178 líneas)
 
 ---
 

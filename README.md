@@ -17,7 +17,7 @@ ADLRA es un sistema compuesto por muchas piezas que trabajan juntas para lograr 
 Para lograrlo, el sistema tiene:
 - Un **backend en Python/FastAPI** con un pipeline de procesamiento de 25+ pasos que analiza cada mensaje, consulta memorias, aplica la identidad de Harold, genera respuestas con LLMs y evalúa la calidad del resultado — todo esto documentado en la sección de [Arquitectura](architecture/README.md)
 - Un **dashboard en Next.js** con 15 páginas donde Harold puede configurar la personalidad de Django, entrenarle, ver sus memorias, monitorear su rendimiento y controlar su gobernanza — documentado en la sección de [Dashboard](dashboard/README.md)
-- **115 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
+- **120 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
 - **Integraciones externas** como el bot de Discord y el sistema de modelos LLM con fallback automático — en [Integraciones](integrations/README.md)
 - **Archivos de configuración** que definen quién es Harold, qué modelos usar, qué habilidades tiene Django y qué límites no puede cruzar — en [Configuración](config/README.md)
 
@@ -58,7 +58,7 @@ Esta documentación está organizada para ser explorada tanto por humanos como p
 |---------------|------|
 | Entender qué es ADLRA y cómo funciona | [Arquitectura General](architecture/README.md) |
 | Ver cómo se procesa cada mensaje | [Pipeline del Orchestrator](architecture/pipeline.md) |
-| Conocer los 115 endpoints de la API | [Referencia API](api/README.md) |
+| Conocer los 120 endpoints de la API | [Referencia API](api/README.md) |
 | Explorar las 15 páginas del dashboard | [Dashboard](dashboard/README.md) |
 | Entender el sistema de identidad de Django | [Sistema de Identidad](architecture/identity.md) |
 | Ver la configuración del sistema | [Configuración](config/README.md) |
@@ -90,7 +90,7 @@ docs/
 │   └── database.md                    #   Postgres + ChromaDB + SQLite + Persistence
 │
 ├── api/
-│   └── README.md                      #   115 endpoints agrupados por sección
+│   └── README.md                      #   120 endpoints agrupados por sección
 │
 ├── dashboard/                         # Las 15 páginas del dashboard
 │   ├── README.md                      #   Overview, componentes, store, hooks, i18n

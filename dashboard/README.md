@@ -171,7 +171,7 @@ export const api = {
 
 ## Temas Relacionados
 
-- [API](../api/README.md) — Los 115 endpoints que consume
+- [API](../api/README.md) — Los 120 endpoints que consume
 - [Arquitectura](../architecture/README.md) — Backend que alimenta el dashboard
 - [Configuración](../config/README.md) — tailwind.config, next.config
 - [Eventos](../architecture/events.md) — WebSocket updates

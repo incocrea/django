@@ -10,7 +10,7 @@ Este documento es la **guía práctica para desarrolladores** (y para Copilot) �
 
 ### ¿Qué cubre este documento?
 
-Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (50 archivos, ~17,100 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
+Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (60 archivos, ~19,000 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -113,7 +113,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 - **No LLM calls** — todos los tests usan mocks
 - **Patrón**: `test_{module}.py` con clases `Test{Feature}`
 
-### Archivos de Test (59 archivos, ~18,590 líneas)
+### Archivos de Test (60 archivos, ~19,000 líneas)
 
 | Archivo | Líneas | Módulo Testeado |
 |---------|--------|-----------------|
@@ -175,6 +175,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_ast_validator.py | 222 | ASTValidator (import/call/attr/structural checks) |
 | test_skill_auth.py | 103 | SkillAuthGate (access levels + management ops) |
 | test_skill_context.py | 53 | SkillRequestContext (principal resolution) |
+| test_skill_generator.py | 354 | SkillGenerator pipeline + requirement parsing |
 | conftest.py | 150 | Fixtures compartidas |
 
 ### Ejecutar Tests

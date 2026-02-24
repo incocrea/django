@@ -87,7 +87,7 @@ iame.lol/
 │   │   ├── memory/        (1,740 ln, 4 files) # → memory.md
 │   │   ├── router/          (~893 ln, 4 files) # → ../integrations/README.md
 │   │   ├── security/        (429 ln, 4 files) # → security.md
-│   │   ├── skills/        (3,082 ln, 13 files + dynamic/) # → ../dashboard/skill-manager.md
+│   │   ├── skills/        (4,171 ln, 14 files + dynamic/) # → ../dashboard/skill-manager.md
 │   │   ├── teleology/    (2,294 ln, 11 files) # → teleology.md
 │   │   ├── trace/           (~513 ln, 2 files) # → events.md
 │   │   ├── training/      (~1,522 ln, 5 files) # → ../dashboard/training-center.md
@@ -121,7 +121,7 @@ iame.lol/
 │                         FastAPI Backend                          │
 │  ┌──────────┐  ┌───────────────────────────────────────────┐    │
 │  │ Routes   │→ │           ORCHESTRATOR (25+ steps)        │    │
-│  │ (116 ep) │  │  Classify → Cognition → Memory → LLM →   │    │
+│  │ (120 ep) │  │  Classify → Cognition → Memory → LLM →   │    │
 │  └──────────┘  │  Identity → Governance → Eval → Store     │    │
 │                └──────────┬────────────────────────────────┘    │
 │  ┌────────────────────────┼────────────────────────────────┐    │
@@ -149,7 +149,7 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 3,063 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 3,178 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
 | Cognition | [cognition.md](cognition.md) | 385 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,740 | 4-tier memory system |
@@ -166,7 +166,7 @@ iame.lol/
 ## Temas Relacionados
 
 - [Cómo arranca el sistema](startup.md) — AppState, lifespan, inicialización
-- [API REST completa](../api/README.md) — 115 endpoints
+- [API REST completa](../api/README.md) — 120 endpoints
 - [Dashboard](../dashboard/README.md) — 15 páginas de control
 - [Configuración](../config/README.md) — persona.yaml, models.json, governance.yaml
 - [Desarrollo](../development/README.md) — Convenciones, tests, roadmap

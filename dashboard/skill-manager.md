@@ -74,11 +74,48 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
 |---------|---------|
 | **Ruta** | `/skills` |
 | **Archivo** | `dashboard/app/skills/page.tsx` (300 líneas) |
-| **APIs al cargar** | `GET /skills` |
-| **APIs de escritura** | `POST /skills/{id}/toggle`, `POST /skills/learn-topic` |
+| **APIs al cargar** | `GET /skills`, `GET /skills/dynamic` |
+| **APIs de escritura** | `POST /skills/{id}/toggle`, `POST /skills/learn-topic`, `POST /skills/dynamic/create`, `DELETE /skills/dynamic/{name}`, `POST /skills/dynamic/{name}/test`, `POST /skills/dynamic/{name}/reload` |
 | **Config file** | `configs/skills.json` (5 skills registradas) |
 | **Estado** | React `useState` para lista de skills, filtro de búsqueda, resultado learn-topic |
-| **Backend modules** | `src/skills/registry.py`, `src/skills/learn_topic.py` (314 ln), `src/skills/web_research.py`, `src/skills/tools.py`, `src/skills/repo_explorer.py` (1,000 ln) |
+| **Backend modules** | `src/skills/registry.py`, `src/skills/learn_topic.py` (428 ln), `src/skills/web_research.py`, `src/skills/tools.py`, `src/skills/repo_explorer.py` (1,107 ln), `src/skills/skill_generator.py` (555 ln), `src/skills/dynamic_loader.py` (400 ln) |
 | **Iconos** | lucide-react: Wrench, Power, Search, BookOpen, Loader2 |
+
+---
+
+## SkillForge — Dynamic Skill Creation
+
+### Arquitectura
+
+SkillForge permite que Django cree dinámicamente nuevos skills a partir de descripciones en lenguaje natural.
+
+| Componente | Archivo | Función |
+|-----------|---------|---------|
+| `SkillGenerator` | `skill_generator.py` (555 ln) | Pipeline LLM-driven: parse requirement → Claude prompt → generate code → AST validate → install → smoke test |
+| `DynamicSkillLoader` | `dynamic_loader.py` (400 ln) | Lifecycle manager: install, uninstall, load_all, reload |
+| `ASTValidator` | `ast_validator.py` (353 ln) | Import allowlist/blocklist + structural validation |
+| `SkillFileManager` | `fs_manager.py` (259 ln) | Sandboxed file I/O in `src/skills/dynamic/` |
+| `BaseSkill` | `base_skill.py` (176 ln) | ABC that all dynamic skills must extend |
+| `SkillAuthGate` | `skill_auth.py` (217 ln) | Access level enforcement (PUBLIC/PRINCIPAL/SYSTEM) |
+
+### API Endpoints (5)
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| `GET` | `/skills/dynamic` | Lista dynamic skills cargados |
+| `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural (Claude) |
+| `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill |
+| `POST` | `/skills/dynamic/{name}/test` | Smoke test de dynamic skill |
+| `POST` | `/skills/dynamic/{name}/reload` | Recargar dynamic skill desde disco |
+
+### Pipeline de Creación
+
+1. **Parse Requirement** — Extrae nombre, descripción, tags del lenguaje natural
+2. **Build Prompt** — Comprehensive BaseSkill template con reglas de imports, código template, reglas críticas
+3. **Generate Code** — Claude genera Python code
+4. **AST Validate** — Verifica imports, estructura, forbidden calls
+5. **Retry** — Hasta 2 reintentos con feedback de errores (temperature 0.2)
+6. **Install** — DynamicSkillLoader: write → import → instantiate → register centroid
+7. **Smoke Test** — Advisory: validate() + execute() con mensaje test
 
 **Última actualización**: 2025-06-23

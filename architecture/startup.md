@@ -41,11 +41,11 @@ El startup es literalmente donde **todo se conecta con todo**:
 
 ## AppState — Singleton Global
 
-`src/api/main.py` (434 líneas) define `AppState`, el singleton que contiene todos los componentes. Se accede via `get_state()` con lazy import en cada handler.
+`src/api/main.py` (450 líneas) define `AppState`, el singleton que contiene todos los componentes. Se accede via `get_state()` con lazy import en cada handler.
 
 ---
 
-## Secuencia de Lifespan (19 pasos)
+## Secuencia de Lifespan (20 pasos)
 
 | Paso | Componente | Wiring | Doc |
 |------|-----------|--------|-----|
@@ -67,7 +67,8 @@ El startup es literalmente donde **todo se conecta con todo**:
 | 16 | Teleology | GoalManager, PriorityEngine, RewardModel, PlanExecutor, ConflictDetector, TeleologicalGovernance, BackgroundReevaluator | [teleology](teleology.md) |
 | 17 | Teleology Middleware | 3 hooks vía `build_teleology_middleware()` | [teleology](teleology.md) |
 | 18 | Memory rollback persistence | Callback wiring | [evaluation](evaluation.md) |
-| 19 | Emit `system.startup` | Via EventBus | [events](events.md) |
+| 19 | `DynamicSkillLoader` | `load_all()` existing dynamic skills | [skills](../dashboard/skill-manager.md) |
+| 20 | Emit `system.startup` | Via EventBus | [events](events.md) |
 
 ---
 

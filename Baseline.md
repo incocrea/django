@@ -19,7 +19,7 @@
 7. [Sistema de Identidad](#7-sistema-de-identidad)
 8. [Sistema de Teleología](#8-sistema-de-teleología)
 9. [Pipeline del Orchestrator](#9-pipeline-del-orchestrator)
-10. [API REST — 115 Endpoints](#10-api-rest--115-endpoints)
+10. [API REST — 120 Endpoints](#10-api-rest--120-endpoints)
 11. [Dashboard — 15 Páginas](#11-dashboard--15-páginas)
 12. [Componentes del Dashboard](#12-componentes-del-dashboard)
 13. [Bot de Discord](#13-bot-de-discord)
@@ -91,25 +91,25 @@ iame.lol/
 ├── agent/                                    # Backend Python FastAPI
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
-│   │   ├── api/           (4,163 ln, 3 files) # main.py (434) + routes.py (3,728)
+│   │   ├── api/           (4,351 ln, 3 files) # main.py (450) + routes.py (3,900)
 │   │   ├── cognition/       (385 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (4,358 ln, 6 files) # orchestrator (3,063) + semantic_classifier (905) + middleware + parallel + categories
+│   │   ├── flows/         (4,473 ln, 6 files) # orchestrator (3,178) + semantic_classifier (905) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,740 ln, 4 files) # manager (1,139) + hybrid_search + compaction
 │   │   ├── router/          (~893 ln, 4 files) # model_router (530) + circuit_breaker (153) + embedding_router (210)
 │   │   ├── security/        (429 ln, 4 files) # input_sanitizer + content_wrapper + middleware
-│   │   ├── skills/        (3,082 ln, 13 files + dynamic/) # registry + tools + learn_topic + repo_explorer + SkillForge infra
+│   │   ├── skills/        (4,171 ln, 14 files + dynamic/) # registry + tools + learn_topic + repo_explorer + SkillForge infra + generator
 │   │   ├── teleology/    (2,294 ln, 11 files) # goals + plans + priorities + rewards + conflicts
 │   │   ├── trace/           (~513 ln, 2 files) # TraceCollector + TraceStore
 │   │   ├── training/      (~1,522 ln, 5 files) # manager + parser + deduplicator + processor
 │   │   ├── config.py                  (156 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # ~18,590 líneas, 59 test files + conftest.py
+│   ├── tests/                                 # ~19,000 líneas, 60 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
@@ -222,7 +222,7 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 ## 6. Arquitectura Backend
 
-### 6.1 Composición — main.py (434 líneas)
+### 6.1 Composición — main.py (450 líneas)
 
 `AppState` es el singleton global que contiene todos los componentes inicializados. La secuencia de `lifespan()`:
 
@@ -246,7 +246,8 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 | 16 | Teleology | GoalManager, PriorityEngine, RewardModel, PlanExecutor, ConflictDetector, TeleologicalGovernance, BackgroundReevaluator |
 | 17 | Teleology Middleware | 3 hooks vía `build_teleology_middleware()` |
 | 18 | Memory rollback persistence | Callback wiring |
-| 19 | Emit `system.startup` | Via EventBus |
+| 19 | `DynamicSkillLoader` | `load_all()` existing dynamic skills, `set_dynamic_loader()` on orchestrator |
+| 20 | Emit `system.startup` | Via EventBus |
 
 **Shutdown**: service_log.shutdown → background_reevaluator.stop → memory_manager.close → database.close.
 
@@ -526,7 +527,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (3,063 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (3,178 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
@@ -577,7 +578,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ---
 
-## 10. API REST — 115 Endpoints
+## 10. API REST — 120 Endpoints
 
 ### 10.1 Health & Status (4 endpoints)
 
@@ -666,6 +667,16 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | `POST` | `/skills/web-research` | Ejecuta web research via Tavily |
 | `POST` | `/skills/learn-topic` | Research → summarize → chunk → ChromaDB |
 | `POST` | `/skills/explore-repo` | Lee archivos locales/GitHub/docs, context injection |
+
+### 10.10b Dynamic Skills — SkillForge (5 endpoints)
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| `GET` | `/skills/dynamic` | Lista dynamic skills cargados |
+| `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural (Claude) |
+| `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill |
+| `POST` | `/skills/dynamic/{name}/test` | Smoke test de dynamic skill |
+| `POST` | `/skills/dynamic/{name}/reload` | Recargar dynamic skill desde disco |
 
 ### 10.11 Training System (14 endpoints)
 
@@ -1315,6 +1326,13 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | `test_trace_subflows.py` | 548 | Trace sub-flow grouping + LLM metadata |
 | `test_embedding_router.py` | ~180 | EmbeddingRouter singleton + Qwen3 embedding |
 | `test_skill_report.py` | ~160 | SkillReport + SkillStep + StepTimer |
+| `test_base_skill.py` | ~160 | BaseSkill ABC + SkillMetadata + SkillResult |
+| `test_ast_validator.py` | ~290 | ASTValidator import checks + structural validation |
+| `test_fs_manager.py` | ~230 | SkillFileManager sandboxed writes |
+| `test_dynamic_loader.py` | ~350 | DynamicSkillLoader lifecycle |
+| `test_skill_auth.py` | ~200 | SkillAuthGate access levels |
+| `test_skill_context.py` | ~100 | SkillRequestContext routing |
+| `test_skill_generator.py` | 354 | SkillGenerator pipeline + requirement parsing |
 
 **Framework**: pytest. **conftest.py** (100 ln): fixtures compartidos.
 
@@ -1344,6 +1362,8 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | 15 | Middleware Pipeline | 16 |
 | 16 | Parallel Executor + Response Aggregator | 10 |
 | 17 | Teleology (goals, plans, priorities, rewards, conflicts, governance, background) | ~130 |
+| 18 | SkillForge Phase A — BaseSkill, FileManager, ASTValidator, DynamicLoader, AuthGate, Context | 103 |
+| 19 | SkillForge Phase B — SkillGenerator (Claude), orchestrator integration, 5 API endpoints | 30 |
 
 ### 🔲 Planificado
 
@@ -1478,5 +1498,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 59 test files, 4 configs, 3 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (90 archivos backend, 15 páginas dashboard, 32 componentes, 60 test files, 4 configs, 3 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026

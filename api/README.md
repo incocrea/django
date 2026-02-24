@@ -1,18 +1,18 @@
-# API REST — 115 Endpoints
+# API REST — 120 Endpoints
 
 > [← Base de Datos](../architecture/database.md) · [Dashboard →](../dashboard/README.md)
 
-**Archivo**: `src/api/routes.py` (3,728 líneas)
+**Archivo**: `src/api/routes.py` (3,900 líneas)
 
 ---
 
 ## Sobre este documento
 
-Este documento es la **referencia completa de los 115 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
+Este documento es la **referencia completa de los 120 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
 
 ### ¿Qué cubre este documento?
 
-Documenta los **18 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (7), Skills (5), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
+Documenta los **19 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (7), Skills (5), Dynamic Skills (5), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -46,13 +46,13 @@ El patrón general de cada endpoint es: lazy import de `get_state()` → acceder
 
 | Métrica | Valor |
 |---------|-------|
-| Total endpoints | **115** |
-| GET | 55 |
-| POST | 34 |
+| Total endpoints | **120** |
+| GET | 56 |
+| POST | 37 |
 | PUT | 10 |
-| DELETE | 12 |
+| DELETE | 13 |
 | WebSocket | 1 |
-| Grupos | 18 |
+| Grupos | 19 |
 
 Patrón backend:
 ```python
@@ -187,6 +187,18 @@ Dashboard: [Memory Lab](../dashboard/memory-lab.md).
 | `POST` | `/skills/explore-repo` | Explora repos locales/GitHub/docs. Body: `{type, target, store}` |
 
 Dashboard: [Skill Manager](../dashboard/skill-manager.md).
+
+---
+
+## 10.10b Dynamic Skills — SkillForge (5 endpoints)
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| `GET` | `/skills/dynamic` | Lista dynamic skills cargados (loaded_skills, sandbox_files, loaded_count) |
+| `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural via Claude |
+| `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill (remove from registry + delete file) |
+| `POST` | `/skills/dynamic/{name}/test` | Ejecuta smoke test de dynamic skill |
+| `POST` | `/skills/dynamic/{name}/reload` | Recarga dynamic skill desde disco |
 
 ---
 
