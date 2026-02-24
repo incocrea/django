@@ -92,24 +92,24 @@ iame.lol/
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
 │   │   ├── api/           (4,163 ln, 3 files) # main.py (434) + routes.py (3,728)
-│   │   ├── cognition/       (315 ln, 3 files) # DecisionEngine + Planner + categories
+│   │   ├── cognition/       (385 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (4,076 ln, 6 files) # orchestrator (2,905) + semantic_classifier (745) + middleware + parallel + categories
+│   │   ├── flows/         (4,358 ln, 6 files) # orchestrator (3,063) + semantic_classifier (905) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,740 ln, 4 files) # manager (1,139) + hybrid_search + compaction
-│   │   ├── router/          (~840 ln, 4 files) # model_router (377) + circuit_breaker (153) + embedding_router (210)
+│   │   ├── router/          (~893 ln, 4 files) # model_router (530) + circuit_breaker (153) + embedding_router (210)
 │   │   ├── security/        (429 ln, 4 files) # input_sanitizer + content_wrapper + middleware
-│   │   ├── skills/        (1,608 ln, 7 files) # registry + web_research + learn_topic + repo_explorer + tools + skill_report
+│   │   ├── skills/        (3,082 ln, 13 files + dynamic/) # registry + tools + learn_topic + repo_explorer + SkillForge infra
 │   │   ├── teleology/    (2,294 ln, 11 files) # goals + plans + priorities + rewards + conflicts
 │   │   ├── trace/           (~513 ln, 2 files) # TraceCollector + TraceStore
 │   │   ├── training/      (~1,522 ln, 5 files) # manager + parser + deduplicator + processor
-│   │   ├── config.py                  (117 ln)# Pydantic BaseSettings
+│   │   ├── config.py                  (156 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # ~17,850 líneas, 53 test files + conftest.py
+│   ├── tests/                                 # ~18,590 líneas, 59 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
@@ -124,7 +124,7 @@ iame.lol/
 │   ├── skills.json               (71 ln)      # Registro de habilidades
 │   └── governance.yaml          (283 ln)      # Autonomía, riesgos, prohibiciones
 ├── scripts/
-│   ├── discord_bot.py           (572 ln)      # Bot Discord natural
+│   ├── discord_bot.py           (574 ln)      # Bot Discord natural
 │   └── discord_post.py          (188 ln)      # Webhook publisher
 ├── .vscode/tasks.json            (78 ln)      # 5 tasks de servicio
 ├── .env                                       # Variables de entorno (gitignored)
@@ -264,12 +264,13 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 `AgentCrew` inicializa los 5 agentes con `ModelRouter` + paths de persona/governance.
 
-### 6.3 Model Router — src/router/ (~840 líneas)
+### 6.3 Model Router — src/router/ (~893 líneas)
 
-**model_router.py (377 ln)**: Cadena de fallback Gemini → Groq (2-level).
+**model_router.py (530 ln)**: Cadena de fallback Gemini → Groq (2-level) + Claude Sonnet 4 (on-demand, no en fallback).
 - `generate(prompt, role, system_prompt, temperature, max_tokens)` → `ModelResponse`
-- Token counting real por proveedor (Gemini `usage_metadata`, Groq `usage.total_tokens`)
-- Estimación de costo: Gemini $0.15/1M, Groq $0.05/1M
+- `generate_with_claude(prompt, system_prompt, temperature, max_tokens)` → `ModelResponse` (bypasses role routing, usado por SkillForge)
+- Token counting real por proveedor (Gemini `usage_metadata`, Groq `usage.total_tokens`, Claude `usage.input_tokens`+`output_tokens`)
+- Estimación de costo: Gemini $0.15/1M, Groq $0.05/1M, Claude $3.0/1M
 - Hot-reload via `reload_config()`
 - 2 perfiles switcheables (balanced, max_quality)
 - Callback de persistencia de tokens wired al startup
@@ -286,20 +287,20 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 - `QwenEmbeddingFunction` ChromaDB-compatible wrapper
 - All memory collections and identity embeddings route through this
 
-### 6.4 Cognición — src/cognition/ (315 líneas, 3 archivos)
+### 6.4 Cognición — src/cognition/ (385 líneas, 3 archivos)
 
 Capa 100% determinística — cero llamadas LLM, cero IO. El Orchestrator no puede iniciar sin ella (isinstance guards).
 
-**DecisionEngine** (163 ln) — **Inmutable** (`__slots__` + `__setattr__` override):
+**DecisionEngine** (198 ln) — **Inmutable** (`__slots__` + `__setattr__` override):
 - `Strategy` enum: DIRECT_RESPONSE, STRUCTURED_ANALYSIS, RESEARCH_REQUIRED, MULTI_AGENT
 - `evaluate(category, message, governance_enabled)` → `DecisionResult` (frozen dataclass)
 - Determina categoría, estrategia, agente, nivel de riesgo, si requiere revisión de identidad/gobernanza
 
-**Planner** (132 ln) — **Stateless**:
+**Planner** (161 ln) — **Stateless**:
 - `build(decision, governance_enabled)` → `Plan` (frozen dataclass)
 - Plan contiene PlanSteps con gate flags para identity_review, governance_review y skill_execution
 
-**categories.py** (20 ln) — `TaskCategory` enum compartido (evita dependencia circular orchestrator↔cognition). 8 categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DOCS, LEARN_REQUEST, MULTI_AGENT.
+**categories.py** (26 ln) — `TaskCategory` enum compartido (evita dependencia circular orchestrator↔cognition). 9 categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DOCS, LEARN_REQUEST, MULTI_AGENT, SKILL_CREATION.
 
 ### 6.5 Memoria — src/memory/ (1,740 líneas, 4 archivos)
 
@@ -348,16 +349,23 @@ Todos heurísticos, sin llamadas LLM extra. Singletons en memoria (max 200-1000 
 | `content_wrapper.py` | Marca contenido externo con boundary markers de seguridad |
 | `middleware.py` (58 ln) | `SecurityMiddleware` en posición PRE_CLASSIFY (priority 10) del pipeline de middleware |
 
-### 6.10 Skills — src/skills/ (1,608 líneas, 7 archivos)
+### 6.10 Skills — src/skills/ (3,082 líneas, 13 archivos + dynamic/ subdir)
 
 | Archivo | Función |
 |---------|---------|
 | `registry.py` | Carga skills.json, toggle enable/disable, tracking de uso |
 | `web_research.py` | Wrapper Tavily API (search + deep research con sub-queries) |
-| `learn_topic.py` (371 ln) | Web search → LLM summarize → chunk → ChromaDB semantic memory. Depth selector (1-3) |
-| `repo_explorer.py` (968 ln) | Lee archivos locales, explora directorios, fetch repos GitHub, accede docs/ propios. Chat-trigger + API + optional memory storage |
+| `learn_topic.py` (428 ln) | Web search → LLM summarize → chunk → ChromaDB semantic memory. Depth selector (1-3) |
+| `repo_explorer.py` (1,107 ln) | Lee archivos locales, explora directorios, fetch repos GitHub, accede docs/ propios. Chat-trigger + API + optional memory storage |
 | `tools.py` | `EmailDraftTool` + `DocumentGenTool` (ambos usan CommunicationAgent) |
 | `skill_report.py` (172 ln) | Unified skill execution reporting. `SkillStep` dataclass, `SkillReport` with `to_trace_nodes()`, `StepTimer` context manager |
+| `base_skill.py` (176 ln) | `BaseSkill` ABC + `SkillMetadata` + `SkillResult` frozen dataclasses. All dynamic skills extend `BaseSkill` |
+| `context.py` (69 ln) | `SkillRequestContext` frozen dataclass. Caller identity routing (source, caller_id) for skill auth |
+| `skill_auth.py` (217 ln) | `SkillAuthGate` + `SkillAccessLevel` enum (PUBLIC/PRINCIPAL/SYSTEM). Static auth checks |
+| `fs_manager.py` (259 ln) | `SkillFileManager` sandboxed to `src/skills/dynamic/`. Path traversal prevention, .py-only, 128KB max |
+| `ast_validator.py` (353 ln) | `ASTValidator` with import allowlist/blocklist + forbidden calls + structural checks |
+| `dynamic_loader.py` (400 ln) | `DynamicSkillLoader`: install → validate → write → import → instantiate → register centroid |
+| `dynamic/` | Package directory for dynamically generated skill modules |
 
 ### 6.11 Training — src/training/ (5 archivos, ~1,522 líneas)
 
@@ -518,7 +526,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (2,905 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (3,063 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
@@ -526,7 +534,7 @@ Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), 
 |------|--------|-------------|
 | 0 | Emergency Check | Bloquea si `_emergency_stopped` |
 | 0.3 | Goal Context Injector | Inyecta metas activas (teleología middleware) |
-| 1 | Semantic Classify | Clasificación semántica por centroides (embeddings Qwen3-Embedding-8B via EmbeddingRouter, 8 categorías, 320 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
+| 1 | Semantic Classify | Clasificación semántica por centroides (embeddings Qwen3-Embedding-8B via EmbeddingRouter, 9 categorías, 360 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
 | 1d | Skill Execution | Si el Planner incluye `skill_execution` step: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
 | 2 | Decision Engine | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | Evalúa alignment decision-identity (observational) |
@@ -1177,7 +1185,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ---
 
-## 13. Bot de Discord — scripts/discord_bot.py (572 líneas)
+## 13. Bot de Discord — scripts/discord_bot.py (574 líneas)
 
 ### Arquitectura
 
@@ -1345,7 +1353,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
 | **Memory Consolidation Background** | ALTA | Job periódico episodic → semantic summarization |
 | **Real Identity Fidelity** | MEDIA | Ponderar identity_similarity en overall_score + dashboard gauge |
-| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (745 ln). No usa LLM sino embeddings locales. Centroides cacheados en disco para arranque rápido. |
+| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (905 ln). No usa LLM sino embeddings locales. Centroides cacheados en disco para arranque rápido. |
 | **External Integrations** | MEDIA | Email send/receive, calendar, Slack, CRM |
 | **Tool Policy Cascade** | MEDIA | Políticas por skill integradas con gobernanza |
 | **Sandboxed Code Execution** | MEDIA | Ejecución de código en sandbox aislado |
@@ -1470,5 +1478,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 53 test files, 4 configs, 3 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 59 test files, 4 configs, 3 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026

@@ -108,9 +108,9 @@ Categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DO
 
 Clasificación semántica por centroides — reemplaza las heurísticas de keywords. Usa embeddings locales (Qwen3-Embedding-8B, 4096 dim via EmbeddingRouter).
 
-- **320 training phrases** (8 categorías × ~40 frases bilingües)
+- **360 training phrases** (9 categorías × ~40 frases bilingües)
 - **Centroides**: promedio normalizado de embeddings por categoría, computados lazy al startup (~1-2s), cacheados como singleton
-- **Clasificación**: cosine similarity mensaje vs 8 centroides
+- **Clasificación**: cosine similarity mensaje vs 9 centroides
 - **MULTI_AGENT**: si top-2 domain categories > 0.45 y gap < 0.08
 - **Fallback**: confidence < 0.30 → CONVERSATION
 - **`SemanticClassification`**: frozen dataclass con category, confidence, scores, runner_up, method

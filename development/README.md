@@ -113,7 +113,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 - **No LLM calls** — todos los tests usan mocks
 - **Patrón**: `test_{module}.py` con clases `Test{Feature}`
 
-### Archivos de Test (53 archivos, ~17,850 líneas)
+### Archivos de Test (59 archivos, ~18,590 líneas)
 
 | Archivo | Líneas | Módulo Testeado |
 |---------|--------|-----------------|
@@ -169,6 +169,12 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_input_sanitizer.py | 170 | InputSanitizer |
 | test_content_wrapper.py | 165 | ContentWrapper |
 | test_watchdog.py | 155 | Watchdog |
+| test_fs_manager.py | 125 | SkillFileManager (sandboxed file I/O) |
+| test_dynamic_loader.py | 117 | DynamicSkillLoader (install/uninstall/reload) |
+| test_base_skill.py | 118 | BaseSkill ABC + SkillMetadata + SkillResult |
+| test_ast_validator.py | 222 | ASTValidator (import/call/attr/structural checks) |
+| test_skill_auth.py | 103 | SkillAuthGate (access levels + management ops) |
+| test_skill_context.py | 53 | SkillRequestContext (principal resolution) |
 | conftest.py | 150 | Fixtures compartidas |
 
 ### Ejecutar Tests

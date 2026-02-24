@@ -10,12 +10,12 @@ Este documento describe las **integraciones externas** de Django — las piezas 
 
 ### ¿Qué cubre este documento?
 
-Documenta: el **Model Router** (377 líneas) con su cadena de fallback Gemini → Groq (2-level), conteo real de tokens, estimación de costos, hot-reload, 2 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (572 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
+Documenta: el **Model Router** (530 líneas) con su cadena de fallback Gemini → Groq (2-level) + Claude on-demand, conteo real de tokens, estimación de costos, hot-reload, 2 perfiles, y circuit breaker por proveedor (CLOSED/OPEN/HALF_OPEN). El **Bot de Discord** (574 líneas) con su flujo de interacción completo (on_message → call_django_api → respuesta), conversaciones per-channel, member awareness, real-time context injection, y 4 comandos. Y el **Discord Webhook** (188 líneas) para publicar mensajes y embeds al canal #updates-django.
 
 ### ¿Cuál es su función en la arquitectura?
 
 Las integraciones son los **puentes hacia afuera**:
-- El **Model Router** es el único punto de salida hacia LLMs — ningún componente llama directamente a Gemini o Groq. Todo pasa por el router, que maneja fallback, retry, circuit breaking y conteo de tokens
+- El **Model Router** es el único punto de salida hacia LLMs — ningún componente llama directamente a Gemini, Groq o Claude. Todo pasa por el router, que maneja fallback, retry, circuit breaking y conteo de tokens
 - El **Bot de Discord** es el segundo canal de interacción (después del dashboard) — permite que Django converse naturalmente en un contexto grupal, con awareness de otros miembros y del historial del canal
 - El **Discord Webhook** es el canal de publicación — permite que el sistema (o Harold) publique actualizaciones formateadas en Discord
 
@@ -40,17 +40,18 @@ Las integraciones son los **puentes hacia afuera**:
 
 ---
 
-## Model Router — `src/router/` (~840 líneas)
+## Model Router — `src/router/` (~893 líneas)
 
-### model_router.py (377 ln)
+### model_router.py (530 ln)
 
-Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B** (2-level)
+Cadena de fallback: **Gemini 2.5 Flash → Groq Llama 3.3 70B** (2-level) + **Claude Sonnet 4** (on-demand only, not in fallback chain)
 
 | Feature | Detalle |
 |---------|---------|
 | `generate()` | `(prompt, role, system_prompt, temperature, max_tokens)` → `ModelResponse` |
-| Token counting | Real por proveedor: Gemini `usage_metadata`, Groq `usage.total_tokens` |
-| Costo | Gemini $0.15/1M, Groq $0.05/1M |
+| `generate_with_claude()` | `(prompt, system_prompt, temperature, max_tokens)` → `ModelResponse` — bypasses role routing, used by SkillForge |
+| Token counting | Real por proveedor: Gemini `usage_metadata`, Groq `usage.total_tokens`, Claude `usage.input_tokens`+`output_tokens` |
+| Costo | Gemini $0.15/1M, Groq $0.05/1M, Claude $3.0/1M |
 | Hot-reload | `reload_config()` — recarga [models.json](../config/README.md) sin restart |
 | Perfiles | balanced, max_quality |
 | Persistence | Callback de persistencia de tokens wired al [startup](../architecture/startup.md) |
@@ -71,7 +72,7 @@ Circuit breaker **por proveedor**:
 
 ---
 
-## Bot de Discord — `scripts/discord_bot.py` (572 líneas)
+## Bot de Discord — `scripts/discord_bot.py` (574 líneas)
 
 ### Arquitectura
 

@@ -59,7 +59,7 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 | **Frontend** | Next.js 15 (App Router), React 19, TypeScript 5.7 | Puerto 3000, proxy `/api/*` → backend |
 | **UI** | shadcn/ui, Tailwind CSS 3.4, lucide-react, CVA | Tema oscuro laboratorio |
 | **Estado** | Zustand 5 | Persistencia localStorage para chat |
-| **LLM** | Gemini 2.5 Flash, Groq Llama 3.3 70B | [Cadena de fallback 2-level](../integrations/README.md) |
+| **LLM** | Gemini 2.5 Flash, Groq Llama 3.3 70B, Claude Sonnet 4 (on-demand) | [Cadena de fallback 2-level](../integrations/README.md) + Claude on-demand |
 | **Vector DB** | ChromaDB (local) | Embedding Qwen3-Embedding-8B (4096-dim via EmbeddingRouter + Ollama) |
 | **SQL DB** | Neon Postgres (remoto) | [Ver database.md](database.md) |
 | **Procedural DB** | SQLite | Correcciones, workflows |
@@ -77,7 +77,7 @@ iame.lol/
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # → agents.md
 │   │   ├── api/           (4,163 ln, 3 files) # → ../api/README.md
-│   │   ├── cognition/       (315 ln, 3 files) # → cognition.md
+│   │   ├── cognition/       (385 ln, 3 files) # → cognition.md
 │   │   ├── db/            (1,970 ln, 3 files) # → database.md
 │   │   ├── evaluation/    (2,151 ln, 6 files) # → evaluation.md
 │   │   ├── events/          (151 ln, 2 files) # → events.md
@@ -85,13 +85,13 @@ iame.lol/
 │   │   ├── governance/         (1 file)       # Stub
 │   │   ├── identity/      (6,080 ln, 22 files)# → identity.md
 │   │   ├── memory/        (1,740 ln, 4 files) # → memory.md
-│   │   ├── router/          (~840 ln, 4 files) # → ../integrations/README.md
+│   │   ├── router/          (~893 ln, 4 files) # → ../integrations/README.md
 │   │   ├── security/        (429 ln, 4 files) # → security.md
-│   │   ├── skills/        (1,608 ln, 7 files) # → ../dashboard/skill-manager.md
+│   │   ├── skills/        (3,082 ln, 13 files + dynamic/) # → ../dashboard/skill-manager.md
 │   │   ├── teleology/    (2,294 ln, 11 files) # → teleology.md
 │   │   ├── trace/           (~513 ln, 2 files) # → events.md
 │   │   ├── training/      (~1,522 ln, 5 files) # → ../dashboard/training-center.md
-│   │   ├── config.py                  (117 ln)# → ../config/README.md
+│   │   ├── config.py                  (156 ln)# → ../config/README.md
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
 │   ├── tests/                                 # → ../development/README.md
@@ -149,9 +149,9 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 2,905 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 3,063 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
-| Cognition | [cognition.md](cognition.md) | 315 | DecisionEngine + Planner (determinístico) |
+| Cognition | [cognition.md](cognition.md) | 385 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,740 | 4-tier memory system |
 | Identity | [identity.md](identity.md) | 6,080 | 22 módulos de identidad |
 | Teleology | [teleology.md](teleology.md) | 2,294 | Metas, planes, prioridades |
@@ -159,7 +159,7 @@ iame.lol/
 | Events + Trace | [events.md](events.md) | 552 | EventBus + TraceCollector |
 | Security | [security.md](security.md) | 429 | Sanitización + middleware |
 | Database | [database.md](database.md) | 1,916 | Postgres + ChromaDB + SQLite |
-| Router | [../integrations/README.md](../integrations/README.md) | ~840 | Model Router + Circuit Breaker + EmbeddingRouter |
+| Router | [../integrations/README.md](../integrations/README.md) | ~893 | Model Router + Circuit Breaker + EmbeddingRouter |
 
 ---
 

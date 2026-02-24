@@ -42,10 +42,10 @@ La configuración es la **capa declarativa** — define *qué* sin definir *cóm
 | Archivo | Líneas | Propósito | Leído por |
 |---------|--------|-----------|-----------|
 | `configs/persona.yaml` | 89 | Identidad del principal | [IdentityManager](../architecture/identity.md), `IdentityCoreAgent`, endpoints persona |
-| `configs/models.json` | 138 | Proveedores LLM, fallback, perfiles | [Model Router](../integrations/README.md), [Model Manager](../dashboard/model-manager.md) |
+| `configs/models.json` | 115 | Proveedores LLM, fallback, perfiles | [Model Router](../integrations/README.md), [Model Manager](../dashboard/model-manager.md) |
 | `configs/skills.json` | 71 | Registro de habilidades | [Skill Manager](../dashboard/skill-manager.md) |
 | `configs/governance.yaml` | 283 | Autonomía, riesgos, prohibiciones | [Governance Console](../dashboard/governance-console.md), [Identity Policy](../architecture/identity.md) |
-| `agent/src/config.py` | 117 | Variables de entorno (Pydantic BaseSettings) | Todo el backend |
+| `agent/src/config.py` | 156 | Variables de entorno (Pydantic BaseSettings) | Todo el backend |
 | `.vscode/tasks.json` | 78 | Tasks de servicio | VS Code |
 
 ---
@@ -78,7 +78,7 @@ Dashboard Identity Studio → PUT /persona/* → escribe YAML
 
 | Sección | Contenido |
 |---------|-----------|
-| `providers` | Gemini (1M ctx), Groq (128K ctx) |
+| `providers` | Gemini (1M ctx), Groq (128K ctx), Claude (on-demand, not in fallback) |
 | `fallback_chain` | gemini → groq |
 | `agent_assignments` | identity_core→Gemini, business→Groq, communication→Gemini, technical→Groq, governance→Gemini |
 | `profiles` | balanced (default), max_quality (all Gemini) |
