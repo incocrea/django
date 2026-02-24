@@ -113,7 +113,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 - **No LLM calls** — todos los tests usan mocks
 - **Patrón**: `test_{module}.py` con clases `Test{Feature}`
 
-### Archivos de Test (50 archivos, ~17,100 líneas)
+### Archivos de Test (53 archivos, ~17,850 líneas)
 
 | Archivo | Líneas | Módulo Testeado |
 |---------|--------|-----------------|
@@ -144,7 +144,9 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_evaluation_legal.py | 275 | Evaluación legal risk |
 | test_evaluation_rollback.py | 270 | Evaluación rollback |
 | test_evaluation_decisions.py | 265 | Evaluación decisions |
-| test_training_manager.py | 255 | Training system |
+| test_training_processor.py | 304 | Training processor pipeline |
+| test_training_manager.py | 255 | Training manager |
+| test_training_parser.py | 251 | Training JSON parser |
 | test_identity_manager.py | 250 | Identity manager |
 | test_identity_core.py | 245 | Identity schema + embedding |
 | test_skill_registry.py | 235 | [Skills](../architecture/pipeline.md) |
@@ -161,6 +163,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_cognition.py | 190 | [Cognición](../architecture/cognition.md) |
 | test_semantic_classifier.py | 186 | [Semantic Classifier](../architecture/cognition.md) |
 | test_governance.py | 185 | [Governance](../dashboard/governance-console.md) |
+| test_training_deduplicator.py | 184 | Training semantic deduplication |
 | test_security.py | 180 | [Security](../architecture/security.md) |
 | test_identity_governance_hardening.py | 175 | Phase 10D.1 |
 | test_input_sanitizer.py | 170 | InputSanitizer |

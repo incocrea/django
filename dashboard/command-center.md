@@ -94,7 +94,7 @@ Fuente: `GET /events/recent?limit=50` + actualizaciones en tiempo real vía WebS
 
 ### 2. Start Training
 - **Tipo**: API Call + Navegación
-- **Comportamiento**: Llama `POST /training/session/start` con modo `free_conversation`, luego redirige a `/training`
+- **Comportamiento**: Llama `POST /training/session/start` con modo `correction`, luego redirige a `/training`
 - **Impacto en Django**: Inicia una nueva sesión de entrenamiento en `TrainingManager`. El backend registra la sesión como activa, emite evento `training.session_started`. Si ya hay una sesión activa, el backend retorna error.
 
 ### 3. Reload Persona

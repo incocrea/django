@@ -19,7 +19,7 @@
 7. [Sistema de Identidad](#7-sistema-de-identidad)
 8. [Sistema de Teleología](#8-sistema-de-teleología)
 9. [Pipeline del Orchestrator](#9-pipeline-del-orchestrator)
-10. [API REST — 116 Endpoints](#10-api-rest--116-endpoints)
+10. [API REST — 115 Endpoints](#10-api-rest--115-endpoints)
 11. [Dashboard — 15 Páginas](#11-dashboard--15-páginas)
 12. [Componentes del Dashboard](#12-componentes-del-dashboard)
 13. [Bot de Discord](#13-bot-de-discord)
@@ -54,7 +54,7 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | Tests (pytest) | ~17,100 líneas, 50 archivos |
 | Dashboard (app/ + components/ + lib/) | 12,490 líneas |
 | **Total líneas de código** | **57,748** |
-| Endpoints REST + WebSocket | 116 |
+| Endpoints REST + WebSocket | 115 |
 | Páginas del dashboard | 15 |
 | Módulos de identidad | 22 archivos, 6,080 líneas |
 | Tablas en Postgres | 15 |
@@ -91,7 +91,7 @@ iame.lol/
 ├── agent/                                    # Backend Python FastAPI
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
-│   │   ├── api/           (4,095 ln, 3 files) # main.py (388) + routes.py (3,707)
+│   │   ├── api/           (4,163 ln, 3 files) # main.py (434) + routes.py (3,728)
 │   │   ├── cognition/       (315 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
@@ -99,22 +99,22 @@ iame.lol/
 │   │   ├── flows/         (4,076 ln, 6 files) # orchestrator (2,905) + semantic_classifier (745) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
-│   │   ├── memory/        (1,636 ln, 4 files) # manager (956) + hybrid_search + compaction
+│   │   ├── memory/        (1,740 ln, 4 files) # manager (1,139) + hybrid_search + compaction
 │   │   ├── router/          (~840 ln, 4 files) # model_router (377) + circuit_breaker (153) + embedding_router (210)
 │   │   ├── security/        (429 ln, 4 files) # input_sanitizer + content_wrapper + middleware
 │   │   ├── skills/        (1,608 ln, 7 files) # registry + web_research + learn_topic + repo_explorer + tools + skill_report
 │   │   ├── teleology/    (2,294 ln, 11 files) # goals + plans + priorities + rewards + conflicts
 │   │   ├── trace/           (~513 ln, 2 files) # TraceCollector + TraceStore
-│   │   ├── training/        (521 ln, 2 files) # 3 modos de entrenamiento
+│   │   ├── training/      (~1,522 ln, 5 files) # manager + parser + deduplicator + processor
 │   │   ├── config.py                  (117 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # ~17,100 líneas, 50 test files + conftest.py
+│   ├── tests/                                 # ~17,850 líneas, 53 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
 │   ├── components/                            # 31 archivos en 7 directorios
-│   ├── lib/                                   # api.ts (1,105 ln), store.ts (159 ln), hooks/, i18n/
+│   ├── lib/                                   # api.ts (1,279 ln), store.ts (159 ln), hooks/, i18n/
 │   ├── next.config.ts                         # Proxy /api/* → localhost:8000
 │   ├── tailwind.config.ts                     # Tema lab oscuro custom
 │   └── package.json                           # 33 deps, 10 devDeps
@@ -222,7 +222,7 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 ## 6. Arquitectura Backend
 
-### 6.1 Composición — main.py (388 líneas)
+### 6.1 Composición — main.py (434 líneas)
 
 `AppState` es el singleton global que contiene todos los componentes inicializados. La secuencia de `lifespan()`:
 
@@ -301,7 +301,7 @@ Capa 100% determinística — cero llamadas LLM, cero IO. El Orchestrator no pue
 
 **categories.py** (20 ln) — `TaskCategory` enum compartido (evita dependencia circular orchestrator↔cognition). 8 categorías: CONVERSATION, BUSINESS, COMMUNICATION, TECHNICAL, RESEARCH, SELF_DOCS, LEARN_REQUEST, MULTI_AGENT.
 
-### 6.5 Memoria — src/memory/ (1,636 líneas, 4 archivos)
+### 6.5 Memoria — src/memory/ (1,740 líneas, 4 archivos)
 
 | Tier | Storage | Propósito | Persistencia |
 |------|---------|-----------|-------------|
@@ -310,7 +310,7 @@ Capa 100% determinística — cero llamadas LLM, cero IO. El Orchestrator no pue
 | **Semantic** | ChromaDB `semantic_memory` | Base de conocimiento, writing samples, RAG | Disco (`chroma_data/`) |
 | **Procedural** | SQLite `procedural.db` | Workflows, patrones, correcciones | Disco (`data/`) |
 
-**manager.py (956 ln)**: `MemoryManager` — `recall()` → `build_context()` → `store_interaction()`. Budget ~2000 tokens. Prioridad: working > semantic > episodic. `clear_working(conversation_id)` por conversación.
+**manager.py (1,139 ln)**: `MemoryManager` — `recall()` → `build_context()` → `store_interaction()`. Budget ~2000 tokens. Prioridad: working > semantic > episodic. `clear_working(conversation_id)` por conversación.
 
 **hybrid_search.py**: Búsqueda híbrida RRF (Reciprocal Rank Fusion) + MMR (Maximal Marginal Relevance) + temporal decay. FTS via tabla `episodic_search` con tsvector + GIN index.
 
@@ -359,14 +359,20 @@ Todos heurísticos, sin llamadas LLM extra. Singletons en memoria (max 200-1000 
 | `tools.py` | `EmailDraftTool` + `DocumentGenTool` (ambos usan CommunicationAgent) |
 | `skill_report.py` (172 ln) | Unified skill execution reporting. `SkillStep` dataclass, `SkillReport` with `to_trace_nodes()`, `StepTimer` context manager |
 
-### 6.11 Training — src/training/manager.py (521 líneas)
+### 6.11 Training — src/training/ (5 archivos, ~1,522 líneas)
 
-3 modos: correction, free_conversation, guided_interview.
+Sistema de entrenamiento con captura de correcciones y carga de archivos con deduplicación semántica.
+
+| Archivo | Líneas | Función |
+|---------|--------|--------|
+| `manager.py` | 520 | TrainingManager — gestión de sesiones, CRUD de correcciones, upload de writing samples, inyección de sugerencias |
+| `training_parser.py` | 406 | Parser JSON para datos de entrenamiento estructurados (writing_sample, style_rule, personality_trait). Acepta claves `"category"` y `"type"` |
+| `deduplicator.py` | 224 | Motor de deduplicación semántica — umbrales de similitud coseno por categoría vía EmbeddingRouter |
+| `processor.py` | 371 | Pipeline end-to-end — parse → deduplicar → almacenar en ChromaDB semantic memory |
+| `__init__.py` | — | Package exports |
+
 - **Correction**: Principal da (original, corrected, feedback) → procedural memory SQLite → genera suggestion → inyectado en cada prompt
-- **Free Conversation**: Intercambio natural → LLM extrae rasgos de personalidad → semantic memory ChromaDB
-- **Guided Interview**: 15 preguntas predefinidas → análisis de respuestas → extracción de rasgos → semantic memory
-
-Writing sample upload: chunking ~500 palabras → semantic memory como `writing_sample` category.
+- **File Upload**: JSON estructurado con datos de entrenamiento → parser → deduplicación semántica contra memoria existente → ChromaDB
 
 ### 6.12 Service Logger — src/service_logger.py (263 líneas)
 
@@ -563,7 +569,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ---
 
-## 10. API REST — 116 Endpoints
+## 10. API REST — 115 Endpoints
 
 ### 10.1 Health & Status (4 endpoints)
 
@@ -631,13 +637,12 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | `GET` | `/interactions/{id}/evaluations` | Evaluaciones de una interacción |
 | `GET` | `/token-usage/persisted` | Token usage agregado desde Postgres |
 
-### 10.9 Memory System (8 endpoints)
+### 10.9 Memory System (7 endpoints)
 
 | Método | Path | Descripción | DB |
 |--------|------|-------------|-----|
 | `GET` | `/memory/stats` | Stats de los 4 tiers | Read: ChromaDB + SQLite |
 | `POST` | `/memory/search` | Búsqueda cross-tier con filtro | Read: ChromaDB + working |
-| `POST` | `/memory/semantic/store` | Almacenar nuevo conocimiento semántico | Write: ChromaDB |
 | `POST` | `/memory/working/clear` | Limpiar working memory (per-conversation o all) | — (ephemeral) |
 | `POST` | `/memory/bulk-delete` | Eliminar múltiples memorias across tiers | Write: ChromaDB. Persist: memory_operations |
 | `PUT` | `/memory/semantic/{id}` | Actualizar contenido/categoría de memoria | Write: ChromaDB. Persist: memory_operations |
@@ -659,7 +664,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | Método | Path | Descripción |
 |--------|------|-------------|
 | `GET` | `/training/status` | Status del sistema de training |
-| `POST` | `/training/session/start` | Iniciar sesión (mode: correction/free/guided) |
+| `POST` | `/training/session/start` | Iniciar sesión de entrenamiento |
 | `POST` | `/training/session/end` | Terminar sesión activa |
 | `POST` | `/training/correction` | Enviar corrección (original→corrected) |
 | `GET` | `/training/corrections` | Listar correcciones de procedural memory |
@@ -668,9 +673,9 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | `DELETE` | `/training/suggestions/{idx}` | Eliminar suggestion individual |
 | `DELETE` | `/training/suggestions` | Limpiar todas las suggestions |
 | `GET` | `/training/history` | Historial de sesiones + suggestions |
-| `POST` | `/training/exchange` | Free conversation → LLM + trait extraction |
+| `POST` | `/training/exchange` | Intercambio de conversación libre (legacy) |
 | `GET` | `/training/interview/questions` | 15 preguntas de entrevista guiada |
-| `POST` | `/training/interview/answer` | Respuesta de entrevista → trait extraction |
+| `POST` | `/training/interview/answer` | Respuesta de entrevista (legacy) |
 | `POST` | `/training/upload-samples` | Upload .txt/.md → chunk → ChromaDB semantic |
 
 ### 10.12 Models (4 endpoints)
@@ -868,8 +873,8 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ### 11.4 Training Center — `/training`
 
-**Archivo**: `app/training/page.tsx` (1,125 ln)
-**Propósito**: Entrenar al delegado con 3 modos de aprendizaje.
+**Archivo**: `app/training/page.tsx` (741 ln)
+**Propósito**: Entrenar al delegado con correcciones y carga de archivos con deduplicación semántica.
 
 **Carga inicial**: `api.trainingStatus()`, `api.trainingHistory()`, `api.listCorrections()`.
 
@@ -877,20 +882,16 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 | Control | Acción Interna |
 |---------|---------------|
-| **Mode selector** (3 botones) | Correction / Free Conversation / Guided Interview — estado local |
-| **Start Session** | `api.startTrainingSession(mode)` → `POST /training/session/start` |
-| **End Session** | `api.endTrainingSession()` → `POST /training/session/end` |
+| **Stats row** (2 cards: Total Corrections, Agents Trained) | `trainingStatus` del estado local |
+| **Ejemplo JSON** (botón header → modal) | Modal con ejemplos de personality_trait, style_rule, writing_sample |
 | **Correction form** (original + corrected + feedback + submit) | `api.submitCorrection(data)` → `POST /training/correction` → guarda en SQLite procedural → genera suggestion → se inyecta en cada prompt futuro |
-| **Free conversation chat** (input + send) | `api.trainingExchange(msg)` → `POST /training/exchange` → orchestrator pipeline completo → LLM extrae rasgos de personalidad → guarda en ChromaDB semantic memory |
-| **Guided interview** (answer textarea + submit) | `api.submitInterviewAnswer(qId, answer)` → `POST /training/interview/answer` → analiza respuesta para rasgos → guarda en ChromaDB |
-| **Interview navigation** (prev/next/skip, dot nav) | Estado local, 15 preguntas |
-| **File upload drag area** | `api.uploadWritingSamples(files)` → `POST /training/upload-samples` (FormData) → chunk ~500 palabras → ChromaDB semantic como `writing_sample` |
+| **File upload drag area** | `api.uploadWritingSamples(files)` → `POST /training/upload-samples` (FormData) → JSON parser → semantic deduplication → ChromaDB semantic memory |
 | **Edit correction** (inline) | `api.updateCorrection(id, data)` → `PUT /training/corrections/{id}` → SQLite update → reload suggestions |
 | **Delete correction** | `api.deleteCorrection(id)` → `DELETE /training/corrections/{id}` → SQLite delete → reload |
 | **Delete suggestion** | `api.deleteSuggestion(idx)` → `DELETE /training/suggestions/{idx}` → remove in-memory |
 | **Clear all suggestions** | `api.clearAllSuggestions()` → `DELETE /training/suggestions` → clear in-memory list |
 
-**Efecto en Django**: Las correcciones se inyectan como "behavioral suggestions" en el prompt de cada interacción futura (paso 5 del pipeline). Los writing samples alimentan el RAG semántico. La free conversation extrae rasgos del habla natural del principal.
+**Efecto en Django**: Las correcciones se inyectan como "behavioral suggestions" en el prompt de cada interacción futura (paso 5 del pipeline). La carga de archivos soporta JSON estructurado con datos de entrenamiento (writing_sample, style_rule, personality_trait) que pasan por deduplicación semántica antes de almacenarse en ChromaDB.
 
 ### 11.5 Testing Playground — `/testing`
 
@@ -942,7 +943,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 ### 11.8 Memory Lab — `/memory`
 
 **Archivo**: `app/memory/page.tsx` (692 ln)
-**Propósito**: Explorar, buscar, crear, editar y eliminar memorias del delegado.
+**Propósito**: Explorar, buscar, editar y eliminar memorias del delegado.
 
 **Carga inicial**: `api.memoryStats()`.
 
@@ -957,7 +958,6 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Delete episodic** | `api.deleteEpisodicMemory(id)` → `DELETE /memory/episodic/{id}` → ChromaDB delete + rollback audit |
 | **Bulk delete** | `api.bulkDeleteMemories(items)` → `POST /memory/bulk-delete` → batch delete + audit per item |
 | **Edit semantic** (inline content + category) | `api.updateSemanticMemory(id, content, category)` → `PUT /memory/semantic/{id}` → ChromaDB update + rollback audit |
-| **Store new memory** (content + category + Store) | `api.storeSemanticMemory(content, category, "dashboard")` → `POST /memory/semantic/store` → ChromaDB add + rollback audit |
 
 **Efecto en Django**: Agregar/editar/eliminar memorias afecta directamente lo que Django "recuerda". Una nueva memoria semántica aparecerá en futuros recalls. Una eliminación significa que Django olvidará esa información.
 
@@ -1097,7 +1097,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 |-----------|---------|---------|
 | `ClientShell` | `components/layout/client-shell.tsx` (23 ln) | Root shell: invoca `useWebSocket()`, `useHealth(5000)`, `useInitialData()`. Wraps en `I18nProvider` + `TooltipProvider` |
 | `Header` | `components/layout/header.tsx` (82 ln) | Barra superior: nombre principal, language switcher (ES/EN), DB status LED, provider count, WS status, agent state badge |
-| `Sidebar` | `components/layout/sidebar.tsx` (161 ln) | 240px sidebar: logo, status LED, 4 grupos nav (Core, Identity & Training, Infrastructure, Observability), 14 nav items, version footer |
+| `Sidebar` | `components/layout/sidebar.tsx` (159 ln) | 240px sidebar: logo, status LED, 15 nav items (flat list, sin encabezados de grupo), version footer |
 
 ### 12.2 Command Center (7 componentes)
 
@@ -1470,5 +1470,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 50 test files, 4 configs, 3 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (89 archivos backend, 15 páginas dashboard, 32 componentes, 53 test files, 4 configs, 3 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026

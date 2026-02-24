@@ -1,18 +1,18 @@
-# API REST — 116 Endpoints
+# API REST — 115 Endpoints
 
 > [← Base de Datos](../architecture/database.md) · [Dashboard →](../dashboard/README.md)
 
-**Archivo**: `src/api/routes.py` (3,707 líneas)
+**Archivo**: `src/api/routes.py` (3,728 líneas)
 
 ---
 
 ## Sobre este documento
 
-Este documento es la **referencia completa de los 116 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
+Este documento es la **referencia completa de los 115 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
 
 ### ¿Qué cubre este documento?
 
-Documenta los **18 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (8), Skills (5), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
+Documenta los **18 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (7), Skills (5), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -46,9 +46,9 @@ El patrón general de cada endpoint es: lazy import de `get_state()` → acceder
 
 | Métrica | Valor |
 |---------|-------|
-| Total endpoints | **116** |
+| Total endpoints | **115** |
 | GET | 55 |
-| POST | 35 |
+| POST | 34 |
 | PUT | 10 |
 | DELETE | 12 |
 | WebSocket | 1 |
@@ -160,13 +160,12 @@ Dashboard: [Cognitive Trace](../dashboard/cognitive-trace.md).
 
 ---
 
-## 10.9 Memory System (8 endpoints)
+## 10.9 Memory System (7 endpoints)
 
 | Método | Path | Descripción | DB |
 |--------|------|-------------|-----|
 | `GET` | `/memory/stats` | Stats de los 4 [tiers](../architecture/memory.md) | ChromaDB + SQLite |
 | `POST` | `/memory/search` | Búsqueda cross-tier con filtro | ChromaDB + working |
-| `POST` | `/memory/semantic/store` | Almacenar nuevo conocimiento semántico | ChromaDB |
 | `POST` | `/memory/working/clear` | Limpiar working memory (per-conversation o all) | — (ephemeral) |
 | `POST` | `/memory/bulk-delete` | Eliminar múltiples memorias across tiers | ChromaDB + memory_operations |
 | `PUT` | `/memory/semantic/{id}` | Actualizar contenido/categoría | ChromaDB + memory_operations |
@@ -196,7 +195,7 @@ Dashboard: [Skill Manager](../dashboard/skill-manager.md).
 | Método | Path | Descripción |
 |--------|------|-------------|
 | `GET` | `/training/status` | Status del sistema |
-| `POST` | `/training/session/start` | Iniciar sesión (correction/free/guided) |
+| `POST` | `/training/session/start` | Iniciar sesión de entrenamiento |
 | `POST` | `/training/session/end` | Terminar sesión activa |
 | `POST` | `/training/correction` | Enviar corrección (original→corrected) |
 | `GET` | `/training/corrections` | Listar correcciones |
@@ -205,9 +204,9 @@ Dashboard: [Skill Manager](../dashboard/skill-manager.md).
 | `DELETE` | `/training/suggestions/{idx}` | Eliminar suggestion individual |
 | `DELETE` | `/training/suggestions` | Limpiar todas las suggestions |
 | `GET` | `/training/history` | Historial de sesiones + suggestions |
-| `POST` | `/training/exchange` | Free conversation → LLM + trait extraction |
+| `POST` | `/training/exchange` | Intercambio de conversación libre (legacy) |
 | `GET` | `/training/interview/questions` | 15 preguntas de entrevista guiada |
-| `POST` | `/training/interview/answer` | Respuesta → trait extraction |
+| `POST` | `/training/interview/answer` | Respuesta de entrevista (legacy) |
 | `POST` | `/training/upload-samples` | Upload .txt/.md → chunk → ChromaDB semantic |
 
 Dashboard: [Training Center](../dashboard/training-center.md).

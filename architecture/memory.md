@@ -2,7 +2,7 @@
 
 > [← Cognición](cognition.md) · [Identidad →](identity.md)
 
-**Directorio**: `src/memory/` (1,636 líneas, 4 archivos)
+**Directorio**: `src/memory/` (1,740 líneas, 4 archivos)
 
 ---
 
@@ -12,7 +12,7 @@ Este documento describe el **sistema de memoria de 4 niveles** que le da a Djang
 
 ### ¿Qué cubre este documento?
 
-Documenta los **4 niveles de memoria** (Working, Episodic, Semantic, Procedural), el `MemoryManager` central (956 líneas) que los coordina, el presupuesto de tokens (~2000 por consulta), el aislamiento per-conversation, la búsqueda híbrida avanzada (RRF + MMR + temporal), el motor de compactación (Background Compaction Engine), y cómo el sistema de identidad se integra con la memoria.
+Documenta los **4 niveles de memoria** (Working, Episodic, Semantic, Procedural), el `MemoryManager` central (1,139 líneas) que los coordina, el presupuesto de tokens (~2000 por consulta), el aislamiento per-conversation, la búsqueda híbrida avanzada (RRF + MMR + temporal), el motor de compactación (Background Compaction Engine), y cómo el sistema de identidad se integra con la memoria.
 
 ### ¿Cuál es su función en la arquitectura?
 
@@ -54,7 +54,7 @@ La memoria se cruza con casi todo el sistema:
 
 ---
 
-## MemoryManager — `manager.py` (956 líneas)
+## MemoryManager — `manager.py` (1,139 líneas)
 
 `MemoryManager` — el coordinador central de memoria.
 

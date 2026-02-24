@@ -30,7 +30,7 @@
 | `/chat` | Chat | Conversación con el delegado | [→](chat.md) |
 | `/docs` | Documentation Viewer | 3-panel: file tree, markdown, ToC | [→](docs.md) |
 | `/identity` | Identity Studio | Editor de personalidad Big Five | [→](identity-studio.md) |
-| `/training` | Training Center | 3 modos de entrenamiento | [→](training-center.md) |
+| `/training` | Training Center | Correcciones + carga con dedup semántica | [→](training-center.md) |
 | `/testing` | Testing Playground | Escenarios, A/B compare | [→](testing-playground.md) |
 | `/models` | Model Manager | Proveedores LLM, perfiles | [→](model-manager.md) |
 | `/skills` | Skill Manager | Skills toggle, learn-topic, repo-explorer | [→](skill-manager.md) |
@@ -52,7 +52,7 @@
 |-----------|---------|---------|
 | `ClientShell` | `client-shell.tsx` (23 ln) | Root: `useWebSocket()`, `useHealth(5000)`, `useInitialData()`, wraps `I18nProvider` + `TooltipProvider` |
 | `Header` | `header.tsx` (82 ln) | Barra superior: principal name, language switcher, DB LED, WS status, agent state badge |
-| `Sidebar` | `sidebar.tsx` (161 ln) | 240px: logo, 4 nav groups (Core, Identity & Training, Infrastructure, Observability), 15 items |
+| `Sidebar` | `sidebar.tsx` (159 ln) | 240px: logo, status LED, 15 nav items (flat list, no group headers) |
 
 ### Command Center (7)
 
@@ -153,7 +153,7 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-## API Client — `lib/api.ts` (1,105 líneas)
+## API Client — `lib/api.ts` (1,279 líneas)
 
 ~111 métodos que mapean 1:1 con los [endpoints del backend](../api/README.md). Patrón:
 
@@ -171,7 +171,7 @@ export const api = {
 
 ## Temas Relacionados
 
-- [API](../api/README.md) — Los 116 endpoints que consume
+- [API](../api/README.md) — Los 115 endpoints que consume
 - [Arquitectura](../architecture/README.md) — Backend que alimenta el dashboard
 - [Configuración](../config/README.md) — tailwind.config, next.config
 - [Eventos](../architecture/events.md) — WebSocket updates

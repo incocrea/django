@@ -17,7 +17,7 @@ ADLRA es un sistema compuesto por muchas piezas que trabajan juntas para lograr 
 Para lograrlo, el sistema tiene:
 - Un **backend en Python/FastAPI** con un pipeline de procesamiento de 25+ pasos que analiza cada mensaje, consulta memorias, aplica la identidad de Harold, genera respuestas con LLMs y evalúa la calidad del resultado — todo esto documentado en la sección de [Arquitectura](architecture/README.md)
 - Un **dashboard en Next.js** con 15 páginas donde Harold puede configurar la personalidad de Django, entrenarle, ver sus memorias, monitorear su rendimiento y controlar su gobernanza — documentado en la sección de [Dashboard](dashboard/README.md)
-- **116 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
+- **115 endpoints de API** que conectan el frontend con el backend — documentados en la [Referencia API](api/README.md)
 - **Integraciones externas** como el bot de Discord y el sistema de modelos LLM con fallback automático — en [Integraciones](integrations/README.md)
 - **Archivos de configuración** que definen quién es Harold, qué modelos usar, qué habilidades tiene Django y qué límites no puede cruzar — en [Configuración](config/README.md)
 
@@ -58,7 +58,7 @@ Esta documentación está organizada para ser explorada tanto por humanos como p
 |---------------|------|
 | Entender qué es ADLRA y cómo funciona | [Arquitectura General](architecture/README.md) |
 | Ver cómo se procesa cada mensaje | [Pipeline del Orchestrator](architecture/pipeline.md) |
-| Conocer los 116 endpoints de la API | [Referencia API](api/README.md) |
+| Conocer los 115 endpoints de la API | [Referencia API](api/README.md) |
 | Explorar las 15 páginas del dashboard | [Dashboard](dashboard/README.md) |
 | Entender el sistema de identidad de Django | [Sistema de Identidad](architecture/identity.md) |
 | Ver la configuración del sistema | [Configuración](config/README.md) |
@@ -90,14 +90,14 @@ docs/
 │   └── database.md                    #   Postgres + ChromaDB + SQLite + Persistence
 │
 ├── api/
-│   └── README.md                      #   116 endpoints agrupados por sección
+│   └── README.md                      #   115 endpoints agrupados por sección
 │
 ├── dashboard/                         # Las 15 páginas del dashboard
 │   ├── README.md                      #   Overview, componentes, store, hooks, i18n
 │   ├── command-center.md              #   / — KPIs, estado, acciones rápidas
 │   ├── chat.md                        #   /chat — Conversación con Django
 │   ├── identity-studio.md             #   /identity — Editor de personalidad
-│   ├── training-center.md             #   /training — 3 modos de entrenamiento
+│   ├── training-center.md             #   /training — Correcciones + carga con dedup semántica
 │   ├── testing-playground.md          #   /testing — Scenarios, A/B compare
 │   ├── model-manager.md               #   /models — Proveedores LLM, perfiles
 │   ├── skill-manager.md               #   /skills — Habilidades del delegado
@@ -129,7 +129,7 @@ docs/
 | Tests pytest | ~17,100 líneas, 50 archivos |
 | Dashboard Next.js | 12,490 líneas |
 | **Total** | **57,748 líneas** |
-| Endpoints API | 116 (55 GET, 35 POST, 10 PUT, 12 DELETE, 1 WS) |
+| Endpoints API | 115 (55 GET, 34 POST, 10 PUT, 12 DELETE, 1 WS) |
 | Páginas dashboard | 15 |
 | Módulos de identidad | 22 archivos, 6,080 líneas |
 | Fases completadas | 17 |

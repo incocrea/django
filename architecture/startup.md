@@ -41,7 +41,7 @@ El startup es literalmente donde **todo se conecta con todo**:
 
 ## AppState — Singleton Global
 
-`src/api/main.py` (403 líneas) define `AppState`, el singleton que contiene todos los componentes. Se accede via `get_state()` con lazy import en cada handler.
+`src/api/main.py` (434 líneas) define `AppState`, el singleton que contiene todos los componentes. Se accede via `get_state()` con lazy import en cada handler.
 
 ---
 
