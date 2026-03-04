@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe los **5 agentes LLM** que componen el equipo de Django — las entidades especializadas que generan respuestas, revisan contenido y aseguran cumplimiento. Cada agente tiene un rol específico, un modelo LLM asignado, y un estilo de operación propio. Juntos, forman el "personal" que Django coordina para responder a cada interacción.
+Este documento describe los **5 agentes LLM** que componen el equipo de Doe — las entidades especializadas que generan respuestas, revisan contenido y aseguran cumplimiento. Cada agente tiene un rol específico, un modelo LLM asignado, y un estilo de operación propio. Juntos, forman el "personal" que Doe coordina para responder a cada interacción.
 
 ### ¿Qué cubre este documento?
 
@@ -16,9 +16,9 @@ Documenta cada uno de los 5 agentes (IdentityCore, Business, Communication, Tech
 
 ### ¿Cuál es su función en la arquitectura?
 
-Los agentes son los **ejecutores creativos** — la contraparte humana de la cognición determinística. Mientras que la [Cognición](cognition.md) decide *qué* hacer y *quién* lo hace, los agentes son los que realmente *generan texto*. Son los únicos componentes del sistema que hacen llamadas a modelos de lenguaje (via el Model Router), así que toda la inteligencia lingüística de Django — su capacidad de conversar, analizar, redactar y revisar — pasa por ellos.
+Los agentes son los **ejecutores creativos** — la contraparte humana de la cognición determinística. Mientras que la [Cognición](cognition.md) decide *qué* hacer y *quién* lo hace, los agentes son los que realmente *generan texto*. Son los únicos componentes del sistema que hacen llamadas a modelos de lenguaje (via el Model Router), así que toda la inteligencia lingüística de Doe — su capacidad de conversar, analizar, redactar y revisar — pasa por ellos.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 - **IdentityCoreAgent** es el agente principal — responde AS Harold (como si fuera Harold), cargado con su persona completa desde `persona.yaml`. La mayoría de conversaciones usan este agente
 - **GovernanceAgent** revisa en modo "juez" a temperatura baja (0.2) con output JSON estricto — decide si una respuesta cumple las reglas

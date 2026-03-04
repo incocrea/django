@@ -2,7 +2,7 @@
 
 ## Información General
 
-La interfaz de Chat es el canal principal de comunicación directa con Django. Permite mantener conversaciones en texto con el delegado digital, seleccionar el modo cognitivo que controla cuánta inteligencia y recursos usa Django para responder, y observar metadatos de cada respuesta (modelo usado, agentes involucrados, fuentes de conocimiento). Es la interfaz que desencadena el pipeline completo del orquestador — cada mensaje enviado aquí activa los 10+ pasos de procesamiento, incluyendo clasificación, decisión, planificación, recall de memoria, generación LLM, revisiones de identidad/gobernanza, evaluación, y persistencia.
+La interfaz de Chat es el canal principal de comunicación directa con Doe. Permite mantener conversaciones en texto con el delegado digital, seleccionar el modo cognitivo que controla cuánta inteligencia y recursos usa Doe para responder, y observar metadatos de cada respuesta (modelo usado, agentes involucrados, fuentes de conocimiento). Es la interfaz que desencadena el pipeline completo del orquestador — cada mensaje enviado aquí activa los 10+ pasos de procesamiento, incluyendo clasificación, decisión, planificación, recall de memoria, generación LLM, revisiones de identidad/gobernanza, evaluación, y persistencia.
 
 ---
 
@@ -13,7 +13,7 @@ La interfaz de Chat es el canal principal de comunicación directa con Django. P
 Área de scroll vertical que muestra la conversación actual como burbujas de mensaje alternadas:
 
 - **Mensajes del usuario**: Alineados a la derecha, fondo acento
-- **Mensajes de Django**: Alineados a la izquierda, fondo oscuro, con metadatos adicionales:
+- **Mensajes de Doe**: Alineados a la izquierda, fondo oscuro, con metadatos adicionales:
   - **Indicador multi-agente**: Badge que muestra si múltiples agentes colaboraron
   - **Modelo usado**: Nombre del provider y modelo (ej: "gemini-2.5-flash")
   - **Modo cognitivo activo**: Badge indicando el modo que generó la respuesta
@@ -46,7 +46,7 @@ El header muestra el estado del WebSocket (conectado/desconectado) y el nombre d
 ### 1. Enviar Mensaje
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /chat` con `{message, conversation_id, cognitive_mode}`
-- **Impacto en Django**: **Activa el pipeline completo del orquestador** (25+ pasos internos):
+- **Impacto en Doe**: **Activa el pipeline completo del orquestador** (25+ pasos internos):
   1. Crea/reutiliza conversación en Postgres
   2. Guarda mensaje del usuario en DB
   3. Emite `agent_state.thinking` vía WebSocket
@@ -60,12 +60,12 @@ El header muestra el estado del WebSocket (conectado/desconectado) y el nombre d
 ### 2. Cambiar Modo Cognitivo
 - **Tipo**: Estado local
 - **Comportamiento**: Rota cíclicamente entre modo 1 → 2 → 3 → 1
-- **Impacto en Django**: Afecta el PRÓXIMO mensaje. No llama ninguna API al cambiar — el modo se incluye como parámetro en la siguiente petición `POST /chat`, modificando fundamentalmente qué pasos del pipeline se ejecutan.
+- **Impacto en Doe**: Afecta el PRÓXIMO mensaje. No llama ninguna API al cambiar — el modo se incluye como parámetro en la siguiente petición `POST /chat`, modificando fundamentalmente qué pasos del pipeline se ejecutan.
 
 ### 3. Limpiar Conversación
 - **Tipo**: Estado local únicamente
 - **Comportamiento**: Borra el historial de mensajes del localStorage y genera un nuevo `conversation_id`
-- **Impacto en Django**: **Ninguno** — no llama `POST /memory/working/clear` ni ningún endpoint backend. Solo limpia la vista del cliente. La working memory del conversation_id anterior sigue existiendo en el servidor hasta que expire por TTL (1 hora) o alcance el límite de sesiones (50).
+- **Impacto en Doe**: **Ninguno** — no llama `POST /memory/working/clear` ni ningún endpoint backend. Solo limpia la vista del cliente. La working memory del conversation_id anterior sigue existiendo en el servidor hasta que expire por TTL (1 hora) o alcance el límite de sesiones (50).
 
 ---
 

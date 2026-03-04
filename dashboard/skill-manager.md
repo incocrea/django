@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Skill Manager permite visualizar, activar y desactivar las habilidades (skills) disponibles de Django, y ejecutar herramientas de aprendizaje. Las habilidades son capacidades discretas que Django puede usar durante el procesamiento de mensajes — como búsqueda web, generación de documentos, o aprendizaje de temas. Habilitar o deshabilitar una skill aquí determina si el orquestador puede invocarla durante el pipeline de procesamiento.
+El Skill Manager permite visualizar, activar y desactivar las habilidades (skills) disponibles de Doe, ejecutar herramientas de aprendizaje y administrar skills autogeneradas por SkillForge. Las habilidades son capacidades discretas que Doe puede usar durante el procesamiento de mensajes — como búsqueda web, generación de documentos, aprendizaje de temas o skills dinámicas creadas por lenguaje natural. Habilitar o deshabilitar una skill aquí determina si el orquestador puede invocarla durante el pipeline de procesamiento.
 
 ---
 
@@ -18,7 +18,7 @@ Tarjetas para cada skill registrada en `configs/skills.json`. Actualmente 5 skil
 | **email-draft** | Generación de borradores de email usando CommunicationAgent | Habilitada |
 | **document-gen** | Generación de documentos usando CommunicationAgent | Habilitada |
 | **learn-topic** | Aprendizaje de temas: web search → LLM summarize → chunk → ChromaDB | Habilitada |
-| **repo-explorer** | Exploración de repositorios locales/GitHub + docs propios de Django | Habilitada |
+| **repo-explorer** | Exploración de repositorios locales/GitHub + docs propios de Doe | Habilitada |
 
 Cada tarjeta muestra:
 - Nombre y descripción de la skill
@@ -42,6 +42,16 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
   - **3 (deep)**: Investigación profunda con sub-queries, resumen extenso
 - Resultado del aprendizaje una vez completado
 
+### Dynamic Skills (SkillForge)
+
+Sección dedicada dentro de `/skills` para administrar skills dinámicas cargadas por `DynamicSkillLoader`:
+- Campo de creación (`create`) por descripción en lenguaje natural
+- Mensaje opcional para smoke test
+- Lista de skills dinámicas cargadas
+- Acciones por skill: `test`, `reload`, `delete` (con confirmación)
+
+Fuente: `GET /skills/dynamic`
+
 ---
 
 ## Acciones
@@ -49,7 +59,7 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
 ### 1. Toggle Skill (Activar/Desactivar)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /skills/{skill_id}/toggle`
-- **Impacto en Django**: Cambia el estado enabled/disabled de la skill en el `SkillRegistry` en memoria. Persiste el cambio en `configs/skills.json`. Cuando una skill está deshabilitada:
+- **Impacto en Doe**: Cambia el estado enabled/disabled de la skill en el `SkillRegistry` en memoria. Persiste el cambio en `configs/skills.json`. Cuando una skill está deshabilitada:
   - **web-research**: El orquestador no podrá hacer búsquedas web incluso en modo cognitivo 1 (Full). Las búsquedas simplemente se omiten.
   - **learn-topic**: Los comandos de chat "aprende sobre X" no se detectarán en el paso 0.5 del pipeline. El endpoint API seguirá disponible pero retornará error.
   - **repo-explorer**: Los comandos "lee el archivo X" o "explora el repo Y" no se detectarán en el paso 0.7 del pipeline.
@@ -58,13 +68,30 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
 ### 2. Learn Topic (Aprender Tema)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /skills/learn-topic` con `{topic, depth: 1|2|3}`
-- **Impacto en Django**: Ejecuta un pipeline de aprendizaje autónomo:
+- **Impacto en Doe**: Ejecuta un pipeline de aprendizaje autónomo:
   1. **Búsqueda web**: Usa Tavily API para buscar información sobre el tema (depth controla cuántas sub-queries)
   2. **Resumen LLM**: Envía los resultados de la búsqueda al LLM para generar un resumen estructurado
   3. **Chunking**: Divide el resumen en segmentos de ~500 palabras
   4. **Almacenamiento**: Guarda los chunks en ChromaDB como memoria semántica con `category=learned_knowledge`
   
-  Después de este proceso, Django "sabe" sobre el tema — la información estará disponible en el recall de memoria (paso 4 del pipeline) para todas las conversaciones futuras. En modos cognitivos 2 y 3, solo las memorias con categoría `learned_knowledge` pasan el filtro semántico, así que este mecanismo es la forma principal de expandir el conocimiento de Django en esos modos.
+  Después de este proceso, Doe "sabe" sobre el tema — la información estará disponible en el recall de memoria (paso 4 del pipeline) para todas las conversaciones futuras. En modos cognitivos 2 y 3, solo las memorias con categoría `learned_knowledge` pasan el filtro semántico, así que este mecanismo es la forma principal de expandir el conocimiento de Doe en esos modos.
+
+### 3. Dynamic Skill Create/Test/Reload/Delete
+- **Tipo**: API Calls
+- **Comportamiento**:
+  - `POST /skills/dynamic/create`
+  - `POST /skills/dynamic/{name}/test`
+  - `POST /skills/dynamic/{name}/reload`
+  - `DELETE /skills/dynamic/{name}`
+- **Impacto en Doe**:
+  - **create**: genera código con Claude, valida AST, instala módulo en `src/skills/dynamic/`, registra centroid dinámico
+  - **test**: ejecuta `validate()` + `execute()` de la skill
+  - **reload**: reimporta skill desde disco con validación
+  - **delete**: elimina skill del loader y del sandbox
+
+**Contrato de respuesta (normalizado)**: envelope `{ status, message, data }`. Errores de validación/estado usan códigos HTTP de error (400/404/422/503/500) en lugar de `200` con error embebido.
+
+**Feedback en UI**: el frontend muestra el `message` del backend cuando una operación falla (por ejemplo proveedor Claude no configurado), y solo usa "Failed to fetch" para problemas reales de red/CORS.
 
 ---
 
@@ -73,13 +100,13 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
 | Aspecto | Detalle |
 |---------|---------|
 | **Ruta** | `/skills` |
-| **Archivo** | `dashboard/app/skills/page.tsx` (300 líneas) |
-| **APIs al cargar** | `GET /skills`, `GET /skills/dynamic` |
+| **Archivo** | `dashboard/app/skills/page.tsx` (626 líneas) |
+| **APIs al cargar** | `GET /skills`, `GET /skills/dynamic`, `GET /skills/dynamic/{name}` (detail) |
 | **APIs de escritura** | `POST /skills/{id}/toggle`, `POST /skills/learn-topic`, `POST /skills/dynamic/create`, `DELETE /skills/dynamic/{name}`, `POST /skills/dynamic/{name}/test`, `POST /skills/dynamic/{name}/reload` |
 | **Config file** | `configs/skills.json` (5 skills registradas) |
-| **Estado** | React `useState` para lista de skills, filtro de búsqueda, resultado learn-topic |
+| **Estado** | React `useState` para skills estáticas + dinámicas, filtro, learn-topic, acciones create/test/reload/delete |
 | **Backend modules** | `src/skills/registry.py`, `src/skills/learn_topic.py` (428 ln), `src/skills/web_research.py`, `src/skills/tools.py`, `src/skills/repo_explorer.py` (1,107 ln), `src/skills/skill_generator.py` (555 ln), `src/skills/dynamic_loader.py` (400 ln) |
-| **Iconos** | lucide-react: Wrench, Power, Search, BookOpen, Loader2 |
+| **Iconos** | lucide-react: Wrench, Power, Search, BookOpen, Loader2, FlaskConical, RefreshCw, Trash2, Eye, EyeOff, Code2, Tag, Zap, Shield, User |
 
 ---
 
@@ -87,7 +114,7 @@ Panel dedicado (visible cuando learn-topic está habilitada) con:
 
 ### Arquitectura
 
-SkillForge permite que Django cree dinámicamente nuevos skills a partir de descripciones en lenguaje natural.
+SkillForge permite que Doe cree dinámicamente nuevos skills a partir de descripciones en lenguaje natural.
 
 | Componente | Archivo | Función |
 |-----------|---------|---------|
@@ -98,11 +125,12 @@ SkillForge permite que Django cree dinámicamente nuevos skills a partir de desc
 | `BaseSkill` | `base_skill.py` (176 ln) | ABC that all dynamic skills must extend |
 | `SkillAuthGate` | `skill_auth.py` (217 ln) | Access level enforcement (PUBLIC/PRINCIPAL/SYSTEM) |
 
-### API Endpoints (5)
+### API Endpoints (6)
 
 | Método | Path | Descripción |
 |--------|------|-------------|
 | `GET` | `/skills/dynamic` | Lista dynamic skills cargados |
+| `GET` | `/skills/dynamic/{name}` | Detalle completo de dynamic skill (metadata, trigger phrases, source code) |
 | `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural (Claude) |
 | `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill |
 | `POST` | `/skills/dynamic/{name}/test` | Smoke test de dynamic skill |

@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Cognitive Trace viewer visualiza el pipeline de procesamiento interno del orquestador como un pipeline horizontal de 8 columnas usando CSS Grid. Cada vez que Django procesa un mensaje, el `TraceCollector` registra cada paso del pipeline como un nodo con inputs, outputs, métricas, y latencia. Esta página permite inspeccionar esos pipelines, entender exactamente qué pasos ejecutó Django para generar una respuesta, ver los prompts exactos enviados al LLM, y ejecutar replays que generan nuevos traces. Es la herramienta principal de observabilidad y debugging del sistema.
+El Cognitive Trace viewer visualiza el pipeline de procesamiento interno del orquestador como un pipeline horizontal de 8 columnas usando CSS Grid. Cada vez que Doe procesa un mensaje, el `TraceCollector` registra cada paso del pipeline como un nodo con inputs, outputs, métricas, y latencia. Esta página permite inspeccionar esos pipelines, entender exactamente qué pasos ejecutó Doe para generar una respuesta, ver los prompts exactos enviados al LLM, y ejecutar replays que generan nuevos traces. Es la herramienta principal de observabilidad y debugging del sistema.
 
 ---
 
@@ -12,7 +12,7 @@ El Cognitive Trace viewer visualiza el pipeline de procesamiento interno del orq
 
 #### Campo de Replay
 - Input de texto + botón Send para enviar un mensaje que generará un nuevo trace
-- Respuesta de Django mostrada debajo del input tras completar el replay
+- Respuesta de Doe mostrada debajo del input tras completar el replay
 
 #### Lista de Traces
 Lista scrollable de los últimos 50 traces generados. Cada item muestra:
@@ -51,7 +51,7 @@ Cada columna muestra: **header** con barra de color + label + conteo de nodos + 
 
 **Nodos con Embedding**: Badge 📐 EMB en el header del nodo cuando `uses_embedding=true`. Indica uso de EmbeddingRouter (Qwen3-Embedding-8B).
 
-**Nodos de Skill**: Badge 🔧 SKILL en sub-nodos de skill execution. Indica pasos de ejecución de habilidades reportados via `SkillReport.to_trace_nodes()`.
+**Nodos de Skill**: Badge 🔧 SKILL en sub-nodos de skill execution. Indica pasos de ejecución de habilidades reportados via `SkillReport.to_trace_nodes()`. Incluye skills nativas (`learn-topic`, `repo-explorer`) y skills dinámicas autogeneradas por SkillForge cuando retornan `SkillResult(report=...)`.
 
 **Nota sobre `skill_execution`**: Aunque usa `node_type="llm_generate"`, un override por `node_id` lo asigna al grupo Planning & Skills (no Generation).
 
@@ -147,37 +147,37 @@ Overlay con backdrop blur que muestra el prompt completo:
 ### 1. Seleccionar Trace
 - **Tipo**: API Call
 - **Comportamiento**: Click en un trace de la sidebar. Llama `GET /trace/{interactionId}`
-- **Impacto en Django**: **Solo lectura** — carga el grafo del trace seleccionado en el canvas.
+- **Impacto en Doe**: **Solo lectura** — carga el grafo del trace seleccionado en el canvas.
 
 ### 2. Replay Message
 - **Tipo**: API Call
 - **Comportamiento**: Escribir un mensaje en el campo de replay y presionar Enter o el botón Send. Llama `POST /trace/replay` con `{message, conversation_id}`
-- **Impacto en Django**: **Ejecuta el pipeline completo del orquestador** — idéntico a enviar un mensaje en `/chat`. Genera un nuevo trace, crea memorias, evaluaciones, persiste en Postgres. La diferencia es que el nuevo trace se carga automáticamente en el canvas y la respuesta se muestra directamente debajo del input. Refresca la lista de traces.
+- **Impacto en Doe**: **Ejecuta el pipeline completo del orquestador** — idéntico a enviar un mensaje en `/chat`. Genera un nuevo trace, crea memorias, evaluaciones, persiste en Postgres. La diferencia es que el nuevo trace se carga automáticamente en el canvas y la respuesta se muestra directamente debajo del input. Refresca la lista de traces.
 
 ### 3. Delete Single Trace
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Hover sobre trace → botón X → confirmar en `ConfirmDialog`. Llama `DELETE /trace/{interactionId}`
-- **Impacto en Django**: Elimina el trace del `TraceStore` en memoria. Si el trace eliminado estaba seleccionado, limpia el canvas. **No elimina** la interacción, memorias, ni evaluaciones asociadas — solo el trace graph.
+- **Impacto en Doe**: Elimina el trace del `TraceStore` en memoria. Si el trace eliminado estaba seleccionado, limpia el canvas. **No elimina** la interacción, memorias, ni evaluaciones asociadas — solo el trace graph.
 
 ### 4. Delete All Traces
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Botón Trash2 en header de lista → confirmar. Llama `DELETE /trace`
-- **Impacto en Django**: Elimina TODOS los traces del `TraceStore` en memoria. Limpia canvas y lista. No afecta datos en Postgres (interactions, evaluations, etc.), solo los graphs en memoria.
+- **Impacto en Doe**: Elimina TODOS los traces del `TraceStore` en memoria. Limpia canvas y lista. No afecta datos en Postgres (interactions, evaluations, etc.), solo los graphs en memoria.
 
 ### 5. Load Latest
 - **Tipo**: API Call
 - **Comportamiento**: Llama `GET /trace/latest/graph`
-- **Impacto en Django**: Solo lectura — carga el trace más reciente
+- **Impacto en Doe**: Solo lectura — carga el trace más reciente
 
 ### 6. View Prompt
 - **Tipo**: Estado local
 - **Comportamiento**: Abre el modal de prompt viewer. Extrae `refined_prompt` y `user_prompt` del output del nodo `prompt_build`
-- **Impacto en Django**: Ninguno — operación puramente visual
+- **Impacto en Doe**: Ninguno — operación puramente visual
 
 ### 7. Copy Prompt
 - **Tipo**: Clipboard
 - **Comportamiento**: Copia el texto del prompt activo al portapapeles
-- **Impacto en Django**: Ninguno
+- **Impacto en Doe**: Ninguno
 
 ---
 

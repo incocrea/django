@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Command Center es la página principal del dashboard y sirve como centro de control operacional de Django. Proporciona una vista consolidada en tiempo real del estado completo del sistema: salud de los servicios, métricas clave de rendimiento (KPIs), estado de los agentes, actividad reciente, configuración de la persona, y estado del router de modelos. Es la primera pantalla que ve el usuario al acceder al dashboard y desde aquí puede navegar rápidamente a cualquier módulo del sistema mediante acciones directas.
+El Command Center es la página principal del dashboard y sirve como centro de control operacional de Doe. Proporciona una vista consolidada en tiempo real del estado completo del sistema: salud de los servicios, métricas clave de rendimiento (KPIs), estado de los agentes, actividad reciente, configuración de la persona, y estado del router de modelos. Es la primera pantalla que ve el usuario al acceder al dashboard y desde aquí puede navegar rápidamente a cualquier módulo del sistema mediante acciones directas.
 
 ---
 
@@ -90,38 +90,38 @@ Fuente: `GET /events/recent?limit=50` + actualizaciones en tiempo real vía WebS
 ### 1. Start Chat
 - **Tipo**: Navegación
 - **Comportamiento**: Redirige a `/chat`
-- **Impacto en Django**: Ninguno directo — solo navegación
+- **Impacto en Doe**: Ninguno directo — solo navegación
 
 ### 2. Start Training
 - **Tipo**: API Call + Navegación
 - **Comportamiento**: Llama `POST /training/session/start` con modo `correction`, luego redirige a `/training`
-- **Impacto en Django**: Inicia una nueva sesión de entrenamiento en `TrainingManager`. El backend registra la sesión como activa, emite evento `training.session_started`. Si ya hay una sesión activa, el backend retorna error.
+- **Impacto en Doe**: Inicia una nueva sesión de entrenamiento en `TrainingManager`. El backend registra la sesión como activa, emite evento `training.session_started`. Si ya hay una sesión activa, el backend retorna error.
 
 ### 3. Reload Persona
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /persona/reload`, luego `GET /persona/info` para actualizar la UI
-- **Impacto en Django**: El backend re-lee `configs/persona.yaml` desde disco, reconstruye los prompts de todos los agentes con los nuevos datos de personalidad. Los cambios aplican inmediatamente a todas las respuestas subsiguientes. Emite evento `config.persona_reloaded`.
+- **Impacto en Doe**: El backend re-lee `configs/persona.yaml` desde disco, reconstruye los prompts de todos los agentes con los nuevos datos de personalidad. Los cambios aplican inmediatamente a todas las respuestas subsiguientes. Emite evento `config.persona_reloaded`.
 
 ### 4. Reload Router
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /router/reload`, luego `GET /router/status` para actualizar la UI
-- **Impacto en Django**: El backend re-lee `configs/models.json` desde disco, reconfigura el `ModelRouter` con los nuevos providers, assignments, y fallback chain. Puede cambiar qué modelo usa cada agente. Emite evento `config.router_reloaded`.
+- **Impacto en Doe**: El backend re-lee `configs/models.json` desde disco, reconfigura el `ModelRouter` con los nuevos providers, assignments, y fallback chain. Puede cambiar qué modelo usa cada agente. Emite evento `config.router_reloaded`.
 
 ### 5. Identity Governance
 - **Tipo**: Navegación
 - **Comportamiento**: Redirige a `/identity-governance`
-- **Impacto en Django**: Ninguno directo — solo navegación
+- **Impacto en Doe**: Ninguno directo — solo navegación
 
 ### 6. Pending Approvals (condicional)
 - **Tipo**: Navegación
 - **Comportamiento**: Solo visible cuando hay aprobaciones pendientes. Redirige a `/governance`
-- **Impacto en Django**: Ninguno directo — solo navegación
+- **Impacto en Doe**: Ninguno directo — solo navegación
 
 ### 7. Emergency Stop / Resume
 - **Tipo**: API Call con doble confirmación
 - **Emergency Stop**: Requiere hacer clic dos veces (botón principal + confirmar en `ConfirmDialog`). Llama `POST /governance/emergency-stop`
 - **Emergency Resume**: Mismo patrón de doble confirmación. Llama `POST /governance/emergency-resume`
-- **Impacto en Django**:
+- **Impacto en Doe**:
   - **Stop**: Establece `_emergency_stopped = True` en el orquestador. **BLOQUEA TODO el procesamiento** — cualquier mensaje enviado al chat retornará error en el paso 0 del pipeline. Emite evento `governance.emergency_stop_activated` al audit log. Estado solo en memoria (se pierde al reiniciar).
   - **Resume**: Restablece `_emergency_stopped = False`. El orquestador vuelve a procesar mensajes normalmente. Emite evento `governance.emergency_stop_deactivated`.
 

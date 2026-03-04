@@ -22,18 +22,19 @@
 
 ---
 
-## 15 Páginas
+## 20 Páginas
 
 | Ruta | Página | Descripción | Doc |
 |------|--------|-------------|-----|
-| `/` | Command Center | KPIs, agent status, health, actividad | [→](command-center.md) |
+| `/login` | Login | Autenticación (open mode / API key) | [→](login.md) |
+| `/` | Command Center | KPIs, agent status, health, actividad, balance | [→](command-center.md) |
 | `/chat` | Chat | Conversación con el delegado | [→](chat.md) |
 | `/docs` | Documentation Viewer | 3-panel: file tree, markdown, ToC | [→](docs.md) |
 | `/identity` | Identity Studio | Editor de personalidad Big Five | [→](identity-studio.md) |
 | `/training` | Training Center | Correcciones + carga con dedup semántica | [→](training-center.md) |
 | `/testing` | Testing Playground | Escenarios, A/B compare | [→](testing-playground.md) |
 | `/models` | Model Manager | Proveedores LLM, perfiles | [→](model-manager.md) |
-| `/skills` | Skill Manager | Skills toggle, learn-topic, repo-explorer | [→](skill-manager.md) |
+| `/skills` | Skill Manager | Skills toggle, learn-topic, repo-explorer + SkillForge dynamic skills admin (create/test/reload/delete) | [→](skill-manager.md) |
 | `/memory` | Memory Lab | Explorar/editar memorias | [→](memory-lab.md) |
 | `/governance` | Governance Console | Reglas, audit, emergency stop | [→](governance-console.md) |
 | `/analytics` | Analytics | Métricas de rendimiento | [→](analytics.md) |
@@ -41,18 +42,24 @@
 | `/evaluation` | Evaluation Dashboard | 5 módulos de evaluación | [→](evaluation-dashboard.md) |
 | `/identity-governance` | Identity Governance | Versiones, evolución, shadow, health | [→](identity-governance.md) |
 | `/goals` | Goals | Sistema teleológico | [→](goals.md) |
+| `/billing` | Billing & Wallet | Balance, compra de tokens, transacciones, tarifas | [→](billing.md) |
+| `/api-keys` | API Keys | CRUD de claves de acceso programático | [→](api-keys.md) |
+| `/admin/tenants` | Tenant Management | Listar, crear, gestionar tenants (owner only) | [→](admin-tenants.md) |
+| `/admin/revenue` | Revenue Dashboard | Revenue por provider y tier (owner only) | [→](admin-revenue.md) |
 
 ---
 
 ## Componentes
 
-### Layout (3)
+### Layout (5)
 
 | Componente | Archivo | Función |
-|-----------|---------|---------|
-| `ClientShell` | `client-shell.tsx` (23 ln) | Root: `useWebSocket()`, `useHealth(5000)`, `useInitialData()`, wraps `I18nProvider` + `TooltipProvider` |
-| `Header` | `header.tsx` (82 ln) | Barra superior: principal name, language switcher, DB LED, WS status, agent state badge |
-| `Sidebar` | `sidebar.tsx` (159 ln) | 240px: logo, status LED, 15 nav items (flat list, no group headers) |
+|-----------|---------|----------|
+| `ClientShell` | `client-shell.tsx` | Root: detecta rutas públicas (login), split en bare shell vs authenticated shell |
+| `AuthenticatedShell` | `client-shell.tsx` | Shell autenticado: `useWebSocket()`, `useHealth(5000)`, `useInitialData()`, wraps Sidebar + Header + main |
+| `AuthGuard` | `auth-guard.tsx` | Protege rutas autenticadas, redirect a `/login` si no hay sesión |
+| `Header` | `header.tsx` | Barra superior: wallet pill, user dropdown (nombre, tier badge, links, logout), language switcher, DB LED, WS status |
+| `Sidebar` | `sidebar.tsx` | 240px: logo, status LED, 7 grupos de navegación (Core, Identity & Training, Infrastructure, Observability, Knowledge, Account, Administration), items owner-only |
 
 ### Command Center (7)
 
@@ -99,7 +106,9 @@ Badge, Button, Card, ConfirmDialog, Input, Progress, ScrollArea, Separator, Tabs
 
 ---
 
-## Estado Global — Zustand Store (159 líneas)
+## Estado Global — Zustand Stores
+
+### Chat Store (159 líneas)
 
 | Grupo | Estado | Persistido |
 |-------|--------|------------|
@@ -111,6 +120,16 @@ Badge, Button, Card, ConfirmDialog, Input, Progress, ScrollArea, Separator, Tabs
 | Persona | `persona: PersonaInfo` | No |
 | Router | `routerStatus` | No |
 | WebSocket | `wsConnected` | No |
+
+### Auth Store (`lib/auth-store.ts`)
+
+| Campo | Tipo | Persistido |
+|-------|------|------------|
+| `token` | `string \| null` | **Sí** (localStorage `doe-auth`) |
+| `user` | `AuthUser` (tenant_id, name, email, tier, is_owner) | **Sí** |
+| `wallet` | `WalletInfo` (balance, lifetime_purchased, lifetime_consumed) | No |
+
+Computados: `isAuthenticated()`, `isOwner()`.
 
 ---
 
@@ -153,9 +172,9 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-## API Client — `lib/api.ts` (1,279 líneas)
+## API Client — `lib/api.ts` (~1,500 líneas)
 
-~111 métodos que mapean 1:1 con los [endpoints del backend](../api/README.md). Patrón:
+~140 métodos que mapean 1:1 con los [endpoints del backend](../api/README.md). Incluye `GET/POST/DELETE /skills/dynamic*` con envelope `{status,message,data}` para SkillForge. Inyecta `Authorization: Bearer <token>` automáticamente desde auth store. Auto-logout en 401. 20+ métodos nuevos para tenant/billing/auth. Patrón:
 
 ```typescript
 export const api = {
@@ -171,7 +190,7 @@ export const api = {
 
 ## Temas Relacionados
 
-- [API](../api/README.md) — Los 120 endpoints que consume
+- [API](../api/README.md) — Los 121 endpoints que consume
 - [Arquitectura](../architecture/README.md) — Backend que alimenta el dashboard
 - [Configuración](../config/README.md) — tailwind.config, next.config
 - [Eventos](../architecture/events.md) — WebSocket updates

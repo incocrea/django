@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Memory Lab es la interfaz para inspeccionar, buscar, editar y eliminar los contenidos de la memoria de Django. El sistema de memoria tiene 4 tiers (Working, Episodic, Semantic, Procedural), cada uno con diferente propósito, persistencia y almacenamiento. Desde aquí el principal puede ver estadísticas de cada tier, buscar memorias por texto y tier, editar memorias existentes, y eliminar memorias individuales o en bloque. Las operaciones aquí afectan directamente qué información recuerda Django en futuras conversaciones.
+El Memory Lab es la interfaz para inspeccionar, buscar, editar y eliminar los contenidos de la memoria de Doe. El sistema de memoria tiene 4 tiers (Working, Episodic, Semantic, Procedural), cada uno con diferente propósito, persistencia y almacenamiento. Desde aquí el principal puede ver estadísticas de cada tier, buscar memorias por texto y tier, editar memorias existentes, y eliminar memorias individuales o en bloque. Las operaciones aquí afectan directamente qué información recuerda Doe en futuras conversaciones.
 
 > **Nota**: La alimentación de memoria semántica se realiza exclusivamente mediante carga de JSON estructurado desde el [Training Center](/training). El Memory Lab es solo para inspección y mantenimiento.
 
@@ -39,32 +39,32 @@ Lista de memorias que coinciden con la query de búsqueda. Cada resultado muestr
 ### 1. Buscar Memorias
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /memory/search` con `{query, tier?: "episodic"|"semantic", limit?: number}`
-- **Impacto en Django**: **Solo lectura** — ejecuta búsqueda por similitud semántica (cosine similarity) en ChromaDB. No modifica ningún dato. El filtro de tier permite buscar solo en episodic, solo en semantic, o en ambos. Límite configurable (default 10).
+- **Impacto en Doe**: **Solo lectura** — ejecuta búsqueda por similitud semántica (cosine similarity) en ChromaDB. No modifica ningún dato. El filtro de tier permite buscar solo en episodic, solo en semantic, o en ambos. Límite configurable (default 10).
 
 ### 2. Editar Memoria Semántica
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /memory/semantic/{id}` con `{content, metadata?}`
-- **Impacto en Django**: Modifica el contenido de una memoria existente en ChromaDB. Se **recomputa el embedding** — la proximidad semántica de esta memoria a futuras queries puede cambiar significativamente. El `MemoryRollbackManager` registra el estado anterior (before-state) para posible undo.
+- **Impacto en Doe**: Modifica el contenido de una memoria existente en ChromaDB. Se **recomputa el embedding** — la proximidad semántica de esta memoria a futuras queries puede cambiar significativamente. El `MemoryRollbackManager` registra el estado anterior (before-state) para posible undo.
 
 ### 3. Eliminar Memoria Semántica
 - **Tipo**: API Call
 - **Comportamiento**: Llama `DELETE /memory/semantic/{id}`
-- **Impacto en Django**: Elimina permanentemente la memoria de ChromaDB. Django ya no recordará esta información. El `MemoryRollbackManager` registra la operación con el contenido completo eliminado para posible undo desde el Evaluation Dashboard.
+- **Impacto en Doe**: Elimina permanentemente la memoria de ChromaDB. Doe ya no recordará esta información. El `MemoryRollbackManager` registra la operación con el contenido completo eliminado para posible undo desde el Evaluation Dashboard.
 
 ### 4. Eliminar Memoria Episódica
 - **Tipo**: API Call
 - **Comportamiento**: Llama `DELETE /memory/episodic/{id}`
-- **Impacto en Django**: Elimina un log de interacción pasada de ChromaDB. Afecta qué contexto histórico recuerda Django. Operación registrada por `MemoryRollbackManager`.
+- **Impacto en Doe**: Elimina un log de interacción pasada de ChromaDB. Afecta qué contexto histórico recuerda Doe. Operación registrada por `MemoryRollbackManager`.
 
 ### 5. Eliminar en Bloque (Bulk Delete)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /memory/bulk-delete` con `{ids: string[], tier: "semantic"|"episodic"}`
-- **Impacto en Django**: Elimina múltiples memorias de un solo tier en una operación. Cada eliminación se registra individualmente en `MemoryRollbackManager`. Útil para limpiar datos de testing o memorias obsoletas.
+- **Impacto en Doe**: Elimina múltiples memorias de un solo tier en una operación. Cada eliminación se registra individualmente en `MemoryRollbackManager`. Útil para limpiar datos de testing o memorias obsoletas.
 
 ### 6. Limpiar Working Memory
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /memory/working/clear` con `{conversation_id?}`
-- **Impacto en Django**: Si se especifica `conversation_id`, limpia solo el buffer de working memory de esa conversación. Si no, limpia todos los buffers. El efecto es que Django "olvida" el contexto de la conversación activa — la próxima respuesta no tendrá referencia a mensajes anteriores de esa sesión.
+- **Impacto en Doe**: Si se especifica `conversation_id`, limpia solo el buffer de working memory de esa conversación. Si no, limpia todos los buffers. El efecto es que Doe "olvida" el contexto de la conversación activa — la próxima respuesta no tendrá referencia a mensajes anteriores de esa sesión.
 
 ### Mecanismo de Undo
 

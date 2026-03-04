@@ -2,7 +2,7 @@
 
 ## Información General
 
-La Governance Console es el centro de control de las reglas, límites, y políticas que gobiernan el comportamiento de Django. Presenta la configuración completa de gobernanza (niveles de autonomía, clasificación de riesgo, operaciones prohibidas, controles de emergencia, privacidad), el registro de auditoría de eventos del sistema, la cola de aprobaciones pendientes, una matriz estática de límites por nivel de autonomía, y el middleware del pipeline. Desde aquí se puede activar/desactivar el Emergency Stop que bloquea completamente el procesamiento de Django.
+La Governance Console es el centro de control de las reglas, límites, y políticas que gobiernan el comportamiento de Doe. Presenta la configuración completa de gobernanza (niveles de autonomía, clasificación de riesgo, operaciones prohibidas, controles de emergencia, privacidad), el registro de auditoría de eventos del sistema, la cola de aprobaciones pendientes, una matriz estática de límites por nivel de autonomía, y el middleware del pipeline. Desde aquí se puede activar/desactivar el Emergency Stop que bloquea completamente el procesamiento de Doe.
 
 ---
 
@@ -16,7 +16,7 @@ Renderiza el contenido completo de `configs/governance.yaml` en secciones colaps
 Grid de 5 tarjetas (niveles 0-4), cada una con:
 - **Número de nivel** y **nombre** (Observer, Assistant, Collaborator, Delegate, Trusted)
 - **Descripción** del nivel
-- **Capabilities** (hasta 3 por nivel): lo que Django puede hacer autónomamente en ese nivel
+- **Capabilities** (hasta 3 por nivel): lo que Doe puede hacer autónomamente en ese nivel
 
 #### Clasificación de Riesgo
 Tarjetas por nivel de riesgo con badges de color:
@@ -26,7 +26,7 @@ Tarjetas por nivel de riesgo con badges de color:
 - **Critical** (rojo): Ejemplos y requerimiento de aprobación
 
 #### Operaciones Prohibidas
-Lista con iconos XCircle rojos de operaciones que Django **nunca** puede ejecutar, independientemente del nivel de autonomía. Marcadas como "HARDCODED" — no configurables por el usuario.
+Lista con iconos XCircle rojos de operaciones que Doe **nunca** puede ejecutar, independientemente del nivel de autonomía. Marcadas como "HARDCODED" — no configurables por el usuario.
 
 #### Controles de Emergencia
 Tarjeta con borde rojo que muestra:
@@ -95,27 +95,27 @@ Fuente: `GET /middleware`
 ### 1. Emergency Stop
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Botón rojo con sombra brillante en el header. Requiere confirmar en `ConfirmDialog` (variant "danger")
-- **Impacto en Django**: Llama `POST /governance/emergency-stop`. Establece `_emergency_stopped = True` en el orquestador. **BLOQUEA COMPLETAMENTE TODO el procesamiento** de Django — cualquier mensaje (desde chat, Discord, API) será rechazado en el paso 0 del pipeline. Emite evento `governance.emergency_stop_activated` al audit log. Estado solo en memoria (se resetea al reiniciar el servidor). Indicador visual "STOPPED" pulsante aparece en el header.
+- **Impacto en Doe**: Llama `POST /governance/emergency-stop`. Establece `_emergency_stopped = True` en el orquestador. **BLOQUEA COMPLETAMENTE TODO el procesamiento** de Doe — cualquier mensaje (desde chat o API) será rechazado en el paso 0 del pipeline. Emite evento `governance.emergency_stop_activated` al audit log. Estado solo en memoria (se resetea al reiniciar el servidor). Indicador visual "STOPPED" pulsante aparece en el header.
 
 ### 2. Emergency Resume
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Botón verde con CheckCircle. Solo visible cuando Emergency Stop está activo. Requiere confirmar en `ConfirmDialog` (variant "info")
-- **Impacto en Django**: Llama `POST /governance/emergency-resume`. Restablece `_emergency_stopped = False`. Django vuelve a procesar mensajes normalmente. Emite evento `governance.emergency_stop_deactivated`.
+- **Impacto en Doe**: Llama `POST /governance/emergency-resume`. Restablece `_emergency_stopped = False`. Doe vuelve a procesar mensajes normalmente. Emite evento `governance.emergency_stop_deactivated`.
 
 ### 3. Toggle Middleware
 - **Tipo**: API Call
 - **Comportamiento**: Botón toggle en cada entrada de middleware
-- **Impacto en Django**: Llama `POST /middleware/{name}/toggle`. Habilita o deshabilita un paso de middleware en el pipeline del orquestador. Los middlewares disabled se saltan durante el procesamiento.
+- **Impacto en Doe**: Llama `POST /middleware/{name}/toggle`. Habilita o deshabilita un paso de middleware en el pipeline del orquestador. Los middlewares disabled se saltan durante el procesamiento.
 
 ### 4. Approval Actions (Approve/Reject/Request Changes)
 - **Tipo**: Estado local únicamente
 - **Comportamiento**: Descarta el item de la lista visual y muestra un toast de 3 segundos
-- **Impacto en Django**: **NINGUNO** — no existe endpoint backend para procesar aprobaciones. Es un placeholder visual. Los items vuelven a aparecer al recargar la página.
+- **Impacto en Doe**: **NINGUNO** — no existe endpoint backend para procesar aprobaciones. Es un placeholder visual. Los items vuelven a aparecer al recargar la página.
 
 ### 5. Refresh
 - **Tipo**: API Call
 - **Comportamiento**: Re-llama los 5 endpoints
-- **Impacto en Django**: Solo lectura
+- **Impacto en Doe**: Solo lectura
 
 ---
 

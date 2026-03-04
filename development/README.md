@@ -10,25 +10,25 @@ Este documento es la **guía práctica para desarrolladores** (y para Copilot) �
 
 ### ¿Qué cubre este documento?
 
-Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **3 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar, Discord bot nunca duplicar), el **catálogo completo de tests** (60 archivos, ~19,000 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
+Documenta las **convenciones de código** para Python (backend) y TypeScript (dashboard), el **tema visual CSS** con todas sus variables, las **2 reglas operacionales críticas** (servicios solo via Tasks, terminales se cierran después de usar), el **catálogo completo de tests** (60 archivos, ~19,000 líneas con pytest), el **roadmap por módulo** (qué está pendiente y su prioridad), los **niveles de autonomía** (0-4) y las **integraciones externas planificadas**.
 
 ### ¿Cuál es su función en la arquitectura?
 
-Este no es un módulo de la arquitectura sino una **meta-documentación operacional**. Define las reglas del juego para construir sobre el sistema existente. Es especialmente crítico porque ADLRA es un proyecto que se auto-modifica (con supervisión humana) — sin reglas claras, los cambios podrían romper la cadena de confianza entre Django, el código y Harold.
+Este no es un módulo de la arquitectura sino una **meta-documentación operacional**. Define las reglas del juego para construir sobre el sistema existente. Es especialmente crítico porque ADLRA es un proyecto que se auto-modifica (con supervisión humana) — sin reglas claras, los cambios podrían romper la cadena de confianza entre Doe, el código y Harold.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 Indirectamente pero de forma importante:
 - Las **convenciones de código** aseguran que nuevos módulos se integren correctamente (lazy imports, logger naming, Pydantic validation)
 - Los **tests** validan que cada módulo de [identidad](../architecture/identity.md), [pipeline](../architecture/pipeline.md), [memoria](../architecture/memory.md), [evaluación](../architecture/evaluation.md), [cognición](../architecture/cognition.md), [seguridad](../architecture/security.md) y [teleología](../architecture/teleology.md) funcione correctamente antes de deployar
-- Las **reglas operacionales** previenen problemas como servicios duplicados (que causan double responses en Discord) o terminales zombie que consumen recursos
+- Las **reglas operacionales** previenen problemas como servicios duplicados o terminales zombie que consumen recursos
 
 ### ¿Cómo interactúa con las demás piezas?
 
 Este documento **referencia a todos los demás** porque cubre el proyecto completo:
 - La tabla de tests enlaza a los módulos que testea: [Pipeline](../architecture/pipeline.md), [Identidad](../architecture/identity.md) (17 archivos de test para las 17 fases), [Memoria](../architecture/memory.md), [Evaluación](../architecture/evaluation.md), [Cognición](../architecture/cognition.md), [Eventos](../architecture/events.md), [Seguridad](../architecture/security.md), [Teleología](../architecture/teleology.md), [Database](../architecture/database.md)
 - El roadmap referencia módulos pendientes en [Pipeline](../architecture/pipeline.md) (Human-in-the-Loop), [Dashboard](../dashboard/README.md) (múltiples mejoras), [Config](../config/README.md) (auth), [Integraciones](../integrations/README.md) (email, calendar, Slack)
-- Las reglas operacionales conectan con [Config](../config/README.md) (tasks.json) y [Integraciones](../integrations/README.md) (Discord bot PID management)
+- Las reglas operacionales conectan con [Config](../config/README.md) (tasks.json) y [Integraciones](../integrations/README.md)
 
 ---
 
@@ -52,7 +52,7 @@ Este documento **referencia a todos los demás** porque cubre el proyecto comple
 | Client directive | `"use client"` en todas las páginas interactivas |
 | Estado global | Zustand store (`lib/store.ts`) |
 | Estado local | `useState` / `useReducer` |
-| API | Centralizada en `lib/api.ts` (~111 métodos) |
+| API | Centralizada en `lib/api.ts` (~119 métodos), parsea `message` de errores backend y distingue fallos de red/CORS |
 | UI | shadcn/ui primitives + custom lab theme |
 | i18n | `lib/i18n/` — `en.json` + `es.json` (631 keys) |
 
@@ -83,7 +83,6 @@ Este documento **referencia a todos los demás** porque cubre el proyecto comple
 |------------|-------------|
 | `run_task("Start All Services")` | `run_in_terminal` con `isBackground: true` para servicios |
 | `run_task("Backend: FastAPI Server")` | Ejecutar `uvicorn` en terminal |
-| `run_task("Discord: Django Bot")` | Ejecutar `python discord_bot.py` manualmente |
 
 Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 
@@ -95,12 +94,6 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | One-off test | Kill después de resultado |
 | Background rápido | Kill inmediatamente |
 | Task de servicio | Keep alive (VS Code las gestiona) |
-
-### Bot Discord = NUNCA duplicar
-
-- PID lock en `agent/discord_bot.pid`
-- NUNCA WMIC scans ni `os.kill()`
-- Si duplicación: `wmic process where "name='python.exe'" get processid,commandline`
 
 ---
 
@@ -176,6 +169,7 @@ Las Tasks tienen `instanceLimit: 1` — re-ejecutar mata la instancia anterior.
 | test_skill_auth.py | 103 | SkillAuthGate (access levels + management ops) |
 | test_skill_context.py | 53 | SkillRequestContext (principal resolution) |
 | test_skill_generator.py | 354 | SkillGenerator pipeline + requirement parsing |
+| test_orchestrator_dynamic_trace.py | 70 | Paridad de Cognitive Trace para skills dinámicas (`SkillReport` sub-nodos) |
 | conftest.py | 150 | Fixtures compartidas |
 
 ### Ejecutar Tests
@@ -231,8 +225,6 @@ pytest --tb=short -q        # salida compacta
 
 | Integración | Tipo | Estado |
 |-------------|------|--------|
-| Discord Bot | Conversación natural | ✅ Operativo |
-| Discord Webhook | Publicación | ✅ Operativo |
 | Email (send/receive) | Comunicación | 🔲 |
 | Calendar (Google/Outlook) | Scheduling | 🔲 |
 | Slack | Messaging | 🔲 |
@@ -276,7 +268,7 @@ pytest --tb=short -q        # salida compacta
 | **OLS** | Ordinary Least Squares — regresión lineal para trends en [evolución](../architecture/identity.md) |
 | **Orchestrator** | [Cerebro central](../architecture/pipeline.md): pipeline de 25+ pasos por cada mensaje |
 | **Planner** | Componente [stateless](../architecture/cognition.md) que construye Plan con steps y gates |
-| **Principal** | La persona humana a quien Django representa (Harold) |
+| **Principal** | La persona humana a quien Doe representa (Harold) |
 | **RRF** | Reciprocal Rank Fusion — combinación de rankings en [hybrid search](../architecture/memory.md) |
 | **Shadow Simulation** | Simulación no-mutante de candidato de [identidad](../architecture/identity.md) (Phase 10B) |
 | **Task** | VS Code Task definida en [tasks.json](../config/README.md) para gestionar servicios |
@@ -290,6 +282,6 @@ pytest --tb=short -q        # salida compacta
 
 - [Arquitectura](../architecture/README.md) — Vista completa del sistema
 - [Pipeline](../architecture/pipeline.md) — Flujo de procesamiento
-- [Integraciones](../integrations/README.md) — Discord, Model Router
+- [Integraciones](../integrations/README.md) — Model Router
 - [Configuración](../config/README.md) — Archivos de config
 - [Baseline.md](../Baseline.md) — Documento monolítico original

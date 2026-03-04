@@ -1,37 +1,36 @@
-# API REST — 120 Endpoints
+# API REST — 121 Endpoints
 
 > [← Base de Datos](../architecture/database.md) · [Dashboard →](../dashboard/README.md)
 
-**Archivo**: `src/api/routes.py` (3,900 líneas)
+**Archivo**: `src/api/routes.py` (4,076 líneas)
 
 ---
 
 ## Sobre este documento
 
-Este documento es la **referencia completa de los 120 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard, el bot de Discord, o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
+Este documento es la **referencia completa de los 121 endpoints** de la API REST de ADLRA — el contrato técnico entre el backend y todo lo que lo consume (el dashboard o cualquier cliente externo). Cada endpoint está documentado con su método HTTP, path, descripción, bases de datos que toca, y eventos que emite.
 
 ### ¿Qué cubre este documento?
 
-Documenta los **19 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (7), Skills (5), Dynamic Skills (5), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
+Documenta los **19 grupos de endpoints** organizados por funcionalidad: Health & Status (4), Service Log (2), Chat (2), Configuration (2), Persona (5), Crew (1), Trace (6), Persisted Interactions (4), Memory (7), Skills (5), Dynamic Skills (6), Training (14), Models (4), Evaluation (21), Governance (6), Analytics (6), Identity Governance (11), Middleware (2), y Teleology/Goals (11). Para cada endpoint se indica método, path, qué hace, qué DB consulta, y qué eventos emite.
 
 ### ¿Cuál es su función en la arquitectura?
 
-La API es la **interfaz pública del backend** — la única forma de comunicarse con Django desde fuera. El dashboard, el bot de Discord, y cualquier herramienta externa interactúan exclusivamente a través de estos endpoints. Sin la API, los 25+ pasos del pipeline, los 22 módulos de identidad, los 4 niveles de memoria, y todo lo demás estarían encerrados en el backend sin forma de acceder a ellos.
+La API es la **interfaz pública del backend** — la única forma de comunicarse con Doe desde fuera. El dashboard y cualquier herramienta externa interactúan exclusivamente a través de estos endpoints. Sin la API, los 25+ pasos del pipeline, los 22 módulos de identidad, los 4 niveles de memoria, y todo lo demás estarían encerrados en el backend sin forma de acceder a ellos.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 - El endpoint **`POST /chat`** es el más crítico — es el punto de entrada que inicia el [pipeline completo](../architecture/pipeline.md) para cada mensaje
 - El **WebSocket `/ws`** permite comunicación bidireccional en tiempo real (recibe eventos del [EventBus](../architecture/events.md), puede enviar chat directo que bypasea el orchestrator)
-- Los endpoints de **Persona** permiten modificar en caliente quién es Django — cambian `persona.yaml` y recargan todos los [agentes](../architecture/agents.md)
-- Los endpoints de **Training** permiten corregir, entrenar y enseñar a Django en tiempo real
+- Los endpoints de **Persona** permiten modificar en caliente quién es Doe — cambian `persona.yaml` y recargan todos los [agentes](../architecture/agents.md)
+- Los endpoints de **Training** permiten corregir, entrenar y enseñar a Doe en tiempo real
 - Los endpoints de **Identity Governance** permiten gestionar versiones de identidad, aprobar/rechazar evoluciones, y hacer rollback
 - **Emergency Stop** (`POST /governance/emergency-stop`) bloquea instantáneamente todo el pipeline
 
 ### ¿Cómo interactúa con las demás piezas?
 
 La API es el **puente central**:
-- **[Dashboard](../dashboard/README.md)**: `lib/api.ts` (~111 métodos) consume estos endpoints. Cada página del dashboard mapea a un grupo de endpoints específico
-- **[Discord Bot](../integrations/README.md)**: usa `POST /api/chat` y `POST /memory/working/clear` exclusivamente
+- **[Dashboard](../dashboard/README.md)**: `lib/api.ts` (~116 métodos) consume estos endpoints. Cada página del dashboard mapea a un grupo de endpoints específico
 - **[Pipeline](../architecture/pipeline.md)**: el handler de `POST /chat` crea la conversación en DB, guarda mensajes, emite eventos de estado, y llama a `orchestrator.process()`
 - **[Base de Datos](../architecture/database.md)**: la mayoría de endpoints leen/escriben Postgres y/o ChromaDB — la columna "DB" de cada tabla lo indica
 - **[Eventos](../architecture/events.md)**: los endpoints de mutación emiten eventos via el EventBus que llegan al dashboard en tiempo real
@@ -46,8 +45,8 @@ El patrón general de cada endpoint es: lazy import de `get_state()` → acceder
 
 | Métrica | Valor |
 |---------|-------|
-| Total endpoints | **120** |
-| GET | 56 |
+| Total endpoints | **121** |
+| GET | 57 |
 | POST | 37 |
 | PUT | 10 |
 | DELETE | 13 |
@@ -64,7 +63,7 @@ async def handler():
     return {"status": "ok", **result}
 ```
 
-Cliente dashboard: `dashboard/lib/api.ts` (~111 métodos) → ver [Dashboard](../dashboard/README.md).
+Cliente dashboard: `dashboard/lib/api.ts` (~116 métodos) → ver [Dashboard](../dashboard/README.md).
 
 ---
 
@@ -190,15 +189,20 @@ Dashboard: [Skill Manager](../dashboard/skill-manager.md).
 
 ---
 
-## 10.10b Dynamic Skills — SkillForge (5 endpoints)
+## 10.10b Dynamic Skills — SkillForge (6 endpoints)
 
 | Método | Path | Descripción |
 |--------|------|-------------|
 | `GET` | `/skills/dynamic` | Lista dynamic skills cargados (loaded_skills, sandbox_files, loaded_count) |
+| `GET` | `/skills/dynamic/{name}` | Detalle completo de dynamic skill (description, version, access_level, author, tags, trigger_phrases, source_code) |
 | `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural via Claude |
 | `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill (remove from registry + delete file) |
 | `POST` | `/skills/dynamic/{name}/test` | Ejecuta smoke test de dynamic skill |
 | `POST` | `/skills/dynamic/{name}/reload` | Recarga dynamic skill desde disco |
+
+**Contrato de respuesta (normalizado)**:
+- Éxito: `{ "status": "ok", "message": "...", "data": { ... } }`
+- Error: `{ "status": "error", "message": "...", "data": { ... } }` con HTTP status apropiado (`400`, `404`, `422`, `500`, `503`)
 
 ---
 

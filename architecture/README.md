@@ -10,15 +10,15 @@ Este documento es el **mapa general de la arquitectura técnica** de ADLRA — l
 
 ### ¿Qué cubre este documento?
 
-Aquí encontrarás el **stack tecnológico completo** (qué lenguajes, frameworks y herramientas se usan), la **estructura de archivos del backend** (dónde vive cada módulo), las **métricas generales del proyecto** (líneas de código, archivos, endpoints) y un **diagrama de alto nivel** que muestra cómo fluye la información desde que un usuario escribe un mensaje hasta que Django responde.
+Aquí encontrarás el **stack tecnológico completo** (qué lenguajes, frameworks y herramientas se usan), la **estructura de archivos del backend** (dónde vive cada módulo), las **métricas generales del proyecto** (líneas de código, archivos, endpoints) y un **diagrama de alto nivel** que muestra cómo fluye la información desde que un usuario escribe un mensaje hasta que Doe responde.
 
 ### ¿Cuál es su función en la arquitectura?
 
 Este documento sirve como **punto de orientación**. No entra en profundidad en ningún subsistema — eso lo hacen los documentos especializados. En cambio, te da el contexto necesario para entender dónde encaja cada pieza antes de sumergirte en los detalles. Es el documento que deberías leer primero después del [índice general](../README.md).
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-Indirectamente, todo. Este documento describe el ecosistema completo que hace posible que Django exista: el backend FastAPI que procesa sus pensamientos, los 5 agentes LLM que generan sus respuestas, los 22 módulos de identidad que lo mantienen fiel a Harold, los 4 niveles de memoria que le dan contexto, y el sistema teleológico que le da propósito. Sin alguna de estas piezas, Django sería un chatbot genérico en lugar de un delegado personalizado.
+Indirectamente, todo. Este documento describe el ecosistema completo que hace posible que Doe exista: el backend FastAPI que procesa sus pensamientos, los 5 agentes LLM que generan sus respuestas, los 22 módulos de identidad que lo mantienen fiel a Harold, los 4 niveles de memoria que le dan contexto, y el sistema teleológico que le da propósito. Sin alguna de estas piezas, Doe sería un chatbot genérico en lugar de un delegado personalizado.
 
 ### ¿Cómo interactúa con las demás piezas?
 
@@ -27,7 +27,7 @@ Este documento **enlaza a todos los demás documentos de arquitectura**:
 - Los [Agentes](agents.md) son los ejecutores LLM — quiénes generan las respuestas
 - La [Cognición](cognition.md) es el analizador determinístico — decide estrategia sin usar LLM
 - La [Memoria](memory.md) es el contexto — 4 niveles desde conversación actual hasta conocimiento permanente
-- La [Identidad](identity.md) es el guardián — 22 módulos que aseguran que Django suene como Harold
+- La [Identidad](identity.md) es el guardián — 22 módulos que aseguran que Doe suene como Harold
 - La [Evaluación](evaluation.md) es el crítico — 5 módulos que califican cada respuesta
 - Los [Eventos](events.md) son el sistema nervioso — transmiten lo que pasa a todo el sistema
 - La [Base de Datos](database.md) es la persistencia — dónde se guarda todo
@@ -43,9 +43,8 @@ Cada uno de esos documentos explica una pieza en detalle, pero este documento te
 
 ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sistema consta de:
 
-- **Backend**: FastAPI con [pipeline de 25+ pasos](pipeline.md), [5 agentes LLM](agents.md), [22 módulos de identidad](identity.md), [4 niveles de memoria](memory.md), [sistema teleológico](teleology.md)
-- **Frontend**: [Dashboard Next.js 15](../dashboard/README.md) con 15 páginas de control
-- **Integraciones**: [Bot de Discord](../integrations/README.md) para conversación natural
+- **Backend**: FastAPI con [pipeline de 25+ pasos](pipeline.md), [5 agentes LLM](agents.md), [22 módulos de identidad](identity.md), [4 niveles de memoria](memory.md), [sistema teleológico](teleology.md), [multi-tenant con billing](multi-tenant.md)
+- **Frontend**: [Dashboard Next.js 15](../dashboard/README.md) con 20 páginas de control
 - **LLMs**: [Cadena Gemini → Groq (2-level)](../integrations/README.md) con circuit breaker
 - **Costo operativo**: $0/mes (todos servicios en tier gratuito)
 
@@ -61,11 +60,10 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 | **Estado** | Zustand 5 | Persistencia localStorage para chat |
 | **LLM** | Gemini 2.5 Flash, Groq Llama 3.3 70B, Claude Sonnet 4 (on-demand) | [Cadena de fallback 2-level](../integrations/README.md) + Claude on-demand |
 | **Vector DB** | ChromaDB (local) | Embedding Qwen3-Embedding-8B (4096-dim via EmbeddingRouter + Ollama) |
-| **SQL DB** | Neon Postgres (remoto) | [Ver database.md](database.md) |
+| **SQL DB** | Neon Postgres (remoto) | [Ver database.md](database.md) — 20 tablas |
 | **Procedural DB** | SQLite | Correcciones, workflows |
 | **Charts** | recharts, SVG inline | Visualizaciones [analytics](../dashboard/analytics.md) |
 | **Flow Viz** | CSS Grid nativo | [Pipeline horizontal 8 columnas](../dashboard/cognitive-trace.md) (legacy: @xyflow/react v12) |
-| **Discord** | discord.py, httpx | [Bot + webhook](../integrations/README.md) |
 
 ---
 
@@ -81,7 +79,7 @@ iame.lol/
 │   │   ├── db/            (1,970 ln, 3 files) # → database.md
 │   │   ├── evaluation/    (2,151 ln, 6 files) # → evaluation.md
 │   │   ├── events/          (151 ln, 2 files) # → events.md
-│   │   ├── flows/         (3,536 ln, 6 files) # → pipeline.md
+│   │   ├── flows/         (3,771 ln, 6 files) # → pipeline.md
 │   │   ├── governance/         (1 file)       # Stub
 │   │   ├── identity/      (6,080 ln, 22 files)# → identity.md
 │   │   ├── memory/        (1,740 ln, 4 files) # → memory.md
@@ -97,9 +95,9 @@ iame.lol/
 │   ├── tests/                                 # → ../development/README.md
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # → ../dashboard/README.md
-│   ├── app/                                   # 15 rutas (App Router)
-│   ├── components/                            # 31 archivos en 7 directorios
-│   ├── lib/                                   # api.ts, store.ts, hooks/, i18n/
+│   ├── app/                                   # 20 rutas (App Router)
+│   ├── components/                            # 36 archivos en 8 directorios
+│   ├── lib/                                   # api.ts, store.ts, auth-store.ts, hooks/, i18n/
 │   └── ...
 ├── configs/                                   # → ../config/README.md
 ├── scripts/                                   # → ../integrations/README.md
@@ -114,16 +112,17 @@ iame.lol/
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        DASHBOARD (Next.js 15)                   │
-│  15 páginas · Zustand store · WebSocket · api.ts (111 methods)  │
+│  20 páginas · Zustand stores · WebSocket · api.ts (~140 methods) │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ HTTP/WS :3000 → :8000
 ┌──────────────────────────────┴──────────────────────────────────┐
 │                         FastAPI Backend                          │
 │  ┌──────────┐  ┌───────────────────────────────────────────┐    │
-│  │ Routes   │→ │           ORCHESTRATOR (25+ steps)        │    │
-│  │ (120 ep) │  │  Classify → Cognition → Memory → LLM →   │    │
-│  └──────────┘  │  Identity → Governance → Eval → Store     │    │
-│                └──────────┬────────────────────────────────┘    │
+│  │ Tenant   │  │                                           │    │
+│  │ Middle-  │→ │           ORCHESTRATOR (25+ steps)        │    │
+│  │ ware     │  │  Classify → Cognition → Memory → LLM →   │    │
+│  │ (Auth)   │  │  Identity → Governance → Eval → Store     │    │
+│  └──────────┘  └──────────┬────────────────────────────────┘    │
 │  ┌────────────────────────┼────────────────────────────────┐    │
 │  │        │           │          │          │          │    │    │
 │  │  5 Agents    4-Tier Mem   22 Identity  Teleology  Eval  │    │
@@ -135,11 +134,11 @@ iame.lol/
 │  │ (2 providers)│  │ (WS + DB + mem)   │  │  (Postgres)   │   │
 │  └──────────────┘  └───────────────────┘  └───────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
-         │                                           │
-    ┌────┴────┐                              ┌───────┴───────┐
-    │ Discord │                              │ Neon Postgres  │
-    │   Bot   │                              │ ChromaDB       │
-    └─────────┘                              │ SQLite         │
+                                                     │
+                                             ┌───────┴───────┐
+                                             │ Neon Postgres  │
+                                             │ ChromaDB       │
+                                             │ SQLite         │
                                              └───────────────┘
 ```
 
@@ -149,7 +148,7 @@ iame.lol/
 
 | Módulo | Doc | Líneas | Función Principal |
 |--------|-----|--------|-------------------|
-| Orchestrator | [pipeline.md](pipeline.md) | 3,178 | Pipeline central 25+ pasos |
+| Orchestrator | [pipeline.md](pipeline.md) | 3,394 | Pipeline central 25+ pasos |
 | Agents | [agents.md](agents.md) | 878 | 5 agentes LLM especializados |
 | Cognition | [cognition.md](cognition.md) | 385 | DecisionEngine + Planner (determinístico) |
 | Memory | [memory.md](memory.md) | 1,740 | 4-tier memory system |
@@ -160,13 +159,15 @@ iame.lol/
 | Security | [security.md](security.md) | 429 | Sanitización + middleware |
 | Database | [database.md](database.md) | 1,916 | Postgres + ChromaDB + SQLite |
 | Router | [../integrations/README.md](../integrations/README.md) | ~893 | Model Router + Circuit Breaker + EmbeddingRouter |
+| Tenant | [multi-tenant.md](multi-tenant.md) | ~1,200 | Multi-tenant + Auth + Billing |
 
 ---
 
 ## Temas Relacionados
 
 - [Cómo arranca el sistema](startup.md) — AppState, lifespan, inicialización
-- [API REST completa](../api/README.md) — 120 endpoints
-- [Dashboard](../dashboard/README.md) — 15 páginas de control
+- [API REST completa](../api/README.md) — 140+ endpoints
+- [Dashboard](../dashboard/README.md) — 20 páginas de control
+- [Multi-Tenant](multi-tenant.md) — Autenticación, billing, aislamiento
 - [Configuración](../config/README.md) — persona.yaml, models.json, governance.yaml
 - [Desarrollo](../development/README.md) — Convenciones, tests, roadmap

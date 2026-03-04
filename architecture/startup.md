@@ -6,7 +6,7 @@
 
 ## Sobre este documento
 
-Este documento explica **cómo arranca Django** — el proceso exacto que ocurre desde que el servidor se enciende hasta que Django está listo para recibir su primera interacción. Parece un detalle técnico menor, pero es fundamental: el **orden de inicialización** determina qué componentes existen, cómo se conectan entre sí, y qué pasa si alguno falla.
+Este documento explica **cómo arranca Doe** — el proceso exacto que ocurre desde que el servidor se enciende hasta que Doe está listo para recibir su primera interacción. Parece un detalle técnico menor, pero es fundamental: el **orden de inicialización** determina qué componentes existen, cómo se conectan entre sí, y qué pasa si alguno falla.
 
 ### ¿Qué cubre este documento?
 
@@ -16,12 +16,12 @@ Documenta el singleton `AppState` (el contenedor global que almacena todos los c
 
 Este es el **compositor** — la pieza que construye el orquesta antes de que suene la primera nota. Sin la secuencia de startup, los módulos individuales (cognición, memoria, identidad, etc.) serían piezas sueltas sin conexión. Es aquí donde se materializan las dependencias: el `DecisionEngine` recibe el `IdentityProfile`, el `Orchestrator` recibe el `DecisionEngine` y el `Planner`, el `AlignmentEvaluator` recibe el baseline embedding, y los callbacks de persistencia se conectan al `ModelRouter` y al `MemoryRollbackManager`.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-El orden de arranque es **crítico**. Si un componente se inicializa antes de que su dependencia esté lista, Django operaría con capacidades reducidas o directamente no arrancaría. Por ejemplo:
-- Si `IdentityManager` no carga antes de `DecisionEngine`, Django no tendría perfil de identidad — sus decisiones serían genéricas
-- Si `MemoryManager` no existe antes del `Orchestrator`, Django no recordaría nada
-- Si la base de datos falla, Django sigue funcionando (degradación graceful) pero sin persistencia histórica
+El orden de arranque es **crítico**. Si un componente se inicializa antes de que su dependencia esté lista, Doe operaría con capacidades reducidas o directamente no arrancaría. Por ejemplo:
+- Si `IdentityManager` no carga antes de `DecisionEngine`, Doe no tendría perfil de identidad — sus decisiones serían genéricas
+- Si `MemoryManager` no existe antes del `Orchestrator`, Doe no recordaría nada
+- Si la base de datos falla, Doe sigue funcionando (degradación graceful) pero sin persistencia histórica
 
 ### ¿Cómo interactúa con las demás piezas?
 

@@ -1,26 +1,26 @@
 # Base de Datos
 
-> [← Seguridad](security.md) · [API →](../api/README.md)
+> [← Seguridad](security.md) · [Multi-Tenant →](multi-tenant.md) · [API →](../api/README.md)
 
 ---
 
 ## Sobre este documento
 
-Este documento describe la **capa de persistencia** de Django — los 3 sistemas de base de datos que almacenan todo lo que Django sabe, hace y recuerda. Sin base de datos, Django perdería toda su historia, evaluaciones y memorias semánticas cada vez que el servidor se reinicia. La persistencia es lo que le da continuidad a largo plazo.
+Este documento describe la **capa de persistencia** de Doe — los 3 sistemas de base de datos que almacenan todo lo que Doe sabe, hace y recuerda. Sin base de datos, Doe perdería toda su historia, evaluaciones y memorias semánticas cada vez que el servidor se reinicia. La persistencia es lo que le da continuidad a largo plazo.
 
 ### ¿Qué cubre este documento?
 
-Documenta las **3 bases de datos** (Neon Postgres remoto, ChromaDB local, SQLite local), las **15 tablas de Postgres** organizadas en 4 grupos (Core, Persistence, Hybrid Search, Teleología), el `DatabaseManager` (408 líneas) que maneja las conexiones, y el `PersistenceRepository` (1,507 líneas, 25+ métodos) que proporciona escritura fire-and-forget y lectura de todos los artefactos del pipeline.
+Documenta las **3 bases de datos** (Neon Postgres remoto, ChromaDB local, SQLite local), las **20 tablas de Postgres** organizadas en 5 grupos (Core, Persistence, Hybrid Search, Teleología, Tenancy), el `DatabaseManager` (408 líneas) que maneja las conexiones, y el `PersistenceRepository` (1,590 líneas, 25+ métodos) que proporciona escritura fire-and-forget y lectura de todos los artefactos del pipeline.
 
 ### ¿Cuál es su función en la arquitectura?
 
-La base de datos es la **memoria a largo plazo del sistema** (distinta de la [Memoria](memory.md) de Django que es funcional). Mientras que ChromaDB guarda las memorias semánticas y episódicas que Django consulta para responder, y SQLite guarda los procedimientos aprendidos, Postgres guarda todo lo operacional: interacciones, trazas cognitivas, evaluaciones, uso de tokens, operaciones de memoria, metas, y el audit log.
+La base de datos es la **memoria a largo plazo del sistema** (distinta de la [Memoria](memory.md) de Doe que es funcional). Mientras que ChromaDB guarda las memorias semánticas y episódicas que Doe consulta para responder, y SQLite guarda los procedimientos aprendidos, Postgres guarda todo lo operacional: interacciones, trazas cognitivas, evaluaciones, uso de tokens, operaciones de memoria, metas, y el audit log.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-**Principio clave: la base de datos es completamente opcional**. Si Postgres no está disponible, Django sigue funcionando — simplemente no persiste historia. Esto es intencional ("fire-and-forget"): un fallo de DB **nunca** bloquea una respuesta al usuario.
+**Principio clave: la base de datos es completamente opcional**. Si Postgres no está disponible, Doe sigue funcionando — simplemente no persiste historia. Esto es intencional ("fire-and-forget"): un fallo de DB **nunca** bloquea una respuesta al usuario.
 
-- ChromaDB es **esencial** para la memoria semántica y episódica — sin ella, Django no recuerda conocimiento aprendido
+- ChromaDB es **esencial** para la memoria semántica y episódica — sin ella, Doe no recuerda conocimiento aprendido
 - SQLite es **esencial** para correcciones y procedimientos — sin ella, el training pierde efecto entre reinicios
 - Postgres permite ver **historia** en dashboards (Analytics, Evaluation, Trace, Identity Governance) pero su ausencia no afecta respuestas
 
@@ -52,7 +52,7 @@ La capa de datos es **consumida por casi todo el sistema**:
 
 ---
 
-## Postgres (Neon) — 15 Tablas
+## Postgres (Neon) — 20 Tablas
 
 ### Core (5 tablas)
 
@@ -88,7 +88,17 @@ La capa de datos es **consumida por casi todo el sistema**:
 | `plans` | Planes de ejecución | PlanExecutor |
 | `reward_signals` | Señales de recompensa (rolling 500) | RewardComputer middleware |
 | `goal_events` | Eventos de lifecycle de metas | GoalManager |
+### Tenancy (5 tablas)
 
+| Tabla | Propósito | Escritura desde |
+|-------|-----------|------------------|
+| `tenants` | Registro de tenants (id, name, email, tier, status, is_platform_owner) | Tenant API |
+| `token_wallets` | Balance de tokens por tenant (balance, lifetime_purchased/consumed/commission) | Billing API |
+| `token_transactions` | Historial de transacciones (purchase, consumption, refund) | TokenBillingService |
+| `commission_rates` | Tarifas de comisión por tier (y opcionalmente por provider) | Seed / Admin |
+| `api_keys` | API keys para autenticación programática (hash SHA-256, prefix, scopes) | Auth API |
+
+> **Todas las tablas Core, Persistence, Hybrid Search y Teleology incluyen columna `tenant_id`** para aislamiento de datos multi-tenant. Ver [Multi-Tenant](multi-tenant.md) para detalles.
 ---
 
 ## ChromaDB (local)
@@ -192,4 +202,5 @@ GoalManager
 - [Eventos](events.md) — audit_log
 - [Identidad](identity.md) — config_versions, identity signals
 - [Teleología](teleology.md) — goals, plans, reward_signals
+- [Multi-Tenant](multi-tenant.md) — 5 tablas de tenancy, aislamiento por tenant_id
 - [Startup](startup.md) — Secuencia de inicialización de DB (paso 2-3)

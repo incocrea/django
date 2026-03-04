@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe el **sistema de memoria de 4 niveles** que le da a Django la capacidad de recordar. Sin memoria, cada conversación empezaría de cero — Django no sabría qué se dijo hace 5 minutos ni qué aprendió el mes pasado. La memoria es lo que transforma a Django de un bot sin contexto a un delegado con historia, conocimiento y continuidad.
+Este documento describe el **sistema de memoria de 4 niveles** que le da a Doe la capacidad de recordar. Sin memoria, cada conversación empezaría de cero — Doe no sabría qué se dijo hace 5 minutos ni qué aprendió el mes pasado. La memoria es lo que transforma a Doe de un bot sin contexto a un delegado con historia, conocimiento y continuidad.
 
 ### ¿Qué cubre este documento?
 
@@ -16,13 +16,13 @@ Documenta los **4 niveles de memoria** (Working, Episodic, Semantic, Procedural)
 
 ### ¿Cuál es su función en la arquitectura?
 
-La memoria es el **almacén contextual** de Django — donde se guardan las conversaciones, el conocimiento aprendido, los patrones de trabajo y las correcciones de entrenamiento. Provee la base de información que el [Pipeline](pipeline.md) consulta antes de generar cada respuesta. Sin memoria, Django tendría que depender solo del conocimiento pre-entrenado del LLM, que no sabe nada sobre Harold ni sobre interacciones previas.
+La memoria es el **almacén contextual** de Doe — donde se guardan las conversaciones, el conocimiento aprendido, los patrones de trabajo y las correcciones de entrenamiento. Provee la base de información que el [Pipeline](pipeline.md) consulta antes de generar cada respuesta. Sin memoria, Doe tendría que depender solo del conocimiento pre-entrenado del LLM, que no sabe nada sobre Harold ni sobre interacciones previas.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-- **Working Memory** (RAM efimera): mantiene el hilo de la conversación actual — permite que Django recuerde lo que se dijo hace 5 mensajes en esta misma charla
-- **Episodic Memory** (ChromaDB): almacena los logs de conversaciones pasadas — permite que Django recuerde interacciones de hace días o semanas
-- **Semantic Memory** (ChromaDB): conocimiento permanente aprendido — lo que Django sabe sobre temas específicos porque se lo enseñaron (via learn-topic, entrenamiento, o almacenamiento manual)
+- **Working Memory** (RAM efimera): mantiene el hilo de la conversación actual — permite que Doe recuerde lo que se dijo hace 5 mensajes en esta misma charla
+- **Episodic Memory** (ChromaDB): almacena los logs de conversaciones pasadas — permite que Doe recuerde interacciones de hace días o semanas
+- **Semantic Memory** (ChromaDB): conocimiento permanente aprendido — lo que Doe sabe sobre temas específicos porque se lo enseñaron (via learn-topic, entrenamiento, o almacenamiento manual)
 - **Procedural Memory** (SQLite): patrones de trabajo y correcciones — las reglas de comportamiento que Harold le ha enseñado
 - El **modo cognitivo** cambia fundamentalmente qué memorias se usan: modo 1 (todo), modo 2 (filtra semántica a `learned_knowledge`), modo 3 (solo memoria, sin LLM)
 
@@ -38,7 +38,6 @@ La memoria se cruza con casi todo el sistema:
 - **[Evaluación](evaluation.md)**: el MemoryRollbackManager trackea cada operación de memoria con before/after para poder deshacer
 - **[Base de Datos](database.md)**: ChromaDB persiste episodic + semantic en disco (`chroma_data/`), SQLite persiste procedural (`data/`), y las operaciones se registran en Postgres
 - **[Startup](startup.md)**: el MemoryManager se inicializa antes del Orchestrator para estar listo cuando llegue el primer mensaje
-- **[Discord Bot](../integrations/README.md)**: cada canal Discord tiene su propia working memory aislada via `conversation_id`
 - Las **Skills** (learn-topic, repo-explorer) escriben directamente en Semantic Memory
 
 ---
@@ -79,8 +78,8 @@ Cada `conversation_id` obtiene su propia instancia de `WorkingMemory` aislada:
 | Fuente | conversation_id | Working Memory |
 |--------|----------------|----------------|
 | Dashboard chat | UUID generado | Instancia propia |
-| Discord #general | `discord_channel_123` | Instancia propia |
-| Discord #dev | `discord_channel_456` | Instancia propia |
+| API client A | `client_session_123` | Instancia propia |
+| API client B | `client_session_456` | Instancia propia |
 
 - `clear_working(conversation_id)` → limpia solo esa conversación
 - `clear_all_working()` → limpia todas

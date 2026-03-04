@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe el **sistema más complejo de toda la arquitectura**: los 22 módulos y 17 fases que aseguran que Django actúe, piense y se comunique **como Harold Vélez**. Si el pipeline es el corazón de Django, la identidad es su alma — la capa que lo diferencia de cualquier otro chatbot y lo convierte en un representante fiel de una persona real.
+Este documento describe el **sistema más complejo de toda la arquitectura**: los 22 módulos y 17 fases que aseguran que Doe actúe, piense y se comunique **como Harold Vélez**. Si el pipeline es el corazón de Doe, la identidad es su alma — la capa que lo diferencia de cualquier otro chatbot y lo convierte en un representante fiel de una persona real.
 
 ### ¿Qué cubre este documento?
 
@@ -16,17 +16,17 @@ Documenta los **22 archivos** del módulo de identidad, organizados en 17 fases 
 
 ### ¿Cuál es su función en la arquitectura?
 
-El sistema de identidad es el **guardián de la fidelidad**. Su trabajo es asegurar que Django NO derive — que no empiece a hablar de formas que Harold no reconocería como propias. Lo hace de múltiples maneras: evaluando cada decisión contra los valores de Harold, re-rankeando memorias según su afinidad con la identidad, inyectando preferencias de estilo en el prompt, monitoreando salud a largo plazo, y proponiendo evoluciones controladas cuando la evidencia lo justifica.
+El sistema de identidad es el **guardián de la fidelidad**. Su trabajo es asegurar que Doe NO derive — que no empiece a hablar de formas que Harold no reconocería como propias. Lo hace de múltiples maneras: evaluando cada decisión contra los valores de Harold, re-rankeando memorias según su afinidad con la identidad, inyectando preferencias de estilo en el prompt, monitoreando salud a largo plazo, y proponiendo evoluciones controladas cuando la evidencia lo justifica.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 **Profundamente y en cada interacción**:
-- Las memorias que Django recuerda están re-rankeadas por afinidad con Harold (Phase 7B)
+- Las memorias que Doe recuerda están re-rankeadas por afinidad con Harold (Phase 7B)
 - El contexto lleva anotaciones visibles de alineación (`[IDENTITY_ALIGNED]`) que influyen en el LLM (Phase 6B)
 - El prompt del sistema incluye preferencias de estilo derivadas de la identidad (tono, asertividad, profundidad, creatividad) (Phase 8B)
 - Si la respuesta se desvía mucho de la identidad, se detecta el drift y se registra (Phase 5A-5C)
 - La confianza del sistema de identidad puede ajustar el umbral de gobernanza (Phase 7A): baja confianza = más estricto
-- A largo plazo, si Django consistentemente evoluciona, el sistema puede proponer una nueva versión de identidad (Phase 10A-10C) — siempre con aprobación humana
+- A largo plazo, si Doe consistentemente evoluciona, el sistema puede proponer una nueva versión de identidad (Phase 10A-10C) — siempre con aprobación humana
 
 ### ¿Cómo interactúa con las demás piezas?
 

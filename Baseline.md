@@ -3,7 +3,7 @@
 > **Autonomous Digital Learning Representative Agent (ADLRA)** — Sistema multi-agente que aprende a representar la identidad, personalidad y estilo de toma de decisiones de su principal a través de entrenamiento progresivo, memoria contextual y feedback humano.
 
 **Principal**: Harold Vélez
-**Nombre del delegado**: Django
+**Nombre del delegado**: Doe
 **Fecha de línea base**: 21 de febrero de 2026
 
 ---
@@ -19,16 +19,15 @@
 7. [Sistema de Identidad](#7-sistema-de-identidad)
 8. [Sistema de Teleología](#8-sistema-de-teleología)
 9. [Pipeline del Orchestrator](#9-pipeline-del-orchestrator)
-10. [API REST — 120 Endpoints](#10-api-rest--120-endpoints)
+10. [API REST — 121 Endpoints](#10-api-rest--121-endpoints)
 11. [Dashboard — 15 Páginas](#11-dashboard--15-páginas)
 12. [Componentes del Dashboard](#12-componentes-del-dashboard)
-13. [Bot de Discord](#13-bot-de-discord)
-14. [Base de Datos](#14-base-de-datos)
-15. [Sistema de Tests](#15-sistema-de-tests)
-16. [Estado Actual vs Planificado](#16-estado-actual-vs-planificado)
-17. [Hoja de Ruta](#17-hoja-de-ruta)
-18. [Convenciones de Desarrollo](#18-convenciones-de-desarrollo)
-19. [Glosario](#19-glosario)
+13. [Base de Datos](#13-base-de-datos)
+14. [Sistema de Tests](#14-sistema-de-tests)
+15. [Estado Actual vs Planificado](#15-estado-actual-vs-planificado)
+16. [Hoja de Ruta](#16-hoja-de-ruta)
+17. [Convenciones de Desarrollo](#17-convenciones-de-desarrollo)
+18. [Glosario](#18-glosario)
 
 ---
 
@@ -38,7 +37,7 @@ ADLRA es un clon virtual autónomo diseñado para emular a Harold Vélez. El sis
 
 - **Backend**: FastAPI con pipeline de 25+ pasos, 5 agentes especializados, 22 módulos de identidad, 4 niveles de memoria, sistema teleológico de metas
 - **Frontend**: Dashboard Next.js 15 con 15 páginas de control, monitoreo y configuración
-- **Integraciones**: Bot de Discord para conversación natural, webhook para publicación
+- **Integraciones**: API REST consumible por cualquier cliente externo
 - **LLMs**: Cadena Gemini → Groq (2-level fallback) con circuit breaker
 - **Costo operativo**: $0/mes (todos servicios en tier gratuito)
 
@@ -79,8 +78,7 @@ El principal puede entrenar, ajustar, monitorear y gobernar al delegado desde el
 | **Procedural DB** | SQLite | Correcciones, workflows |
 | **Charts** | recharts, SVG inline | Visualizaciones analytics |
 | **Flow Viz** | CSS Grid nativo | Pipeline horizontal 8 columnas (legacy: @xyflow/react v12) |
-| **Discord** | discord.py, httpx | Bot + webhook publisher |
-| **Auth** | Supabase (planificado) | API abierta actualmente |
+| **Auth** | JWT HS256 + API Keys | TenantMiddleware, multi-tenant |
 
 ---
 
@@ -91,12 +89,12 @@ iame.lol/
 ├── agent/                                    # Backend Python FastAPI
 │   ├── src/                                  # 23,834 líneas, 90 archivos
 │   │   ├── agents/          (878 ln, 8 files) # 5 agentes + crew + base
-│   │   ├── api/           (4,351 ln, 3 files) # main.py (450) + routes.py (3,900)
+│   │   ├── api/           (4,527 ln, 3 files) # main.py (450) + routes.py (4,076)
 │   │   ├── cognition/       (385 ln, 3 files) # DecisionEngine + Planner + categories
 │   │   ├── db/            (1,999 ln, 3 files) # database.py (408) + persistence.py (1,590)
 │   │   ├── evaluation/    (2,151 ln, 6 files) # 5 módulos heurísticos
 │   │   ├── events/          (151 ln, 2 files) # EventBus pub/sub + WebSocket broadcast
-│   │   ├── flows/         (4,473 ln, 6 files) # orchestrator (3,178) + semantic_classifier (905) + middleware + parallel + categories
+│   │   ├── flows/         (4,708 ln, 6 files) # orchestrator (3,394) + semantic_classifier (924) + middleware + parallel + categories
 │   │   ├── governance/         (1 file)       # Stub (__init__.py)
 │   │   ├── identity/      (6,080 ln, 22 files)# 22 módulos Phase 4-10C
 │   │   ├── memory/        (1,740 ln, 4 files) # manager (1,139) + hybrid_search + compaction
@@ -109,12 +107,12 @@ iame.lol/
 │   │   ├── config.py                  (156 ln)# Pydantic BaseSettings
 │   │   ├── service_logger.py          (263 ln)# Rotating file logger
 │   │   └── watchdog.py               (136 ln)# Service health watchdog
-│   ├── tests/                                 # ~19,000 líneas, 60 test files + conftest.py
+│   ├── tests/                                 # ~19,000 líneas, 61 test files + conftest.py
 │   └── configs → ../configs                   # Symlink
 ├── dashboard/                                 # Frontend Next.js 15
 │   ├── app/                                   # 15 rutas (App Router)
 │   ├── components/                            # 31 archivos en 7 directorios
-│   ├── lib/                                   # api.ts (1,279 ln), store.ts (159 ln), hooks/, i18n/
+│   ├── lib/                                   # api.ts (1,388 ln), store.ts (159 ln), hooks/, i18n/
 │   ├── next.config.ts                         # Proxy /api/* → localhost:8000
 │   ├── tailwind.config.ts                     # Tema lab oscuro custom
 │   └── package.json                           # 33 deps, 10 devDeps
@@ -124,8 +122,8 @@ iame.lol/
 │   ├── skills.json               (71 ln)      # Registro de habilidades
 │   └── governance.yaml          (283 ln)      # Autonomía, riesgos, prohibiciones
 ├── scripts/
-│   ├── discord_bot.py           (574 ln)      # Bot Discord natural
-│   └── discord_post.py          (188 ln)      # Webhook publisher
+│   ├── migrate_embeddings.py                  # Embedding migration utility
+│   └── discord_post.py          (188 ln)      # Webhook publisher (legacy, removed from core)
 ├── .vscode/tasks.json            (78 ln)      # 5 tasks de servicio
 ├── .env                                       # Variables de entorno (gitignored)
 ├── .env.example                               # Template de variables
@@ -196,7 +194,7 @@ Carga desde `.env` vía `@lru_cache`. Agrupadas por función:
 
 | Grupo | Variables | Defaults |
 |-------|----------|----------|
-| App | `app_name`, `app_version`, `environment`, `debug` | "Django", "2.0.0", "development", True |
+| App | `app_name`, `app_version`, `environment`, `debug` | "Doe", "2.0.0", "development", True |
 | API | `api_host`, `api_port` | "0.0.0.0", 8000 |
 | LLM | `gemini_api_key`, `groq_api_key`, `ollama_base_url` | None, None, localhost:11434 |
 | DB | `database_url`, `chroma_persist_directory` | None, "./chroma_data" |
@@ -213,8 +211,7 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 | `Backend: FastAPI Server` | `uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload` | instanceLimit:1 |
 | `Dashboard: Next.js Dev Server` | `Remove-Item .next; npx next dev --port 3000` | instanceLimit:1 |
 | `Health Watchdog` | `python -m src.watchdog` | reveal:never |
-| `Discord: Django Bot` | `venv/Scripts/python.exe scripts/discord_bot.py` | PID lock, instanceLimit:1 |
-| `Start All Services` | dependsOn las 4 anteriores (parallel) | Build group default |
+| `Start All Services` | dependsOn las 3 anteriores (parallel) | Build group default |
 
 **Regla crítica**: Todos los servicios se inician via VS Code Tasks, NUNCA con `run_in_terminal isBackground:true`.
 
@@ -527,7 +524,7 @@ GoalCondition types: `metric_threshold`, `event_occurred`, `time_elapsed`, `memo
 
 ---
 
-## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (3,178 líneas)
+## 9. Pipeline del Orchestrator — src/flows/orchestrator.py (3,394 líneas)
 
 Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), Memory+LLM (2, default, grounded en memoria), Memory Only (3, sin LLM).
 
@@ -536,7 +533,7 @@ Pipeline central de 25+ pasos. 3 Modos Cognitivos: Full (1, sin restricciones), 
 | 0 | Emergency Check | Bloquea si `_emergency_stopped` |
 | 0.3 | Goal Context Injector | Inyecta metas activas (teleología middleware) |
 | 1 | Semantic Classify | Clasificación semántica por centroides (embeddings Qwen3-Embedding-8B via EmbeddingRouter, 9 categorías, 360 training phrases). Fallback a CONVERSATION si confidence < 0.30 |
-| 1d | Skill Execution | Si el Planner incluye `skill_execution` step: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
+| 1d | Skill Execution | Si el Planner incluye `skill_execution`: learn-topic (mode 1), repo-explorer (modes 1-2), SKILL_CREATION y dispatch de skills dinámicas. Contexto inyectado en pipeline, no bypass. Skills con `SkillReport` inyectan sub-nodos en Cognitive Trace. |
 | 2 | Decision Engine | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | Evalúa alignment decision-identity (observational) |
 | 3d | Identity Confidence | Agrega señales → confidence 0-1 + autonomy_modifier |
@@ -578,7 +575,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ---
 
-## 10. API REST — 120 Endpoints
+## 10. API REST — 121 Endpoints
 
 ### 10.1 Health & Status (4 endpoints)
 
@@ -668,11 +665,12 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | `POST` | `/skills/learn-topic` | Research → summarize → chunk → ChromaDB |
 | `POST` | `/skills/explore-repo` | Lee archivos locales/GitHub/docs, context injection |
 
-### 10.10b Dynamic Skills — SkillForge (5 endpoints)
+### 10.10b Dynamic Skills — SkillForge (6 endpoints)
 
 | Método | Path | Descripción |
 |--------|------|-------------|
 | `GET` | `/skills/dynamic` | Lista dynamic skills cargados |
+| `GET` | `/skills/dynamic/{name}` | Detalle completo de dynamic skill (metadata, trigger phrases, source code) |
 | `POST` | `/skills/dynamic/create` | Crear skill desde descripción en lenguaje natural (Claude) |
 | `DELETE` | `/skills/dynamic/{name}` | Desinstalar dynamic skill |
 | `POST` | `/skills/dynamic/{name}/test` | Smoke test de dynamic skill |
@@ -888,7 +886,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Reload from file** (botón) | `api.reloadPersona()` → `POST /persona/reload` → relee persona.yaml → reload agents → re-fetch info |
 | **View Versions →** (link) | Navega a `/identity-governance` |
 
-**Efecto en Django**: Cada save actualiza `persona.yaml` y recarga TODOS los agentes. Esto significa que al cambiar un slider de personalidad y guardar, la siguiente respuesta de Django reflejará la nueva personalidad. El `IdentityManager` detectará el cambio de SHA-256 hash y actualizará el `IdentityProfile` y baseline embedding.
+**Efecto en Doe**: Cada save actualiza `persona.yaml` y recarga TODOS los agentes. Esto significa que al cambiar un slider de personalidad y guardar, la siguiente respuesta de Doe reflejará la nueva personalidad. El `IdentityManager` detectará el cambio de SHA-256 hash y actualizará el `IdentityProfile` y baseline embedding.
 
 ### 11.4 Training Center — `/training`
 
@@ -910,7 +908,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Delete suggestion** | `api.deleteSuggestion(idx)` → `DELETE /training/suggestions/{idx}` → remove in-memory |
 | **Clear all suggestions** | `api.clearAllSuggestions()` → `DELETE /training/suggestions` → clear in-memory list |
 
-**Efecto en Django**: Las correcciones se inyectan como "behavioral suggestions" en el prompt de cada interacción futura (paso 5 del pipeline). La carga de archivos soporta JSON estructurado con datos de entrenamiento (writing_sample, style_rule, personality_trait) que pasan por deduplicación semántica antes de almacenarse en ChromaDB.
+**Efecto en Doe**: Las correcciones se inyectan como "behavioral suggestions" en el prompt de cada interacción futura (paso 5 del pipeline). La carga de archivos soporta JSON estructurado con datos de entrenamiento (writing_sample, style_rule, personality_trait) que pasan por deduplicación semántica antes de almacenarse en ChromaDB.
 
 ### 11.5 Testing Playground — `/testing`
 
@@ -947,7 +945,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ### 11.7 Skill Manager — `/skills`
 
-**Archivo**: `app/skills/page.tsx` (~300 ln)
+**Archivo**: `app/skills/page.tsx` (626 ln)
 **Propósito**: Gestionar habilidades del delegado.
 
 **Controles y acciones**:
@@ -958,6 +956,12 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Toggle skill** (per skill) | `api.toggleSkill(id, enabled)` → `POST /skills/{id}/toggle` → actualiza skills.json → emite `config.skill_toggled` |
 | **Learn Topic** (topic + depth 1-3 + Learn) | `api.learnTopic(topic, depth)` → `POST /skills/learn-topic` → Tavily search → LLM summarize → chunk → ChromaDB semantic memory como `learned_knowledge` |
 | **Explore Repo** (target + type + store toggle) | `api.exploreRepo(target, type, store)` → `POST /skills/explore-repo` → lee archivos locales/GitHub/docs → context injection o storage en ChromaDB |
+| **Create Dynamic Skill** | `api.createDynamicSkill(message)` → `POST /skills/dynamic/create` |
+| **Test Dynamic Skill** | `api.testDynamicSkill(name, message?)` → `POST /skills/dynamic/{name}/test` |
+| **Reload Dynamic Skill** | `api.reloadDynamicSkill(name)` → `POST /skills/dynamic/{name}/reload` |
+| **Delete Dynamic Skill** | `api.deleteDynamicSkill(name)` → `DELETE /skills/dynamic/{name}` |
+
+**Contrato dynamic skills**: envelope `{status, message, data}` con status HTTP de error cuando corresponde.
 
 ### 11.8 Memory Lab — `/memory`
 
@@ -978,7 +982,7 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 | **Bulk delete** | `api.bulkDeleteMemories(items)` → `POST /memory/bulk-delete` → batch delete + audit per item |
 | **Edit semantic** (inline content + category) | `api.updateSemanticMemory(id, content, category)` → `PUT /memory/semantic/{id}` → ChromaDB update + rollback audit |
 
-**Efecto en Django**: Agregar/editar/eliminar memorias afecta directamente lo que Django "recuerda". Una nueva memoria semántica aparecerá en futuros recalls. Una eliminación significa que Django olvidará esa información.
+**Efecto en Doe**: Agregar/editar/eliminar memorias afecta directamente lo que Doe "recuerda". Una nueva memoria semántica aparecerá en futuros recalls. Una eliminación significa que Doe olvidará esa información.
 
 ### 11.9 Governance Console — `/governance`
 
@@ -1196,49 +1200,9 @@ Cada paso emite eventos via EventBus y crea nodos via TraceCollector.
 
 ---
 
-## 13. Bot de Discord — scripts/discord_bot.py (574 líneas)
+## 13. Base de Datos
 
-### Arquitectura
-
-- **Dependencies**: discord.py, httpx (ambos en agent/venv)
-- **Token**: `DISCORD_BOT_TOKEN` en `.env`
-- **Task**: `Discord: Django Bot` en tasks.json
-- **PID file**: `agent/discord_bot.pid` (atexit cleanup)
-- **API**: Todas las interacciones via `POST /api/chat` al backend
-
-### Flujo de Interacción
-
-1. User escribe en Discord → `on_message()`
-2. Track user en `known_users` (display_name, username, message_count)
-3. Almacena mensaje en `channel_buffers[channel_id]` (deque maxlen=30)
-4. Si es comando (!reset, !who, !full, !memory) → handle directamente
-5. Si debe responder (mention, reply, name trigger, o LLM decide):
-   - Build `GROUP_CONTEXT_PROMPT` con: servidor, canal, miembros, últimos 30 mensajes
-   - `POST /api/chat` con: message tagged como "[user_name]", `conversation_id` per-channel, `cognitive_mode=2`, context
-   - Si respuesta contiene `[SILENT]` → no responde
-   - Si no → simula typing → split en chunks ≤2000 chars → envía
-6. Cooldown: `MIN_RESPONSE_GAP = 8s` entre respuestas por canal
-
-### Características Clave
-
-- **Per-channel conversations**: Cada canal Discord tiene su propio `conversation_id` y working memory aislada
-- **Member awareness**: `guild.chunk()` al startup + `build_member_list()` inyectado en cada prompt
-- **Real-time context**: GROUP_CONTEXT_PROMPT overrides Knowledge Status restrictions
-- **Cognitive mode 2**: Memory+LLM para todas las interacciones Discord
-- **Comandos**: `!full <msg>` (mode 1), `!memory <msg>` (mode 3), `!reset`/`!nueva`/`!new`, `!who`/`!quien`
-
-### Discord Webhook — scripts/discord_post.py (188 líneas)
-
-Publisher a canal `#updates-django` via webhook URL en `.env`.
-- Texto plano: auto-split a 2000 chars
-- `--embed`: Rich embed con título y color
-- `--file`: Leer contenido de archivo
-
----
-
-## 14. Base de Datos
-
-### 14.1 Postgres (Neon) — 15 tablas en 4 grupos
+### 13.1 Postgres (Neon) — 15 tablas en 4 grupos
 
 | Grupo | Tablas | Propósito |
 |-------|--------|-----------|
@@ -1249,7 +1213,7 @@ Publisher a canal `#updates-django` via webhook URL en `.env`.
 
 **Driver**: psycopg2 (sync, autocommit). **Totalmente opcional** — app degrada gracefully sin DB.
 
-### 14.2 ChromaDB (local)
+### 13.2 ChromaDB (local)
 
 | Colección | Propósito |
 |-----------|-----------|
@@ -1258,11 +1222,11 @@ Publisher a canal `#updates-django` via webhook URL en `.env`.
 
 Embedding: Qwen3-Embedding-8B (4096 dimensiones via EmbeddingRouter + Ollama). Persiste en disco (`chroma_data/`).
 
-### 14.3 SQLite
+### 13.3 SQLite
 
 Archivo `data/procedural.db`. Almacena correcciones de training y patrones procedurales.
 
-### 14.4 PersistenceRepository (1,507 líneas)
+### 13.4 PersistenceRepository (1,507 líneas)
 
 Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 - **Write**: `save_interaction()`, `save_trace_nodes()`, `save_all_evaluations()`, `save_token_usage()`, `save_memory_operation()`, `store_identity_snapshot()`
@@ -1272,7 +1236,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 15. Sistema de Tests — ~17,100 líneas, 50 archivos
+## 14. Sistema de Tests — ~17,100 líneas, 50 archivos
 
 | Archivo | Líneas | Módulo testeado |
 |---------|--------|----------------|
@@ -1338,7 +1302,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 16. Estado Actual vs Planificado
+## 15. Estado Actual vs Planificado
 
 ### ✅ Completado
 
@@ -1373,7 +1337,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 | **Supabase Auth** | ALTA | JWT + login/logout + rutas protegidas |
 | **Memory Consolidation Background** | ALTA | Job periódico episodic → semantic summarization |
 | **Real Identity Fidelity** | MEDIA | Ponderar identity_similarity en overall_score + dashboard gauge |
-| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (905 ln). No usa LLM sino embeddings locales. Centroides cacheados en disco para arranque rápido. |
+| ~~LLM-Based Classification~~ | ~~MEDIA~~ | ✅ **COMPLETADO** — Clasificación semántica por centroides implementada en `semantic_classifier.py` (924 ln). No usa LLM sino embeddings locales. Centroides cacheados en disco para arranque rápido. |
 | **External Integrations** | MEDIA | Email send/receive, calendar, Slack, CRM |
 | **Tool Policy Cascade** | MEDIA | Políticas por skill integradas con gobernanza |
 | **Sandboxed Code Execution** | MEDIA | Ejecución de código en sandbox aislado |
@@ -1386,7 +1350,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 17. Hoja de Ruta
+## 16. Hoja de Ruta
 
 **Objetivo final**: Un clon virtual autónomo capaz de emular a Harold Vélez de forma casi indistinguible en pensamiento, decisiones y uso de herramientas.
 
@@ -1435,7 +1399,7 @@ Fire-and-forget — un fallo NUNCA afecta la respuesta al usuario. 25+ methods:
 
 ---
 
-## 18. Convenciones de Desarrollo
+## 17. Convenciones de Desarrollo
 
 ### Python (Backend)
 - Lazy imports en handlers: `from src.api.main import get_state`
@@ -1468,7 +1432,7 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-## 19. Glosario
+## 18. Glosario
 
 | Término | Significado |
 |---------|-------------|
@@ -1498,5 +1462,5 @@ Fonts: Inter (sans) + JetBrains Mono (mono). Animaciones: `pulse-led`, `slide-in
 
 ---
 
-> **Fuentes**: Auditoría exhaustiva del repositorio completo (90 archivos backend, 15 páginas dashboard, 32 componentes, 60 test files, 4 configs, 3 scripts). Verificado contra codebase real.
+> **Fuentes**: Auditoría exhaustiva del repositorio completo (90 archivos backend, 15 páginas dashboard, 32 componentes, 61 test files, 4 configs, 3 scripts). Verificado contra codebase real.
 > **Fecha de generación**: 21 de febrero de 2026

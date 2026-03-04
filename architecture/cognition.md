@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe la **capa de cognición determinística** de Django — el componente que toma decisiones estratégicas **sin usar ningún LLM**. Mientras que los agentes LLM generan texto con creatividad, la cognición es pura lógica: analiza el mensaje, calcula el riesgo, selecciona la estrategia óptima y crea un plan de ejecución paso a paso. Todo esto ocurre en milisegundos, con cero costo de tokens y resultados 100% predecibles.
+Este documento describe la **capa de cognición determinística** de Doe — el componente que toma decisiones estratégicas **sin usar ningún LLM**. Mientras que los agentes LLM generan texto con creatividad, la cognición es pura lógica: analiza el mensaje, calcula el riesgo, selecciona la estrategia óptima y crea un plan de ejecución paso a paso. Todo esto ocurre en milisegundos, con cero costo de tokens y resultados 100% predecibles.
 
 ### ¿Qué cubre este documento?
 
@@ -16,12 +16,12 @@ Documenta tres componentes: el `DecisionEngine` (un objeto inmutable que evalúa
 
 ### ¿Cuál es su función en la arquitectura?
 
-La cognición es el **cerebro analítico** de Django — la parte que piensa antes de actuar. Sin cognición, el Orchestrator tendría que enviar cada mensaje al LLM sin contexto estratégico. Con cognición, Django sabe antes de generar la respuesta si es una conversación casual (respuesta directa), un análisis de negocio (análisis estructurado), una investigación (requiere web search) o una tarea compleja (requiere múltiples agentes). Esto hace que Django sea **más eficiente** (no gasta tokens innecesarios), **más seguro** (evalúa riesgo antes de actuar) y **más coherente** (el plan guía toda la ejecución).
+La cognición es el **cerebro analítico** de Doe — la parte que piensa antes de actuar. Sin cognición, el Orchestrator tendría que enviar cada mensaje al LLM sin contexto estratégico. Con cognición, Doe sabe antes de generar la respuesta si es una conversación casual (respuesta directa), un análisis de negocio (análisis estructurado), una investigación (requiere web search) o una tarea compleja (requiere múltiples agentes). Esto hace que Doe sea **más eficiente** (no gasta tokens innecesarios), **más seguro** (evalúa riesgo antes de actuar) y **más coherente** (el plan guía toda la ejecución).
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 - El `DecisionEngine` determina **qué agente** responderá (IdentityCore, Business, Communication, Technical) — esto afecta directamente el tono y enfoque de la respuesta
-- La estrategia (`DIRECT_RESPONSE` vs `STRUCTURED_ANALYSIS` vs `RESEARCH_REQUIRED`) determina **cuánto esfuerzo** dedicará Django al mensaje
+- La estrategia (`DIRECT_RESPONSE` vs `STRUCTURED_ANALYSIS` vs `RESEARCH_REQUIRED`) determina **cuánto esfuerzo** dedicará Doe al mensaje
 - El `preliminary_risk` y las flags `requires_identity_review`/`requires_governance_review` determinan **qué controles** se aplicarán a la respuesta
 - El `Plan` del Planner define **qué pasos** se ejecutarán — si no hay paso de "identity_review" en el Plan, esa revisión se salta
 

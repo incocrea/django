@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Analytics Dashboard muestra métricas operacionales agregadas sobre el funcionamiento de Django: distribución de eventos por tipo, agente y riesgo, tendencias de fidelidad de identidad, tasa de autonomía, y uso de tokens. Es una vista de solo lectura (excepto por la acción de borrar datos) que permite al principal monitorear patrones de uso, costos, y la consistencia del comportamiento de Django a lo largo del tiempo.
+El Analytics Dashboard muestra métricas operacionales agregadas sobre el funcionamiento de Doe: distribución de eventos por tipo, agente y riesgo, tendencias de fidelidad de identidad, tasa de autonomía, y uso de tokens. Es una vista de solo lectura (excepto por la acción de borrar datos) que permite al principal monitorear patrones de uso, costos, y la consistencia del comportamiento de Doe a lo largo del tiempo.
 
 ---
 
@@ -58,16 +58,16 @@ Fuente: `GET /analytics/overview` → `events_by_risk`
 ### 1. Clear All Data (Borrar Todos los Datos)
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Botón rojo con icono Trash2. Requiere confirmar en `ConfirmDialog` (variant "danger")
-- **Impacto en Django**: Ejecuta en paralelo:
+- **Impacto en Doe**: Ejecuta en paralelo:
   - `DELETE /analytics/events` — Elimina todos los registros de eventos de Postgres y el EventBus en memoria
   - `DELETE /analytics/tokens` — Elimina todos los registros de uso de tokens de Postgres
   
-  Después de la eliminación, todos los contadores y gráficos se reinician a cero. **Los datos eliminados NO son recuperables**. No afecta memorias, traces, evaluaciones, ni la configuración de Django — solo datos estadísticos de analytics.
+  Después de la eliminación, todos los contadores y gráficos se reinician a cero. **Los datos eliminados NO son recuperables**. No afecta memorias, traces, evaluaciones, ni la configuración de Doe — solo datos estadísticos de analytics.
 
 ### 2. Refresh
 - **Tipo**: API Call
 - **Comportamiento**: Re-llama los 4 endpoints de lectura
-- **Impacto en Django**: Solo lectura
+- **Impacto en Doe**: Solo lectura
 
 ---
 

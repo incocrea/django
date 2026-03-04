@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe la **capa de protección de inputs** de Django — los 3 componentes que filtran, sanitizan y etiquetan el contenido antes de que entre al pipeline de procesamiento. Esta es la primera línea de defensa contra inyecciones de prompt, contenido malicioso y manipulación del sistema.
+Este documento describe la **capa de protección de inputs** de Doe — los 3 componentes que filtran, sanitizan y etiquetan el contenido antes de que entre al pipeline de procesamiento. Esta es la primera línea de defensa contra inyecciones de prompt, contenido malicioso y manipulación del sistema.
 
 ### ¿Qué cubre este documento?
 
@@ -16,9 +16,9 @@ Documenta 3 componentes: el `InputSanitizer` (detecta 3 tipos de amenaza: prompt
 
 ### ¿Cuál es su función en la arquitectura?
 
-La seguridad es el **escudo perimetral**. Su trabajo es interceptar mensajes potencialmente peligrosos antes de que lleguen al LLM. Sin esta capa, un usuario malintencionado podría inyectar instrucciones que hagan que Django ignore su persona, revele información confidencial, o actúe fuera de sus límites de gobernanza.
+La seguridad es el **escudo perimetral**. Su trabajo es interceptar mensajes potencialmente peligrosos antes de que lleguen al LLM. Sin esta capa, un usuario malintencionado podría inyectar instrucciones que hagan que Doe ignore su persona, revele información confidencial, o actúe fuera de sus límites de gobernanza.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 **Detalle crítico**: actualmente la seguridad opera en **modo detect-only** — reporta amenazas detectadas pero **NO bloquea** ningún mensaje. Esto significa que:
 - Las amenazas se registran como eventos y se incluyen en la traza cognitiva para auditoría

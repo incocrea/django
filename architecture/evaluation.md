@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe los **5 módulos de evaluación heurística** que califican cada respuesta de Django después de que es generada. No usan LLM — todo es regex, keyword matching y scoring determinístico. Esto significa que evaluar una respuesta cuesta exactamente $0 y toma milisegundos, lo cual permite evaluar **cada una de las interacciones** sin excepción.
+Este documento describe los **5 módulos de evaluación heurística** que califican cada respuesta de Doe después de que es generada. No usan LLM — todo es regex, keyword matching y scoring determinístico. Esto significa que evaluar una respuesta cuesta exactamente $0 y toma milisegundos, lo cual permite evaluar **cada una de las interacciones** sin excepción.
 
 ### ¿Qué cubre este documento?
 
@@ -16,14 +16,14 @@ Documenta los 5 módulos: **Quality** (5 dimensiones de calidad con grade A-F), 
 
 ### ¿Cuál es su función en la arquitectura?
 
-La evaluación es el **sistema de control de calidad** de Django. Mientras que la [Identidad](identity.md) intenta *prevenir* desviaciones (antes y durante la generación), la evaluación *detecta* problemas después de que la respuesta ya existe. Juntos, forman un ciclo de feedback: la identidad influye en cómo se genera la respuesta, y la evaluación mide qué tan bien salió.
+La evaluación es el **sistema de control de calidad** de Doe. Mientras que la [Identidad](identity.md) intenta *prevenir* desviaciones (antes y durante la generación), la evaluación *detecta* problemas después de que la respuesta ya existe. Juntos, forman un ciclo de feedback: la identidad influye en cómo se genera la respuesta, y la evaluación mide qué tan bien salió.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 - **Quality Scorer**: no cambia la respuesta actual, pero sus grades alimentan los dashboards y permiten identificar patrones de degradación a largo plazo
 - **Alignment Evaluator**: calcula `identity_similarity` comparando la respuesta contra el baseline embedding de Harold — esta métrica es usada por múltiples módulos de identidad como señal
-- **Legal Risk**: detecta si Django hizo promesas contractuales, compartió información confidencial, o hizo claims financieros — crucial para proteger a Harold
-- **Decision Registry**: auto-detecta cuand Django toma decisiones de negocio, registrando trigger, alternativas y trade-offs para auditoría
+- **Legal Risk**: detecta si Doe hizo promesas contractuales, compartió información confidencial, o hizo claims financieros — crucial para proteger a Harold
+- **Decision Registry**: auto-detecta cuand Doe toma decisiones de negocio, registrando trigger, alternativas y trade-offs para auditoría
 - **Memory Rollback**: permite deshacer operaciones de memoria si algo se almacenó incorrectamente — checkpoints con rollback seguro
 
 ### ¿Cómo interactúa con las demás piezas?

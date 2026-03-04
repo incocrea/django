@@ -2,7 +2,7 @@
 
 ## Información General
 
-La interfaz de Identity Governance permite gestionar el sistema de versionamiento, evolución y monitoreo de salud de la identidad de Django. Es el centro de control para las fases 10A-10D del pipeline de identidad: propuestas de evolución, simulaciones shadow (no-mutantes), snapshots de identidad, y monitoreo longitudinal de salud. Todas las operaciones de mutación requieren aprobación humana explícita — ningún cambio se aplica automáticamente.
+La interfaz de Identity Governance permite gestionar el sistema de versionamiento, evolución y monitoreo de salud de la identidad de Doe. Es el centro de control para las fases 10A-10D del pipeline de identidad: propuestas de evolución, simulaciones shadow (no-mutantes), snapshots de identidad, y monitoreo longitudinal de salud. Todas las operaciones de mutación requieren aprobación humana explícita — ningún cambio se aplica automáticamente.
 
 La página organiza su funcionalidad en 4 tabs independientes: Versions (gestión de snapshots inmutables), Evolution (propuestas de evolución generadas automáticamente), Shadow Simulation (simulaciones paralelas de candidatos), e Identity Health (monitoreo longitudinal con señales de identidad).
 
@@ -150,7 +150,7 @@ Fuente: `GET /identity/health?window_size=50`
   
   Llama `POST /identity/snapshot` con `{version?, tags?, label?, notes?}`
 
-- **Impacto en Django**: 
+- **Impacto en Doe**: 
   - Crea un snapshot inmutable del `IdentityProfile` actual vía `IdentityVersionControl.create_snapshot()`
   - Genera un UUID version_id, timestamp ISO, SHA-256 content_hash
   - Deep-copy del profile_data (nunca referencia mutable)
@@ -161,7 +161,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 2. Activate Version
 - **Tipo**: ConfirmDialog (warning) → API Call
 - **Comportamiento**: Botón "Activate" (CheckCircle) en versiones no-activas → confirmar → llama `POST /identity/activate/{id}`
-- **Impacto en Django**:
+- **Impacto en Doe**:
   - **Pointer swap**: Cambia el perfil de identidad activo al snapshot seleccionado
   - El `IdentityManager` carga el `IdentityProfile` desde el snapshot
   - Todas las componentes de identidad del pipeline (enforcement, policy, memory bridge, decision modulation, etc.) usarán el nuevo perfil a partir de la siguiente interacción
@@ -172,7 +172,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 3. Rollback to Version
 - **Tipo**: ConfirmDialog (danger) → API Call
 - **Comportamiento**: Botón "Rollback" (RotateCcw, naranja) en versiones más antiguas que la activa → confirmar warning destructivo → llama `POST /identity/rollback/{id}`
-- **Impacto en Django**: ⚠️ **OPERACIÓN DESTRUCTIVA**:
+- **Impacto en Doe**: ⚠️ **OPERACIÓN DESTRUCTIVA**:
   - Activa la versión seleccionada como perfil de identidad
   - **Invalida permanentemente TODAS las versiones creadas después** del punto de rollback (marca `invalidated_by_rollback: true`)
   - Las versiones invalidadas **no pueden ser activadas** — quedan como registro histórico
@@ -183,7 +183,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 4. Delete Version
 - **Tipo**: ConfirmDialog (danger) → API Call
 - **Comportamiento**: Botón Delete (Trash2, rojo) en versiones no-activas → confirmar → llama `DELETE /identity/versions/{id}`
-- **Impacto en Django**:
+- **Impacto en Doe**:
   - Elimina permanentemente el snapshot de Postgres
   - **No se permite eliminar la versión activa** — retorna HTTP 409 Conflict (Phase 10D.1 fix D4)
   - Si el snapshot tenía datos de evolución o shadow asociados, esos NO se eliminan (son registros independientes por interaction_id)
@@ -191,7 +191,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 5. Approve Evolution Candidate
 - **Tipo**: API Call directa
 - **Comportamiento**: Botón "Approve" (CheckCircle) en candidatos de evolución → llama `POST /identity/evolution/{interactionId}/approve`
-- **Impacto en Django**:
+- **Impacto en Doe**:
   - Crea un snapshot del candidato de evolución via `IdentityVersionControl.create_snapshot()` con `evolution_source='evolution_candidate'`
   - El snapshot incluye metadata de evolución (proposed_version, shift_magnitude, etc.)
   - Emite evento `identity.evolution_approved` via EventBus (Phase 10D.1 fix D2)
@@ -201,7 +201,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 6. Reject Evolution Candidate
 - **Tipo**: API Call directa
 - **Comportamiento**: Botón "Reject" (XCircle, rojo) en candidatos → llama `POST /identity/evolution/{interactionId}/reject`
-- **Impacto en Django**:
+- **Impacto en Doe**:
   - Marca el candidato como rechazado (`evolution_rejected: true`)
   - Emite evento `identity.evolution_rejected` via EventBus singleton (Phase 10D.1 fix D1 — corregido de `EventBus()` constructor roto a singleton compartido)
   - El candidato permanece visible como "Rejected" pero no puede ser aprobado
@@ -210,7 +210,7 @@ Fuente: `GET /identity/health?window_size=50`
 ### 7. Refresh (en cada tab)
 - **Tipo**: API Call de lectura
 - **Comportamiento**: Botón RefreshCw en cada tab → recarga datos del tab correspondiente
-- **Impacto en Django**: Solo lectura
+- **Impacto en Doe**: Solo lectura
 
 ---
 

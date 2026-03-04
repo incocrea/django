@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Training Center es la interfaz para entrenar a Django y enseñarle cómo debe comportarse. Soporta correcciones directas (donde se indica explícitamente qué debería haber dicho Django) y carga de archivos con deduplicación semántica (JSON estructurado con writing_sample, style_rule, personality_trait que pasan por un pipeline de parsing, deduplicación contra memoria existente, y almacenamiento en ChromaDB). También permite gestionar correcciones y sugerencias almacenadas. Cada interacción de entrenamiento modifica permanentemente el comportamiento futuro de Django a través de sus sistemas de memoria.
+El Training Center es la interfaz para entrenar a Doe y enseñarle cómo debe comportarse. Soporta correcciones directas (donde se indica explícitamente qué debería haber dicho Doe) y carga de archivos con deduplicación semántica (JSON estructurado con writing_sample, style_rule, personality_trait que pasan por un pipeline de parsing, deduplicación contra memoria existente, y almacenamiento en ChromaDB). También permite gestionar correcciones y sugerencias almacenadas. Cada interacción de entrenamiento modifica permanentemente el comportamiento futuro de Doe a través de sus sistemas de memoria.
 
 ---
 
@@ -24,7 +24,7 @@ Botón en la zona superior que abre un modal con ejemplos completos del formato 
 
 Tabla de correcciones existentes en memoria procedural. Cada corrección muestra:
 - **Situación**: El contexto original
-- **Respuesta original**: Lo que Django dijo
+- **Respuesta original**: Lo que Doe dijo
 - **Corrección**: Lo que debería haber dicho
 - **Fecha de creación**: Timestamp
 
@@ -37,12 +37,12 @@ Fuente: `GET /training/corrections`
 ### 1. Enviar Corrección
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /training/correction` con `{situation, original_response, corrected_response, explanation?}`
-- **Impacto en Django**: **Almacena permanentemente** la corrección en SQLite `procedural.db` vía `ProceduralMemory`. A partir de este momento, esta corrección se **inyecta en el paso 5 (Correction Injection) de CADA interacción futura** del orquestador. Django consultará estas correcciones antes de generar cada respuesta, ajustando su comportamiento para no repetir el error. Las correcciones nunca expiran — persisten indefinidamente.
+- **Impacto en Doe**: **Almacena permanentemente** la corrección en SQLite `procedural.db` vía `ProceduralMemory`. A partir de este momento, esta corrección se **inyecta en el paso 5 (Correction Injection) de CADA interacción futura** del orquestador. Doe consultará estas correcciones antes de generar cada respuesta, ajustando su comportamiento para no repetir el error. Las correcciones nunca expiran — persisten indefinidamente.
 
 ### 2. Subir Archivo de Entrenamiento (JSON con Deduplicación Semántica)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /training/upload-samples` con archivos JSON estructurados
-- **Impacto en Django**: El backend procesa el archivo a través de un pipeline de 3 etapas:
+- **Impacto en Doe**: El backend procesa el archivo a través de un pipeline de 3 etapas:
   1. **Parser** (`training_parser.py`): Extrae items estructurados del JSON — soporta categorías `writing_sample`, `style_rule`, y `personality_trait` (acepta campo `"category"` o `"type"`)
   2. **Deduplicador** (`deduplicator.py`): Compara cada item contra la memoria semántica existente via cosine similarity (EmbeddingRouter). Umbrales por categoría — items duplicados se descartan
   3. **Processor** (`processor.py`): Almacena items únicos en ChromaDB semantic memory con sus categorías correspondientes
@@ -51,17 +51,17 @@ Fuente: `GET /training/corrections`
 ### 3. Editar Corrección
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /training/corrections/{id}` con datos actualizados
-- **Impacto en Django**: Modifica la corrección existente en SQLite. Los cambios se reflejan inmediatamente en las inyecciones futuras del paso 5 del pipeline.
+- **Impacto en Doe**: Modifica la corrección existente en SQLite. Los cambios se reflejan inmediatamente en las inyecciones futuras del paso 5 del pipeline.
 
 ### 4. Eliminar Corrección
 - **Tipo**: API Call
 - **Comportamiento**: Llama `DELETE /training/corrections/{id}`
-- **Impacto en Django**: Elimina permanentemente la corrección de SQLite. Django dejará de recibir esa corrección en el paso 5 de interacciones futuras.
+- **Impacto en Doe**: Elimina permanentemente la corrección de SQLite. Doe dejará de recibir esa corrección en el paso 5 de interacciones futuras.
 
 ### 5. Eliminar Sugerencias
 - **Tipo**: API Call
 - **Comportamiento**: Llama `DELETE /training/suggestions`
-- **Impacto en Django**: Limpia sugerencias generadas automáticamente.
+- **Impacto en Doe**: Limpia sugerencias generadas automáticamente.
 
 ---
 

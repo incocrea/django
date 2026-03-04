@@ -8,7 +8,7 @@
 
 ## Sobre este documento
 
-Este documento describe el **sistema teleológico** de Django — la capa que le da **propósito**. Mientras la identidad define *quién es* Django y la cognición decide *cómo* responder, la teleología define *para qué* lo hace. Es el sistema de metas, prioridades, recompensas y resolución de conflictos que permite a Django operar con dirección estratégica en lugar de simplemente reaccionar a mensajes.
+Este documento describe el **sistema teleológico** de Doe — la capa que le da **propósito**. Mientras la identidad define *quién es* Doe y la cognición decide *cómo* responder, la teleología define *para qué* lo hace. Es el sistema de metas, prioridades, recompensas y resolución de conflictos que permite a Doe operar con dirección estratégica en lugar de simplemente reaccionar a mensajes.
 
 ### ¿Qué cubre este documento?
 
@@ -16,11 +16,11 @@ Documenta la **jerarquía de 4 tipos de metas** (mission → strategic → opera
 
 ### ¿Cuál es su función en la arquitectura?
 
-La teleología es el **navegante estratégico**. Sin este sistema, Django reacciona a mensajes individuales sin visión de conjunto — responde bien a cada pregunta pero no trabaja hacia ningún objetivo mayor. Con la teleología, Django puede tener metas como "aprender sobre el negocio de Harold", priorizar tareas que contribuyen a esas metas, detectar conflictos entre objetivos contradictorios, y reportar progreso.
+La teleología es el **navegante estratégico**. Sin este sistema, Doe reacciona a mensajes individuales sin visión de conjunto — responde bien a cada pregunta pero no trabaja hacia ningún objetivo mayor. Con la teleología, Doe puede tener metas como "aprender sobre el negocio de Harold", priorizar tareas que contribuyen a esas metas, detectar conflictos entre objetivos contradictorios, y reportar progreso.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-- **Metas activas enriquecen el contexto**: si Django tiene una meta activa relevante al mensaje actual, esa meta se inyecta en el contexto del prompt — el LLM sabe qué está intentando lograr Django
+- **Metas activas enriquecen el contexto**: si Doe tiene una meta activa relevante al mensaje actual, esa meta se inyecta en el contexto del prompt — el LLM sabe qué está intentando lograr Doe
 - **Priorización inteligente**: cuando hay múltiples tareas, la teleología calcula cuál es más urgente/importante usando 7 factores ponderados
 - **Resolución de conflictos**: si dos metas se contradicen, el sistema detecta el conflicto y aplica una de 5 estrategias (priorizar, comprometer, delegar, aplazar, descomponer)
 - **Importante**: actualmente el nivel de autonomía es 0 (Observer), por lo que el background loop **solo observa** — no ejecuta acciones autónomas. El sistema está construido pero esperando que el nivel de autonomía suba para activarse completamente
@@ -43,7 +43,7 @@ La teleología es el **navegante estratégico**. Sin este sistema, Django reacci
 
 ## Resumen
 
-Sistema de metas y propósitos del agente. Define QUÉ quiere lograr Django, con qué prioridad, cómo medir progreso, y cómo resolver conflictos entre objetivos.
+Sistema de metas y propósitos del agente. Define QUÉ quiere lograr Doe, con qué prioridad, cómo medir progreso, y cómo resolver conflictos entre objetivos.
 
 ---
 

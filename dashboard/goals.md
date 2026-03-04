@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Goal Manager implementa un sistema teleológico de gestión de objetivos para Django. Permite definir, priorizar, y gestionar objetivos a diferentes niveles (táctico, operacional, estratégico, misión), detectar conflictos entre objetivos activos, y monitorear señales de recompensa asociadas a las interacciones. Este módulo es parte del sistema de gobernanza — los objetivos informan el comportamiento de Django al proporcionar contexto sobre las prioridades del principal.
+El Goal Manager implementa un sistema teleológico de gestión de objetivos para Doe. Permite definir, priorizar, y gestionar objetivos a diferentes niveles (táctico, operacional, estratégico, misión), detectar conflictos entre objetivos activos, y monitorear señales de recompensa asociadas a las interacciones. Este módulo es parte del sistema de gobernanza — los objetivos informan el comportamiento de Doe al proporcionar contexto sobre las prioridades del principal.
 
 La página organiza su funcionalidad en 3 tabs: Goals (lista y gestión), Conflicts (detección automática de conflictos entre objetivos), y Rewards (señales de recompensa por interacción).
 
@@ -70,7 +70,7 @@ Fuente: `GET /goals/rewards/recent?limit=20`
   
   Llama `POST /goals` con `{title, description, goal_type}`
 
-- **Impacto en Django**: Crea un nuevo objetivo en el sistema teleológico del backend con:
+- **Impacto en Doe**: Crea un nuevo objetivo en el sistema teleológico del backend con:
   - `status: "created"` (no activo hasta activación explícita)
   - `priority` y `identity_alignment` calculados automáticamente por el backend
   - UUID `goal_id` generado
@@ -79,27 +79,27 @@ Fuente: `GET /goals/rewards/recent?limit=20`
 ### 2. Activate Goal
 - **Tipo**: API Call directa
 - **Comportamiento**: Botón Play (verde) en objetivos con status "created" → llama `POST /goals/{id}/activate`
-- **Impacto en Django**: Cambia el estado a "active". Los objetivos activos son considerados por el sistema de gobernanza durante la evaluación de decisiones y pueden influir en el comportamiento del orquestador al proveer contexto sobre las prioridades actuales del principal.
+- **Impacto en Doe**: Cambia el estado a "active". Los objetivos activos son considerados por el sistema de gobernanza durante la evaluación de decisiones y pueden influir en el comportamiento del orquestador al proveer contexto sobre las prioridades actuales del principal.
 
 ### 3. Complete Goal
 - **Tipo**: API Call directa
 - **Comportamiento**: Botón CheckCircle (esmeralda) en objetivos con status "active" → llama `POST /goals/{id}/complete`
-- **Impacto en Django**: Marca el objetivo como completado. Sale del conjunto de objetivos activos y deja de influir en el contexto de decisiones. Genera señal de recompensa positiva.
+- **Impacto en Doe**: Marca el objetivo como completado. Sale del conjunto de objetivos activos y deja de influir en el contexto de decisiones. Genera señal de recompensa positiva.
 
 ### 4. Cancel Goal
 - **Tipo**: API Call directa
 - **Comportamiento**: Botón XCircle (rojo) en objetivos con status created/active/paused → llama `POST /goals/{id}/cancel`
-- **Impacto en Django**: Marca el objetivo como cancelado. Sale del conjunto de objetivos activos. No genera señal de recompensa.
+- **Impacto en Doe**: Marca el objetivo como cancelado. Sale del conjunto de objetivos activos. No genera señal de recompensa.
 
 ### 5. Delete Goal
 - **Tipo**: API Call directa (sin confirmación)
 - **Comportamiento**: Botón Trash2 (rojo) — disponible en **todos los estados** → llama `DELETE /goals/{id}`
-- **Impacto en Django**: ⚠️ **Eliminación permanente** del objetivo. Sin diálogo de confirmación. Si el objetivo estaba activo, se elimina inmediatamente del contexto de gobernanza. Los conflictos asociados se recalculan automáticamente.
+- **Impacto en Doe**: ⚠️ **Eliminación permanente** del objetivo. Sin diálogo de confirmación. Si el objetivo estaba activo, se elimina inmediatamente del contexto de gobernanza. Los conflictos asociados se recalculan automáticamente.
 
 ### 6. Refresh (implícito)
 - **Tipo**: Carga automática
 - **Comportamiento**: Los 3 tabs se cargan en paralelo con `Promise.all([loadGoals(), loadConflicts(), loadRewards()])` al montar la página
-- **Impacto en Django**: Solo lectura
+- **Impacto en Doe**: Solo lectura
 
 ---
 

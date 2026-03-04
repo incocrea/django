@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Evaluation Dashboard presenta los resultados de los 5 módulos de evaluación heurística que analizan cada interacción de Django. Estos módulos corren automáticamente después de cada respuesta del orquestador (paso 10 del pipeline) sin hacer llamadas LLM adicionales. La página permite inspeccionar scores de calidad, alineación con la persona, riesgos legales detectados, decisiones de negocio registradas, y operaciones de memoria con rollback. Desde aquí también se pueden aprobar/rechazar decisiones pendientes, deshacer operaciones de memoria, crear checkpoints, y purgar todos los datos de evaluación.
+El Evaluation Dashboard presenta los resultados de los 5 módulos de evaluación heurística que analizan cada interacción de Doe. Estos módulos corren automáticamente después de cada respuesta del orquestador (paso 10 del pipeline) sin hacer llamadas LLM adicionales. La página permite inspeccionar scores de calidad, alineación con la persona, riesgos legales detectados, decisiones de negocio registradas, y operaciones de memoria con rollback. Desde aquí también se pueden aprobar/rechazar decisiones pendientes, deshacer operaciones de memoria, crear checkpoints, y purgar todos los datos de evaluación.
 
 ---
 
@@ -110,46 +110,46 @@ Fuentes: `GET /evaluation/rollback/log?limit=50` + `GET /evaluation/rollback/che
 ### 1. Approve Decision
 - **Tipo**: API Call
 - **Comportamiento**: Botón verde en decisiones con status "pending" y `requires_approval: true`. Llama `PUT /evaluation/decisions/{id}/status` con `{status: "approved", approved_by: "principal"}`
-- **Impacto en Django**: Actualiza el estado de la decisión en el `DecisionRegistry` a "approved". Esto puede afectar el comportamiento futuro del orquestador si implementa lógica condicional basada en decisiones aprobadas (actualmente informativo).
+- **Impacto en Doe**: Actualiza el estado de la decisión en el `DecisionRegistry` a "approved". Esto puede afectar el comportamiento futuro del orquestador si implementa lógica condicional basada en decisiones aprobadas (actualmente informativo).
 
 ### 2. Reject Decision
 - **Tipo**: API Call
 - **Comportamiento**: Botón rojo. Llama `PUT /evaluation/decisions/{id}/status` con `{status: "rejected", approved_by: "principal"}`
-- **Impacto en Django**: Marca la decisión como rechazada en el `DecisionRegistry`.
+- **Impacto en Doe**: Marca la decisión como rechazada en el `DecisionRegistry`.
 
 ### 3. Defer Decision
 - **Tipo**: API Call
 - **Comportamiento**: Botón gris. Llama `PUT /evaluation/decisions/{id}/status` con `{status: "deferred", approved_by: "principal"}`
-- **Impacto en Django**: Pospone la decisión. Sigue apareciendo en la lista pero con badge "deferred".
+- **Impacto en Doe**: Pospone la decisión. Sigue apareciendo en la lista pero con badge "deferred".
 
 ### 4. Undo Memory Operation
 - **Tipo**: API Call
 - **Comportamiento**: Botón naranja Undo2 en operaciones no revertidas. Llama `POST /evaluation/rollback/undo/{operationId}`
-- **Impacto en Django**: **Restaura la memoria a su estado anterior** desde el snapshot before-state:
+- **Impacto en Doe**: **Restaura la memoria a su estado anterior** desde el snapshot before-state:
   - Si fue un `delete`: Re-crea la memoria en ChromaDB/SQLite con el contenido original
   - Si fue un `modify`: Revierte al contenido anterior
   - Si fue un `store`: Elimina la memoria creada
   
-  Esto afecta directamente el recall del paso 4 del pipeline — las futuras respuestas de Django tendrán acceso a memorias restauradas o perderán acceso a memorias revertidas.
+  Esto afecta directamente el recall del paso 4 del pipeline — las futuras respuestas de Doe tendrán acceso a memorias restauradas o perderán acceso a memorias revertidas.
 
 ### 5. Create Checkpoint
 - **Tipo**: API Call
 - **Comportamiento**: Botón Save. Llama `POST /evaluation/rollback/checkpoint` con nombre auto-generado `checkpoint-{timestamp}`
-- **Impacto en Django**: Crea un checkpoint nombrado en el `MemoryRollbackManager`. Marca el punto actual en el log de operaciones. (Nota: actualmente el rollback to checkpoint no está expuesto en la UI).
+- **Impacto en Doe**: Crea un checkpoint nombrado en el `MemoryRollbackManager`. Marca el punto actual en el log de operaciones. (Nota: actualmente el rollback to checkpoint no está expuesto en la UI).
 
 ### 6. Delete All Evaluation Data
 - **Tipo**: API Call con confirmación
 - **Comportamiento**: Botón rojo Trash2 en header → confirmar en `ConfirmDialog`. Llama `DELETE /evaluation/data`
-- **Impacto en Django**: **Purga permanente** de todos los datos de evaluación:
+- **Impacto en Doe**: **Purga permanente** de todos los datos de evaluación:
   - Limpia las 5 stores en memoria (quality, alignment, legal, decisions, rollback)
   - Elimina los registros de evaluación de Postgres
   - Resetea todos los contadores y métricas a cero
-  - **No afecta** memorias, traces, configuración, ni el comportamiento de Django — solo datos de evaluación históricos
+  - **No afecta** memorias, traces, configuración, ni el comportamiento de Doe — solo datos de evaluación históricos
 
 ### 7. Refresh
 - **Tipo**: API Call
 - **Comportamiento**: Re-llama overview + datos del tab activo
-- **Impacto en Django**: Solo lectura
+- **Impacto en Doe**: Solo lectura
 
 ---
 

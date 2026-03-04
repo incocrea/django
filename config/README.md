@@ -6,7 +6,7 @@
 
 ## Sobre este documento
 
-Este documento describe los **6 archivos de configuración** que definen quién es Django, qué modelos LLM usa, qué habilidades tiene, qué límites no puede cruzar, qué variables de entorno necesita, y cómo se gestionan los servicios. Son los archivos que Harold modifica (directamente o via el dashboard) para moldear el comportamiento de Django sin tocar código.
+Este documento describe los **6 archivos de configuración** que definen quién es Doe, qué modelos LLM usa, qué habilidades tiene, qué límites no puede cruzar, qué variables de entorno necesita, y cómo se gestionan los servicios. Son los archivos que Harold modifica (directamente o via el dashboard) para moldear el comportamiento de Doe sin tocar código.
 
 ### ¿Qué cubre este documento?
 
@@ -14,16 +14,16 @@ Documenta en detalle: **persona.yaml** (la identidad de Harold: Big Five, valore
 
 ### ¿Cuál es su función en la arquitectura?
 
-La configuración es la **capa declarativa** — define *qué* sin definir *cómo*. `persona.yaml` dice quién es Harold pero no cómo implementar la fidelidad; `governance.yaml` dice qué está prohibido pero no cómo bloquearlo. Los módulos de código (identidad, agentes, pipeline, gobernanza) leen estos archivos y los interpretan. Esto permite cambiar el comportamiento de Django sin modificar código — un cambio en persona.yaml se refleja en la próxima interacción.
+La configuración es la **capa declarativa** — define *qué* sin definir *cómo*. `persona.yaml` dice quién es Harold pero no cómo implementar la fidelidad; `governance.yaml` dice qué está prohibido pero no cómo bloquearlo. Los módulos de código (identidad, agentes, pipeline, gobernanza) leen estos archivos y los interpretan. Esto permite cambiar el comportamiento de Doe sin modificar código — un cambio en persona.yaml se refleja en la próxima interacción.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 **Todo empieza aquí**:
-- `persona.yaml` define literalmente *quién es Django*: su personalidad, valores, estilo. Si cambias `openness` de 0.81 a 0.30, Django se vuelve más conservador y menos creativo
+- `persona.yaml` define literalmente *quién es Doe*: su personalidad, valores, estilo. Si cambias `openness` de 0.81 a 0.30, Doe se vuelve más conservador y menos creativo
 - `models.json` define *con qué cerebro piensa*: cambiar el perfil a `max_quality` hace que todo se procese con Gemini (máxima calidad, mayor costo)
 - `governance.yaml` define *qué puede y qué no puede hacer*: las operaciones prohibidas son límites duros que ningún agente puede cruzar
-- `skills.json` define *qué herramientas tiene*: deshabilitar `web-research` impide que Django busque en internet
-- `.env` define *las credenciales*: sin `GEMINI_API_KEY`, Django solo puede usar Groq como fallback
+- `skills.json` define *qué herramientas tiene*: deshabilitar `web-research` impide que Doe busque en internet
+- `.env` define *las credenciales*: sin `GEMINI_API_KEY`, Doe solo puede usar Groq como fallback
 
 ### ¿Cómo interactúa con las demás piezas?
 
@@ -33,7 +33,7 @@ La configuración es la **capa declarativa** — define *qué* sin definir *cóm
 - **[Pipeline](../architecture/pipeline.md)**: `persona.yaml` se recarga en caliente via `POST /persona/reload` → todos los agentes actualizan su prompt
 - **[Dashboard](../dashboard/README.md)**: Identity Studio escribe directamente en `persona.yaml`. Model Manager escribe en `models.json`. Governance Console lee `governance.yaml`
 - **[Startup](../architecture/startup.md)**: `config.py` (Pydantic BaseSettings) es lo primero que se carga. De ahí se derivan todas las demás configuraciones
-- **[Tasks](../config/README.md)**: `tasks.json` define cómo se lanzan los servicios (backend, dashboard, watchdog, Discord bot) via VS Code
+- **[Tasks](../config/README.md)**: `tasks.json` define cómo se lanzan los servicios (backend, dashboard, watchdog) via VS Code
 
 ---
 
@@ -120,7 +120,7 @@ Pydantic `BaseSettings`, carga desde `.env` via `@lru_cache`.
 
 | Grupo | Variables | Defaults |
 |-------|----------|----------|
-| App | `app_name`, `app_version`, `environment`, `debug` | "Django", "2.0.0", "development", True |
+| App | `app_name`, `app_version`, `environment`, `debug` | "Doe", "2.0.0", "development", True |
 | API | `api_host`, `api_port` | "0.0.0.0", 8000 |
 | LLM | `gemini_api_key`, `groq_api_key`, `ollama_base_url` | None, None, localhost:11434 |
 | DB | `database_url`, `chroma_persist_directory` | None, "./chroma_data" |
@@ -139,8 +139,7 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 | `Backend: FastAPI Server` | `uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload` | 1 |
 | `Dashboard: Next.js Dev Server` | `Remove-Item .next; npx next dev --port 3000` | 1 |
 | `Health Watchdog` | `python -m src.watchdog` | 1 |
-| `Discord: Django Bot` | `venv/Scripts/python.exe scripts/discord_bot.py` | 1 |
-| `Start All Services` | dependsOn las 4 anteriores (parallel) | — |
+| `Start All Services` | dependsOn las 3 anteriores (parallel) | — |
 
 > **Regla crítica**: Todos los servicios se inician via VS Code Tasks, NUNCA con terminales background.
 
@@ -150,6 +149,6 @@ Properties booleanas: `has_gemini`, `has_groq`, `has_tavily`, `has_database`, `h
 
 - [Identidad](../architecture/identity.md) — Consume persona.yaml
 - [Agentes](../architecture/agents.md) — Consume models.json, persona.yaml
-- [Integrations](../integrations/README.md) — Model Router, Discord bot
+- [Integrations](../integrations/README.md) — Model Router
 - [Gobernanza](../dashboard/governance-console.md) — Consume governance.yaml
 - [Startup](../architecture/startup.md) — Secuencia de carga de configuración

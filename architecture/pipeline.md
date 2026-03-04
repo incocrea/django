@@ -2,13 +2,13 @@
 
 > [← Arquitectura](README.md) · [Agentes →](agents.md)
 
-**Archivo**: `src/flows/orchestrator.py` (3,178 líneas)
+**Archivo**: `src/flows/orchestrator.py` (3,394 líneas)
 
 ---
 
 ## Sobre este documento
 
-Este documento describe el **corazón de Django** — el pipeline del Orchestrator. Cada vez que alguien le habla a Django (por chat, Discord, o API), el mensaje pasa por una secuencia de 25+ pasos antes de que Django responda. Este documento detalla exactamente qué hace cada paso, en qué orden se ejecutan, y qué decide cada uno.
+Este documento describe el **corazón de Doe** — el pipeline del Orchestrator. Cada vez que alguien le habla a Doe (por chat o API), el mensaje pasa por una secuencia de 25+ pasos antes de que Doe responda. Este documento detalla exactamente qué hace cada paso, en qué orden se ejecutan, y qué decide cada uno.
 
 ### ¿Qué cubre este documento?
 
@@ -16,12 +16,12 @@ Documenta los **3 modos cognitivos** (Full, Memory+LLM, Memory Only), la **tabla
 
 ### ¿Cuál es su función en la arquitectura?
 
-El Orchestrator es el **director de orquesta** — el módulo central que coordina a todos los demás. No genera respuestas por sí mismo, no almacena memorias, no evalúa calidad. Lo que hace es **invocar a cada subsistema en el orden correcto** y pasar los resultados de uno al siguiente. Es la columna vertebral que le da estructura al pensamiento de Django.
+El Orchestrator es el **director de orquesta** — el módulo central que coordina a todos los demás. No genera respuestas por sí mismo, no almacena memorias, no evalúa calidad. Lo que hace es **invocar a cada subsistema en el orden correcto** y pasar los resultados de uno al siguiente. Es la columna vertebral que le da estructura al pensamiento de Doe.
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
 **Totalmente**. El pipeline determina:
-- **Qué tan inteligente es Django**: en modo Full (1) usa web + LLM + toda la memoria; en modo Memory+LLM (2, default) se limita a conocimiento aprendido; en modo Memory Only (3) ni siquiera usa LLM
+- **Qué tan inteligente es Doe**: en modo Full (1) usa web + LLM + toda la memoria; en modo Memory+LLM (2, default) se limita a conocimiento aprendido; en modo Memory Only (3) ni siquiera usa LLM
 - **Qué tan seguro es**: los pasos de gobernanza y revisión de identidad pueden señalar respuestas riesgosas
 - **Qué tan fiel a Harold es**: 10+ pasos de identidad (modulación de decisiones, confianza, sesgo conductual, integración de prompt, etc.) trabajan para que cada respuesta suene como Harold
 - **Qué tan buena memoria tiene**: los pasos de recall, re-ranking y consolidación determinan qué recuerda y con qué prioridad
@@ -63,7 +63,7 @@ Pipeline central de 25+ pasos que procesa CADA mensaje. Soporta 3 Modos Cognitiv
 | 0 | Emergency Check | orchestrator | Bloquea si `_emergency_stopped` → ver [governance](../dashboard/governance-console.md) |
 | 0.3 | Goal Context Injector | [teleology middleware](teleology.md) | Inyecta metas activas (PRE_CLASSIFY hook) |
 | 1 | Semantic Classify | [semantic_classifier](cognition.md) | Clasificación semántica por centroides — embeddings Qwen3-Embedding-8B via EmbeddingRouter, 9 categorías, 360 training phrases. Fallback a CONVERSATION si confidence < 0.30 |
-| 1d | Skill Execution | [skills](../dashboard/skill-manager.md) | Si Planner incluye `skill_execution`: learn-topic (mode 1) o repo-explorer (modes 1-2). Contexto inyectado en pipeline, no bypass |
+| 1d | Skill Execution | [skills](../dashboard/skill-manager.md) | Si Planner incluye `skill_execution`: learn-topic (mode 1), repo-explorer (modes 1-2), SKILL_CREATION y dispatch dinámico. Contexto inyectado en pipeline, no bypass. Skills con `SkillReport` agregan sub-nodos al trace. |
 | 2 | Decision Engine | [cognition](cognition.md) | Deterministic strategy/risk/agent (no LLM) |
 | 3c | Identity Decision Modulation | [identity](identity.md) | Evalúa alignment decision-identity (observational) |
 | 3d | Identity Confidence | [identity](identity.md) | Agrega señales → confidence 0-1 + autonomy_modifier |

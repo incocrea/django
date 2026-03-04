@@ -6,7 +6,7 @@
 
 ## Sobre este documento
 
-Este documento describe el **sistema nervioso** de Django — los dos mecanismos que hacen visible y auditable todo lo que pasa internamente. El `EventBus` transmite lo que ocurre en tiempo real (como un sistema de notificaciones), y el `TraceCollector` graba cada paso del procesamiento como un grafo visual (como una cámara que filma el pensamiento de Django).
+Este documento describe el **sistema nervioso** de Doe — los dos mecanismos que hacen visible y auditable todo lo que pasa internamente. El `EventBus` transmite lo que ocurre en tiempo real (como un sistema de notificaciones), y el `TraceCollector` graba cada paso del procesamiento como un grafo visual (como una cámara que filma el pensamiento de Doe).
 
 ### ¿Qué cubre este documento?
 
@@ -14,14 +14,14 @@ Documenta el `EventBus` (151 líneas), su mecanismo de broadcast simultáneo a 3
 
 ### ¿Cuál es su función en la arquitectura?
 
-Los eventos y trazas son el **sistema de observabilidad**. Sin ellos, lo que hace Django internamente sería una caja negra. Gracias a events y trace, Harold puede:
-- **Ver en tiempo real** qué está haciendo Django (via WebSocket al Dashboard)
+Los eventos y trazas son el **sistema de observabilidad**. Sin ellos, lo que hace Doe internamente sería una caja negra. Gracias a events y trace, Harold puede:
+- **Ver en tiempo real** qué está haciendo Doe (via WebSocket al Dashboard)
 - **Auditar** qué hizo en el pasado (via audit_log en Postgres)
-- **Visualizar** exactamente cómo pensó Django cada respuesta (via el pipeline horizontal CSS Grid en la página `/trace`)
+- **Visualizar** exactamente cómo pensó Doe cada respuesta (via el pipeline horizontal CSS Grid en la página `/trace`)
 
-### ¿Cómo afecta al comportamiento de Django?
+### ¿Cómo afecta al comportamiento de Doe?
 
-Estos sistemas no afectan *qué* responde Django — son puramente observacionales. Pero afectan profundamente la **experiencia de Harold**:
+Estos sistemas no afectan *qué* responde Doe — son puramente observacionales. Pero afectan profundamente la **experiencia de Harold**:
 - El Command Center del dashboard se actualiza en tiempo real gracias a los eventos WebSocket
 - Los LEDs de estado de agentes cambian de color según los eventos `agent_state.*`
 - El feed de actividad muestra cada evento importante
@@ -37,7 +37,6 @@ Events y Trace son **consumidos y producidos por casi todo el sistema**:
 - **[Gobernanza](../dashboard/governance-console.md)**: emite eventos críticos como `governance.emergency_stop_activated`
 - **[Base de Datos](database.md)**: los eventos se persisten en la tabla `audit_log` de Postgres; los nodos de traza en la tabla `trace_nodes`
 - **[Dashboard](../dashboard/README.md)**: el Command Center, Chat, y otros componentes consumen eventos via WebSocket en tiempo real
-- **[Discord Bot](../integrations/README.md)**: los eventos de chat se emiten igual que para interacciones de dashboard
 - **[Startup](startup.md)**: el primer evento del sistema es `system.startup`; el EventBus se inicializa temprano en la secuencia
 - **[API](../api/README.md)**: endpoints de trace (6) y events/recent exponen los datos al frontend
 

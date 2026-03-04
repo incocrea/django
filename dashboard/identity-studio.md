@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Identity Studio es el editor principal de la personalidad e identidad de Django. Permite visualizar y modificar los cinco grandes rasgos de personalidad (Big Five), el estilo de comunicación, la jerarquía de valores, y los límites conductuales del delegado. Cada cambio guardado aquí modifica directamente el archivo `persona.yaml` en el servidor, recarga inmediatamente la configuración de todos los agentes, y afecta todas las respuestas futuras de Django. Es la interfaz donde el principal define "quién es Django" a nivel de personalidad.
+El Identity Studio es el editor principal de la personalidad e identidad de Doe. Permite visualizar y modificar los cinco grandes rasgos de personalidad (Big Five), el estilo de comunicación, la jerarquía de valores, y los límites conductuales del delegado. Cada cambio guardado aquí modifica directamente el archivo `persona.yaml` en el servidor, recarga inmediatamente la configuración de todos los agentes, y afecta todas las respuestas futuras de Doe. Es la interfaz donde el principal define "quién es Doe" a nivel de personalidad.
 
 ---
 
@@ -24,7 +24,7 @@ Fuente: `GET /persona/info` → `traits`
 
 ### Sliders de Estilo de Comunicación
 
-6 sliders horizontales que definen cómo se comunica Django:
+6 sliders horizontales que definen cómo se comunica Doe:
 
 | Dimensión | Rango | Polo bajo → Polo alto |
 |-----------|-------|----------------------|
@@ -49,7 +49,7 @@ Fuente: `GET /persona/info` → `values`
 
 ### Límites Conductuales (Boundaries)
 
-Lista de reglas que Django debe respetar. Cada boundary es un string libre. Soporta:
+Lista de reglas que Doe debe respetar. Cada boundary es un string libre. Soporta:
 
 - **Agregar**: Campo de texto + botón para añadir nuevos límites
 - **Eliminar**: Botón X en cada límite para removerlo
@@ -63,27 +63,27 @@ Fuente: `GET /persona/info` → `boundaries`
 ### 1. Guardar Personalidad (Save Traits)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /persona/traits` con el objeto `{openness, conscientiousness, extraversion, agreeableness, neuroticism}`
-- **Impacto en Django**: Escribe los nuevos valores en `configs/persona.yaml` en disco. Recarga inmediatamente la configuración de todos los 5 agentes — sus system prompts se reconstruyen con los nuevos rasgos. El `IdentityCoreAgent` incorpora los rasgos en su prompt de persona. Emite evento `config.persona_updated`. Los cambios afectan la personalidad de TODAS las respuestas futuras, tanto en dashboard como en Discord.
+- **Impacto en Doe**: Escribe los nuevos valores en `configs/persona.yaml` en disco. Recarga inmediatamente la configuración de todos los 5 agentes — sus system prompts se reconstruyen con los nuevos rasgos. El `IdentityCoreAgent` incorpora los rasgos en su prompt de persona. Emite evento `config.persona_updated`. Los cambios afectan la personalidad de TODAS las respuestas futuras.
 
 ### 2. Guardar Estilo de Comunicación (Save Communication)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /persona/communication` con `{formality, technical_depth, warmth, directness, humor, verbosity}`
-- **Impacto en Django**: Escribe en `persona.yaml`, recarga agentes. Afecta directamente el tono, nivel de detalle, y estilo de todas las respuestas. El `AlignmentEvaluator` usa estos valores como baseline para medir si las respuestas futuras se alinean con el estilo definido. El `IdentityContextWeighter` (Phase 6B) y `IdentityBehavioralBias` (Phase 8A) derivan `tone_weight` y `assertiveness` de estos valores.
+- **Impacto en Doe**: Escribe en `persona.yaml`, recarga agentes. Afecta directamente el tono, nivel de detalle, y estilo de todas las respuestas. El `AlignmentEvaluator` usa estos valores como baseline para medir si las respuestas futuras se alinean con el estilo definido. El `IdentityContextWeighter` (Phase 6B) y `IdentityBehavioralBias` (Phase 8A) derivan `tone_weight` y `assertiveness` de estos valores.
 
 ### 3. Guardar Valores (Save Values)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /persona/values` con la lista ordenada de valores
-- **Impacto en Django**: Escribe en `persona.yaml`, recarga agentes. Los valores son usados por el `AlignmentEvaluator` para medir alineación ético-moral, por el `IdentityDecisionModulator` (Phase 6C) para evaluar alignment categoría-valores, por el `IdentityFeedbackController` (Phase 5C) para generar correction hints, y por el `IdentityBehavioralBias` (Phase 8A) para derivar assertiveness. El orden importa — el primer valor tiene mayor peso.
+- **Impacto en Doe**: Escribe en `persona.yaml`, recarga agentes. Los valores son usados por el `AlignmentEvaluator` para medir alineación ético-moral, por el `IdentityDecisionModulator` (Phase 6C) para evaluar alignment categoría-valores, por el `IdentityFeedbackController` (Phase 5C) para generar correction hints, y por el `IdentityBehavioralBias` (Phase 8A) para derivar assertiveness. El orden importa — el primer valor tiene mayor peso.
 
 ### 4. Guardar Límites (Save Boundaries)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /persona/boundaries` con la lista de límites
-- **Impacto en Django**: Escribe en `persona.yaml`, recarga agentes. Los boundaries son verificados por el `AlignmentEvaluator` en cada interacción — violaciones se reportan como flags en el Evaluation Dashboard. El `GovernanceAgent` también los considera en su revisión de compliance.
+- **Impacto en Doe**: Escribe en `persona.yaml`, recarga agentes. Los boundaries son verificados por el `AlignmentEvaluator` en cada interacción — violaciones se reportan como flags en el Evaluation Dashboard. El `GovernanceAgent` también los considera en su revisión de compliance.
 
 ### 5. Reload from File (Recargar desde archivo)
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /persona/reload`, luego `GET /persona/info` para refrescar la UI
-- **Impacto en Django**: Re-lee `configs/persona.yaml` desde disco (descartando cambios no guardados en la UI) y recarga todos los agentes. Útil cuando `persona.yaml` fue editado manualmente fuera del dashboard.
+- **Impacto en Doe**: Re-lee `configs/persona.yaml` desde disco (descartando cambios no guardados en la UI) y recarga todos los agentes. Útil cuando `persona.yaml` fue editado manualmente fuera del dashboard.
 
 ### ⚠️ Limitaciones Conocidas
 

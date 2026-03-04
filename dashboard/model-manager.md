@@ -2,7 +2,7 @@
 
 ## Información General
 
-El Model Manager controla qué modelos de lenguaje (LLM) usa Django, cómo están asignados a cada agente, y qué perfil de configuración está activo. Permite ver el estado de los providers (Gemini, Groq), probar la conexión a cada uno, cambiar de perfil con un clic, y reasignar qué modelo usa cada agente individualmente. Los cambios aquí afectan inmediatamente qué proveedor y modelo procesa las solicitudes de cada agente — modificando calidad, velocidad, costo, y privacidad de las respuestas.
+El Model Manager controla qué modelos de lenguaje (LLM) usa Doe, cómo están asignados a cada agente, y qué perfil de configuración está activo. Permite ver el estado de los providers (Gemini, Groq), probar la conexión a cada uno, cambiar de perfil con un clic, y reasignar qué modelo usa cada agente individualmente. Los cambios aquí afectan inmediatamente qué proveedor y modelo procesa las solicitudes de cada agente — modificando calidad, velocidad, costo, y privacidad de las respuestas.
 
 ---
 
@@ -75,22 +75,22 @@ Tabla decorativa que muestra cómo se rutean los diferentes tipos de tarea a los
 ### 1. Cambiar Perfil
 - **Tipo**: API Call
 - **Comportamiento**: Llama `PUT /models/profile` con `{profile: "balanced|max_quality"}`
-- **Impacto en Django**: Reconfigura **instantáneamente** las asignaciones de TODOS los agentes al preset del perfil seleccionado. Escribe en `configs/models.json`. La PRÓXIMA llamada LLM de cualquier agente usará el nuevo provider/modelo. Si se cambia a `max_quality`, todo va a Gemini — mayor gasto de tokens pero mejor calidad.
+- **Impacto en Doe**: Reconfigura **instantáneamente** las asignaciones de TODOS los agentes al preset del perfil seleccionado. Escribe en `configs/models.json`. La PRÓXIMA llamada LLM de cualquier agente usará el nuevo provider/modelo. Si se cambia a `max_quality`, todo va a Gemini — mayor gasto de tokens pero mejor calidad.
 
 ### 2. Cambiar Asignación Individual
 - **Tipo**: API Call
 - **Comportamiento**: Seleccionar un provider diferente en el dropdown de un agente específico. Llama `PUT /models/assignment` con `{agent_role, provider}`
-- **Impacto en Django**: Cambia el provider del agente especificado sin afectar los demás. Escribe en `configs/models.json`. Solo afecta al agente modificado.
+- **Impacto en Doe**: Cambia el provider del agente especificado sin afectar los demás. Escribe en `configs/models.json`. Solo afecta al agente modificado.
 
 ### 3. Probar Modelo
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /models/test` con `{provider}`
-- **Impacto en Django**: Envía un prompt de prueba simple al provider seleccionado y mide latencia. **No genera efectos colaterales** — no crea memorias, traces, ni evaluaciones. Es una llamada LLM directa sin pasar por el orquestador. Útil para verificar que un provider está online antes de cambiar la asignación.
+- **Impacto en Doe**: Envía un prompt de prueba simple al provider seleccionado y mide latencia. **No genera efectos colaterales** — no crea memorias, traces, ni evaluaciones. Es una llamada LLM directa sin pasar por el orquestador. Útil para verificar que un provider está online antes de cambiar la asignación.
 
 ### 4. Recargar desde Archivo
 - **Tipo**: API Call
 - **Comportamiento**: Llama `POST /router/reload`
-- **Impacto en Django**: Re-lee `configs/models.json` desde disco y reconfigura el router. Útil si el archivo fue editado manualmente. Emite evento `config.router_reloaded`.
+- **Impacto en Doe**: Re-lee `configs/models.json` desde disco y reconfigura el router. Útil si el archivo fue editado manualmente. Emite evento `config.router_reloaded`.
 
 ---
 
